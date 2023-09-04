@@ -26,7 +26,8 @@ project "Astan"
 
 	includedirs
 	{
-		"%{prj.name}/vendor\\spdlog\\include"
+		"%{prj.name}/vendor\\spdlog\\include",
+		"%{prj.name}/src"
 	}
 	filter "system:windows"
 		cppdialect "C++17"
