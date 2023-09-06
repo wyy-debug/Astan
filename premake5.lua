@@ -11,6 +11,10 @@ workspace "Astan"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+IncludeDir = {}
+IncludeDir["GLFW"] = "Astan/vendor/GLFW/include"
+include "Astan/vendor/GLFW"
+
 project "Astan"
 	location "Astan"
 	kind "SharedLib"
@@ -30,7 +34,14 @@ project "Astan"
 	includedirs
 	{
 		"%{prj.name}/vendor\\spdlog\\include",
-		"%{prj.name}/src"
+		"%{prj.name}/src",
+		"%{IncludeDir.GLFW}"
+	}
+	links
+	{
+		"GLFW",
+		"opengl32.lib",
+		"Dwmapi.lib"
 	}
 	filter "system:windows"
 		cppdialect "C++17"
