@@ -2,8 +2,6 @@
 
 #include "Event.h"
 
-#include <sstream>
-
 namespace Astan {
 	class ASTAN_API KeyEvent : public Event
 	{
@@ -34,5 +32,21 @@ namespace Astan {
 		EVENT_CLASS_TYPE(KeyPressed)
 	private:
 		int m_RepeatCount;
+	};
+
+	class ASTAN_API KeyReleasedEvent : public KeyEvent
+	{
+	public:
+		KeyReleasedEvent(int keycode) 
+			: KeyEvent(keycode) {}
+		std::string ToString() const override
+		{
+			std::stringstream ss;
+			ss << "KeyReleaseEvent: " << m_KeyCode;
+			return ss.str();
+		}
+
+		EVENT_CLASS_TYPE(KeyReleased)
+
 	};
 }

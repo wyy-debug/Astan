@@ -18,6 +18,9 @@ project "Astan"
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
+	pchheader "aspch.h"
+	pchsource "Astan/src/aspch.cpp"
+
 	files
 	{
 		"%{prj.name}/src/**.h",
