@@ -10,7 +10,7 @@ namespace Astan {
 		WindowClose,WindowResize,WindowFocus,WindowLostFocus,WindowMoved,
 		AppTick,AppUpdate,AppRender,
 		KeyPressed,KeyReleased,
-		MouseButtonPressed,MouseButtonReleased,MouesMoved,MouseScrolled
+		MouseButtonPressed,MouseButtonReleased,MouseMoved,MouseScrolled
 	};
 	enum EventCategory
 	{
@@ -56,7 +56,7 @@ namespace Astan {
 		template<typename T>
 		bool Dispatch(EventFn<T> func) 
 		{
-			if (m_Event.GetEventType == T::GetStaticType())
+			if (m_Event.GetEventType() == T::GetStaticType())
 			{
 				m_Event.m_Handled == func(*(T*)&m_Event);
 				return true;
