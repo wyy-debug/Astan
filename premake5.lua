@@ -13,7 +13,10 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 IncludeDir = {}
 IncludeDir["GLFW"] = "Astan/vendor/GLFW/include"
+IncludeDir["Glad"] = "Astan/vendor/Glad/include"
+
 include "Astan/vendor/GLFW"
+include "Astan/vendor/Glad"
 
 project "Astan"
 	location "Astan"
@@ -35,11 +38,14 @@ project "Astan"
 	{
 		"%{prj.name}/vendor\\spdlog\\include",
 		"%{prj.name}/src",
-		"%{IncludeDir.GLFW}"
+		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.Glad}"
+
 	}
 	links
 	{
 		"GLFW",
+		"Glad",
 		"opengl32.lib",
 		"Dwmapi.lib"
 	}
@@ -52,7 +58,8 @@ project "Astan"
 		{
 			"AS_PLATFORM_WINDOWS",
 			"AS_BUILD_DLL",
-			"_WINDLL"
+			"_WINDLL",
+			"GLFW_INCLUDE_NONE"
 		}
 
 		postbuildcommands
@@ -62,14 +69,17 @@ project "Astan"
 
 	filter "configurations:Debug"
 		defines "AS_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines "AS_RELEASE"
+		buildoptions "/MD"
 		symbols "On"
 
 	filter "configurations:Dist"
 		defines "AS_DIST"
+		buildoptions "/MD"
 		symbols "On"
 
 project "Application"
@@ -109,12 +119,15 @@ project "Application"
 
 	filter "configurations:Debug"
 		defines "AS_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines "AS_RELEASE"
+		buildoptions "/MD"
 		symbols "On"
 
 	filter "configurations:Dist"
 		defines "AS_DIST"
+		buildoptions "/MD"
 		symbols "On"

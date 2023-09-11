@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Astan/Window.h"
-#include "Astan/Log.h"
 
 #include <GLFW/glfw3.h>
 
