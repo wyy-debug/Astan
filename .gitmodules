@@ -7,3 +7,6 @@
 [submodule "Astan/Astan/vendor/imgui"]
 	path = Astan/Astan/vendor/imgui
 	url = https://github.com/TheCherno/imgui
+[submodule "Astan/vendor/imgui"]
+	path = Astan/vendor/imgui
+	url = https://github.com/TheCherno/imgui

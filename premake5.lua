@@ -14,15 +14,17 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 IncludeDir = {}
 IncludeDir["GLFW"] = "Astan/vendor/GLFW/include"
 IncludeDir["Glad"] = "Astan/vendor/Glad/include"
+IncludeDir["ImGui"] = "Astan/vendor/imgui"
 
 include "Astan/vendor/GLFW"
 include "Astan/vendor/Glad"
+include "Astan/vendor/imgui"
 
 project "Astan"
 	location "Astan"
 	kind "SharedLib"
 	language "C++"
-	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}") 
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "aspch.h"
@@ -39,13 +41,15 @@ project "Astan"
 		"%{prj.name}/vendor\\spdlog\\include",
 		"%{prj.name}/src",
 		"%{IncludeDir.GLFW}",
-		"%{IncludeDir.Glad}"
+		"%{IncludeDir.Glad}",
+		"%{IncludeDir.ImGui}"
 
 	}
 	links
 	{
 		"GLFW",
 		"Glad",
+		"ImGui",
 		"opengl32.lib",
 		"Dwmapi.lib"
 	}
