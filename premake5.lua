@@ -1,6 +1,7 @@
 workspace "Astan"
 	architecture "x64" 
 
+	startproject "Application"
 
 	configurations
 	{
@@ -20,10 +21,13 @@ include "Astan/vendor/GLFW"
 include "Astan/vendor/Glad"
 include "Astan/vendor/imgui"
 
+
 project "Astan"
 	location "Astan"
 	kind "SharedLib"
 	language "C++"
+	staticruntime "off"
+
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}") 
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
@@ -55,7 +59,6 @@ project "Astan"
 	}
 	filter "system:windows"
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		defines
@@ -73,23 +76,25 @@ project "Astan"
 
 	filter "configurations:Debug"
 		defines "AS_DEBUG"
-		buildoptions "/MDd"
+		runtime "Debug"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines "AS_RELEASE"
-		buildoptions "/MD"
+		runtime "Release"
 		symbols "On"
 
 	filter "configurations:Dist"
 		defines "AS_DIST"
-		buildoptions "/MD"
+		runtime "Release"
 		symbols "On"
 
 project "Application"
 	location "Application"
 	kind "ConsoleApp"
 	language "C++"
+	staticruntime "off"
+
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -113,7 +118,7 @@ project "Application"
 
 	filter "system:windows"
 		cppdialect "C++17"
-		staticruntime "On"
+
 		systemversion "latest"
 
 		defines
@@ -123,15 +128,15 @@ project "Application"
 
 	filter "configurations:Debug"
 		defines "AS_DEBUG"
-		buildoptions "/MDd"
+		runtime "Debug"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines "AS_RELEASE"
-		buildoptions "/MD"
+		runtime "Release"
 		symbols "On"
 
 	filter "configurations:Dist"
 		defines "AS_DIST"
-		buildoptions "/MD"
+		runtime "Release"
 		symbols "On"
