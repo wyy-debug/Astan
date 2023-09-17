@@ -38,7 +38,7 @@ namespace Astan {
 		EventDispatcher dispacther(e);
 		dispacther.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
 
-		AS_CORE_TRACE("{0}",e);
+		//AS_CORE_TRACE("{0}",e);
 
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();)
 		{
@@ -64,8 +64,8 @@ namespace Astan {
 			{
 				layer->OnUpdate();
 			}
-			auto [x, y] = Input::GetMousePosition();
-			AS_CORE_TRACE("{0},{1}", x, y);
+			//auto [x, y] = Input::GetMousePosition();
+			//AS_CORE_TRACE("{0},{1}", x, y);
 			m_Window->OnUpdate();
 
 			
