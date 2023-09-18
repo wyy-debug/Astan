@@ -112,8 +112,7 @@ project "Application"
 	{
 		"Astan/vendor\\spdlog\\include",
 		"Astan/src",
-		"Astan/vendor\\glm"
-		
+		"Astan/vendor"		
 		
 	}
 

@@ -6,7 +6,7 @@
 #include "Astan/Events/Event.h"
 #include "Astan/Events/ApplicationEvent.h"
 
-
+#include "Astan/ImGui/ImGuiLayer.h"
 namespace Astan {
 	class ASTAN_API Application
 	{
@@ -26,6 +26,7 @@ namespace Astan {
 		bool OnWindowClose(WindowCloseEvent& e);
 
 		std::unique_ptr<Window> m_Window;
+		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 		LayerStack m_LayerStack;
 	private:

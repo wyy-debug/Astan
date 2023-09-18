@@ -1,10 +1,6 @@
 #include <Astan.h>
 
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
+//#include "imgui/imgui.h"
 
 
 class ExampleLayer : public Astan::Layer
@@ -15,6 +11,12 @@ public:
 	{
 	}
 
+	//virtual void OnImGuiRender() override
+	//{
+	//	ImGui::Begin("Test");
+	//	ImGui::Text("hello world");
+	//	ImGui::End();
+	//}
 	void OnUpdate() override
 	{
 		//AS_INFO("ExampleLayer::Update");
@@ -44,7 +46,6 @@ public:
 	Sandbox() 
 	{
 		PushLayer(new ExampleLayer());
-		PushOverlay(new Astan::ImGuiLayer());
 	}
 
 	~Sandbox() {}
