@@ -16,6 +16,7 @@ IncludeDir = {}
 IncludeDir["GLFW"] = "Astan/vendor/GLFW/include"
 IncludeDir["Glad"] = "Astan/vendor/Glad/include"
 IncludeDir["ImGui"] = "Astan/vendor/imgui"
+IncludeDir["glm"] = "Astan/vendor/glm"
 
 include "Astan/vendor/GLFW"
 include "Astan/vendor/Glad"
@@ -37,7 +38,9 @@ project "Astan"
 	files
 	{
 		"%{prj.name}/src/**.h",
-		"%{prj.name}/src/**.cpp"
+		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/glm/glm/**.hpp",
+		"%{prj.name}/vendor/glm/glm/**.inl"
 	}
 
 	includedirs
@@ -46,8 +49,8 @@ project "Astan"
 		"%{prj.name}/src",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.Glad}",
-		"%{IncludeDir.ImGui}"
-
+		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.glm}"
 	}
 	links
 	{
@@ -108,7 +111,10 @@ project "Application"
 	includedirs
 	{
 		"Astan/vendor\\spdlog\\include",
-		"Astan/src"
+		"Astan/src",
+		"Astan/vendor\\glm"
+		
+		
 	}
 
 	links
