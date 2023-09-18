@@ -4,12 +4,6 @@
 [submodule "Astan/vendor/GLFW"]
 	path = Astan/vendor/GLFW
 	url = https://github.com/TheCherno/glfw
-[submodule "Astan/Astan/vendor/imgui"]
-	path = Astan/Astan/vendor/imgui
-	url = https://github.com/TheCherno/imgui
-[submodule "Astan/vendor/imgui"]
-	path = Astan/vendor/imgui
-	url = https://github.com/TheCherno/imgui
 [submodule "Astan/vendor/glm"]
 	path = Astan/vendor/glm
 	url = https://github.com/g-truc/glm
