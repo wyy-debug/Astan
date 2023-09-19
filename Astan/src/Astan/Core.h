@@ -1,12 +1,16 @@
 #pragma once
 
 #ifdef AS_PLATFORM_WINDOWS
-	#ifdef AS_BUILD_DLL
-		#define ASTAN_API __declspec(dllexport)
+	#if AS_DYNAMIC_LINK
+		#ifdef AS_BUILD_DLL
+			#define ASTAN_API __declspec(dllexport)
+		#else
+			#define ASTAN_API __declspec(dllimport)
+		#endif
 	#else
-		#define ASTAN_API __declspec(dllimport)
+		#define ASTAN_API
 	#endif
-	#else
+#else
 	#error Astan only support Windows!
 #endif
 

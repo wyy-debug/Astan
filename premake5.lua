@@ -25,9 +25,10 @@ include "Astan/vendor/imgui"
 
 project "Astan"
 	location "Astan"
-	kind "SharedLib"
+	kind "StaticLib"
 	language "C++"
-	staticruntime "off"
+	cppdialect "C++17"
+	staticruntime "on"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}") 
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -41,6 +42,11 @@ project "Astan"
 		"%{prj.name}/src/**.cpp",
 		"%{prj.name}/vendor/glm/glm/**.hpp",
 		"%{prj.name}/vendor/glm/glm/**.inl"
+	}
+
+	defines
+	{
+		"_CRT_SECURE_NO_WARNINGS"
 	}
 
 	includedirs
@@ -61,7 +67,6 @@ project "Astan"
 		"Dwmapi.lib"
 	}
 	filter "system:windows"
-		cppdialect "C++17"
 		systemversion "latest"
 
 		defines
@@ -72,31 +77,27 @@ project "Astan"
 			"GLFW_INCLUDE_NONE"
 		}
 
-		postbuildcommands
-		{
-			("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Application")
-		}
-
 	filter "configurations:Debug"
 		defines "AS_DEBUG"
 		runtime "Debug"
-		symbols "On"
+		symbols "on"
 
 	filter "configurations:Release"
 		defines "AS_RELEASE"
 		runtime "Release"
-		symbols "On"
+		symbols "on"
 
 	filter "configurations:Dist"
 		defines "AS_DIST"
 		runtime "Release"
-		symbols "On"
+		symbols "on"
 
 project "Application"
 	location "Application"
 	kind "ConsoleApp"
 	language "C++"
-	staticruntime "off"
+	cppdialect "C++17"
+	staticruntime "on"
 
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
@@ -122,7 +123,6 @@ project "Application"
 	}
 
 	filter "system:windows"
-		cppdialect "C++17"
 
 		systemversion "latest"
 
@@ -134,14 +134,14 @@ project "Application"
 	filter "configurations:Debug"
 		defines "AS_DEBUG"
 		runtime "Debug"
-		symbols "On"
+		symbols "on"
 
 	filter "configurations:Release"
 		defines "AS_RELEASE"
 		runtime "Release"
-		symbols "On"
+		symbols "on"
 
 	filter "configurations:Dist"
 		defines "AS_DIST"
 		runtime "Release"
-		symbols "On"
+		symbols "on"
