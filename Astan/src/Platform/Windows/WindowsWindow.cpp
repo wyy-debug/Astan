@@ -4,7 +4,9 @@
 #include "Astan/Events/ApplicationEvent.h"
 #include "Astan/Events/MouseEvent.h"
 #include "Astan/Events/KeyEvent.h"
-#include <Glad/glad.h>
+
+
+#include "Platform/OpenGL/OpenGLContext.h"
 
 
 namespace Astan {
@@ -36,6 +38,8 @@ namespace Astan {
 		
 		AS_CORE_INFO("Creating window {0} ({1},{2})", props.Title, props.Width, props.Height);
 
+
+
 		if (!s_GLFWInitialized)
 		{
 			int success = glfwInit();
@@ -44,9 +48,12 @@ namespace Astan {
 			s_GLFWInitialized = true;
 		}
 		m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
-		glfwMakeContextCurrent(m_Window);
-		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-		AS_CORE_ASSERT(status , "Failed to initialze Glad!");
+
+		m_Context = new OpenGLContext(m_Window);
+		m_Context->Init();
+		// ^
+
+
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
 
@@ -141,12 +148,12 @@ namespace Astan {
 
 	void WindowsWindow::Shutdown()
 	{
-
+		glfwDestroyWindow(m_Window);
 	}
 	void WindowsWindow::OnUpdate()
 	{
 		glfwPollEvents();
-		glfwSwapBuffers(m_Window);
+		m_Context->SwapBuffers();
 	}
 
 	void WindowsWindow::SetVSync(bool enabled)

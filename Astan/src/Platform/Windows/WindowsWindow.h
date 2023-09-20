@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Astan/Window.h"
+#include "Astan/Renderer/GraphicsContext.h"
 
 #include <GLFW/glfw3.h>
 
@@ -29,6 +30,7 @@ namespace Astan {
 
 	private:
 		GLFWwindow* m_Window;
+		GraphicsContext* m_Context;
 
 		struct WindowData
 		{
