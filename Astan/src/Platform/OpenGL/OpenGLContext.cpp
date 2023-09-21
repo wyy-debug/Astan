@@ -16,7 +16,9 @@ namespace Astan
 	{
 		glfwMakeContextCurrent(m_WindowHandle);
 		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-		AS_CORE_ASSERT(status,"Failed to initialize Glad;")
+		AS_CORE_ASSERT(status, "Failed to initialize Glad;");
+
+		AS_CORE_INFO("OpenGL Renderer: {0}",glGetString(GL_RENDERER));
 
 	}
 	void OpenGLContext::SwapBuffers()
