@@ -7,6 +7,7 @@
 #include "Astan/Events/ApplicationEvent.h"
 
 #include "Astan/ImGui/ImGuiLayer.h"
+#include "Astan/Renderer/Shader.h"
 namespace Astan {
 	class ASTAN_API Application
 	{
@@ -31,6 +32,7 @@ namespace Astan {
 		LayerStack m_LayerStack;
 
 		unsigned int m_VertexArray, m_VertexBuffer, m_IndexBuffer;
+		std::unique_ptr<Shader> m_Shader;
 	private:
 		static Application* s_Instance;
 	};
