@@ -11,6 +11,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <glm/glm.hpp>
 
 #include "Astan/Log.h"
 #ifdef AS_PLATFORM_WINDOWS

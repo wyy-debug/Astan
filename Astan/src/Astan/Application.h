@@ -7,9 +7,14 @@
 #include "Astan/Events/ApplicationEvent.h"
 
 #include "Astan/ImGui/ImGuiLayer.h"
+
 #include "Astan/Renderer/Shader.h"
 #include "Astan/Renderer/Buffer.h"
 #include "Astan/Renderer/VertexArray.h"
+#include "Astan/Renderer/OrthographicCamera.h"
+
+
+
 
 namespace Astan {
 	class ASTAN_API Application
@@ -41,7 +46,7 @@ namespace Astan {
 		std::shared_ptr<VertexArray> m_SquareVA;
 		std::shared_ptr<Shader> m_BlueShader;
 
-
+		OrthographicCamera m_Camera;
 	private:
 		static Application* s_Instance;
 	};

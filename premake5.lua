@@ -40,7 +40,7 @@ project "Astan"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
-		"%{prj.name}/vendor/glm/glm/**.hpp",
+		"%{prj.name}/vendor/glm/**.hpp",
 		"%{prj.name}/vendor/glm/glm/**.inl"
 	}
 
@@ -113,7 +113,8 @@ project "Application"
 	{
 		"Astan/vendor\\spdlog\\include",
 		"Astan/src",
-		"Astan/vendor"		
+		"Astan/vendor",
+		"Astan/vendor\\glm"	
 		
 	}
 
