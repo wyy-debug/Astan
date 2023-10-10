@@ -1,5 +1,6 @@
 #pragma once
 #include "Astan/Core.h"
+#include "Astan/Core/Timestep.h"
 #include "Astan/Events/Event.h"
 namespace Astan {
 	class ASTAN_API Layer
@@ -10,7 +11,7 @@ namespace Astan {
 
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
-		virtual void OnUpdate() {}
+		virtual void OnUpdate(Timestep ts) {}
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event& event) {}
 
