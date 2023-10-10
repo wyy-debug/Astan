@@ -8,12 +8,11 @@
 
 #include "Astan/ImGui/ImGuiLayer.h"
 
+#include "Astan/Renderer/Renderer.h"
 #include "Astan/Renderer/Shader.h"
 #include "Astan/Renderer/Buffer.h"
 #include "Astan/Renderer/VertexArray.h"
 #include "Astan/Renderer/OrthographicCamera.h"
-
-
 
 
 namespace Astan {
@@ -39,14 +38,7 @@ namespace Astan {
 		bool m_Running = true;
 		LayerStack m_LayerStack;
 
-		std::shared_ptr<Shader> m_Shader;
-		std::shared_ptr<VertexArray> m_VertexArray;
 
-
-		std::shared_ptr<VertexArray> m_SquareVA;
-		std::shared_ptr<Shader> m_BlueShader;
-
-		OrthographicCamera m_Camera;
 	private:
 		static Application* s_Instance;
 	};
