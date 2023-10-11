@@ -22,7 +22,7 @@ public:
 			 0.5f,-0.5f,0.0f, 0.2f,0.3f,0.8f,1.0f,
 			 0.0f, 0.5f,0.0f, 0.8f,0.8f,0.2f,1.0f,
 		};
-		std::shared_ptr<Astan::VertexBuffer> vertexBuffer;
+		Astan::Ref<Astan::VertexBuffer> vertexBuffer;
 
 		vertexBuffer.reset(Astan::VertexBuffer::Create(vertices, sizeof(vertices)));
 
@@ -36,7 +36,7 @@ public:
 
 
 		uint32_t indices[3] = { 0,1,2 };
-		std::shared_ptr<Astan::IndexBuffer> indexBuffer;
+		Astan::Ref<Astan::IndexBuffer> indexBuffer;
 		indexBuffer.reset(Astan::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
@@ -48,7 +48,7 @@ public:
 			 0.5f, 0.5f,0.0f,
 			-0.5f, 0.5f,0.0f
 		};
-		std::shared_ptr<Astan::VertexBuffer> squreVB;
+		Astan::Ref<Astan::VertexBuffer> squreVB;
 		squreVB.reset(Astan::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
 		squreVB->SetLayout({
 			{Astan::ShaderDataType::Float3, "a_Position"},
@@ -56,7 +56,7 @@ public:
 		m_SquareVA->AddVertexBuffer(squreVB);
 
 		uint32_t squareIndices[6] = { 0,1,2,2,3,0 };
-		std::shared_ptr<Astan::IndexBuffer> squareIB;
+		Astan::Ref<Astan::IndexBuffer> squareIB;
 		squareIB.reset(Astan::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t)));
 		m_SquareVA->SetIndexBuffer(squareIB);
 
@@ -189,12 +189,12 @@ public:
 
 
 private:
-	std::shared_ptr<Astan::VertexArray> m_VertexArray;
-	std::shared_ptr<Astan::Shader> m_Shader;
+	Astan::Ref<Astan::Shader> m_Shader;
+	Astan::Ref<Astan::VertexArray> m_VertexArray;
 
-
-	std::shared_ptr<Astan::VertexArray> m_SquareVA;
-	std::shared_ptr<Astan::Shader> m_FlatColorShader;
+	
+	Astan::Ref<Astan::VertexArray> m_SquareVA;
+	Astan::Ref<Astan::Shader> m_FlatColorShader;
 
 	Astan::OrthographicCamera m_Camera;
 	glm::vec3 m_CameraPosition;
