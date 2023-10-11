@@ -1,8 +1,12 @@
 #include <Astan.h>
 
+#include "Platform/OpenGL/OpenGLShader.h"
+
 #include "imgui/imgui.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 
 class ExampleLayer : public Astan::Layer
 {
@@ -86,7 +90,7 @@ public:
 				color = v_Color;
 			}
 		)";
-		m_Shader.reset(new Astan::Shader(vertexSource, fragmentSource));
+		m_Shader.reset(Astan::Shader::Create(vertexSource, fragmentSource));
 
 		std::string flatColorShaderVertexSrc = R"(
 			#version 330 core
@@ -108,20 +112,17 @@ public:
 			layout(location = 0) out vec4 color;
 			in vec3 v_Position;
 			
-			uniform vec4 u_Color;
+			uniform vec3 u_Color;
 						
 			void main()
 			{
-				color = u_Color;
+				color = vec4(u_Color,1.0f);
 			}
 		)";
-		m_FlatColorShader.reset(new Astan::Shader(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
+		m_FlatColorShader.reset(Astan::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
 	}
 
-	virtual void OnImGuiRender() override
-	{
 
-	}
 	void OnUpdate(Astan::Timestep ts) override
 	{
 		if (Astan::Input::IsKeyPressed(AS_KEY_LEFT))
@@ -153,15 +154,9 @@ public:
 
 		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
 		
-		glm::vec4 redColor(0.8f, 0.3f, 0.3f, 1.0f);
-		glm::vec4 blueColor(0.2f, 0.3f, 0.8f, 1.0f);
 		
-		Astan::MaterialRef material = new Astan::Material(m_FlatColorShader);
-		Astan::MaterialInstanceRef mi = new Astan::MaterialInstanceRef(material);
-
-		mi->Set("u_Color", redColor);
-		mi->SetTexture("u_AlbedoMap", texture);
-		squareMesh->SetMaterial(mi);
+		std::dynamic_pointer_cast<Astan::OpenGLShader>(m_FlatColorShader)->Bind();
+		std::dynamic_pointer_cast<Astan::OpenGLShader>(m_FlatColorShader)->UploadUniformFloat3("u_Color",m_SquareColor);
 
 		for (int y = 0; y < 20; y++)
 		{
@@ -169,16 +164,20 @@ public:
 			{
 				glm::vec3 pos(i * 0.11f, y * 0.11f, 0.0f);
 				glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
-				//if (i % 2 == 0)
-				//	m_FlatColorShader->UploadUniformFloat4("u_Color",redColor);
-				//else
-				//	m_FlatColorShader->UploadUniformFloat4("u_Color", blueColor);
-				Astan::Renderer::Submit(mi, m_SquareVA, transform);
+				Astan::Renderer::Submit(m_FlatColorShader, m_SquareVA, transform);
 			}
 		}
 		Astan::Renderer::Submit(m_Shader, m_VertexArray);
 
 		Astan::Renderer::EndScene();
+	}
+
+
+	virtual void OnImGuiRender() override
+	{
+		ImGui::Begin("Setting");
+		ImGui::ColorEdit3("Square Color", glm::value_ptr(m_SquareColor));
+		ImGui::End();
 	}
 
 	void OnEvent(Astan::Event& event) override
@@ -204,6 +203,7 @@ private:
 	float m_CameraRotation = 0.0f;
 	float m_CameraRotationSpeed = 180.0f;
 
+	glm::vec3 m_SquareColor = { 0.2f,0.3f,0.8f };
 
 };
 
