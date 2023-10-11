@@ -88,7 +88,7 @@ public:
 		)";
 		m_Shader.reset(new Astan::Shader(vertexSource, fragmentSource));
 
-		std::string blueShaderVertexSource = R"(
+		std::string flatColorShaderVertexSrc = R"(
 			#version 330 core
 			layout(location = 0) in vec3 a_Position;			
 
@@ -103,17 +103,19 @@ public:
 				gl_Position = u_ViewProjection * u_Transform * vec4(a_Position,1.0);
 			}
 		)";
-		std::string blueShaderFragmentSource = R"(
+		std::string flatColorShaderFragmentSrc = R"(
 			#version 330 core
 			layout(location = 0) out vec4 color;
 			in vec3 v_Position;
-
+			
+			uniform vec4 u_Color;
+						
 			void main()
 			{
-				color = vec4(0.2,0.3,0.8, 1.0);
+				color = u_Color;
 			}
 		)";
-		m_BlueShader.reset(new Astan::Shader(blueShaderVertexSource, blueShaderFragmentSource));
+		m_FlatColorShader.reset(new Astan::Shader(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
 	}
 
 	virtual void OnImGuiRender() override
@@ -148,14 +150,30 @@ public:
 
 		Astan::Renderer::BeginScene(m_Camera);
 
+
 		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
+		
+		glm::vec4 redColor(0.8f, 0.3f, 0.3f, 1.0f);
+		glm::vec4 blueColor(0.2f, 0.3f, 0.8f, 1.0f);
+		
+		Astan::MaterialRef material = new Astan::Material(m_FlatColorShader);
+		Astan::MaterialInstanceRef mi = new Astan::MaterialInstanceRef(material);
+
+		mi->Set("u_Color", redColor);
+		mi->SetTexture("u_AlbedoMap", texture);
+		squareMesh->SetMaterial(mi);
+
 		for (int y = 0; y < 20; y++)
 		{
 			for (int i = 0; i < 20; i++)
 			{
 				glm::vec3 pos(i * 0.11f, y * 0.11f, 0.0f);
 				glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
-				Astan::Renderer::Submit(m_BlueShader, m_SquareVA, transform);
+				//if (i % 2 == 0)
+				//	m_FlatColorShader->UploadUniformFloat4("u_Color",redColor);
+				//else
+				//	m_FlatColorShader->UploadUniformFloat4("u_Color", blueColor);
+				Astan::Renderer::Submit(mi, m_SquareVA, transform);
 			}
 		}
 		Astan::Renderer::Submit(m_Shader, m_VertexArray);
@@ -177,7 +195,7 @@ private:
 
 
 	std::shared_ptr<Astan::VertexArray> m_SquareVA;
-	std::shared_ptr<Astan::Shader> m_BlueShader;
+	std::shared_ptr<Astan::Shader> m_FlatColorShader;
 
 	Astan::OrthographicCamera m_Camera;
 	glm::vec3 m_CameraPosition;
