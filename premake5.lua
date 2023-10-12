@@ -17,6 +17,8 @@ IncludeDir["GLFW"] = "Astan/vendor/GLFW/include"
 IncludeDir["Glad"] = "Astan/vendor/Glad/include"
 IncludeDir["ImGui"] = "Astan/vendor/imgui"
 IncludeDir["glm"] = "Astan/vendor/glm"
+IncludeDir["stb_image"] = "Astan/vendor/stb_image"
+
 
 include "Astan/vendor/GLFW"
 include "Astan/vendor/Glad"
@@ -40,6 +42,8 @@ project "Astan"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/stb_image/**.cpp",
+		"%{prj.name}/vendor/stb_image/**.h",
 		"%{prj.name}/vendor/glm/**.hpp",
 		"%{prj.name}/vendor/glm/glm/**.inl"
 	}
@@ -56,7 +60,9 @@ project "Astan"
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.ImGui}",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.stb_image}",
+
 	}
 	links
 	{

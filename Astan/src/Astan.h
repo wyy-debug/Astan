@@ -20,6 +20,7 @@
 
 #include "Astan/Renderer/VertexArray.h"
 #include "Astan/Renderer/Shader.h"
+#include "Astan/Renderer/Texture.h"
 #include "Astan/Renderer/Buffer.h"
 
 #include "Astan/Renderer/OrthographicCamera.h"
