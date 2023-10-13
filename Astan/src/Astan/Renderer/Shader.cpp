@@ -5,6 +5,19 @@
 #include "Platform/OpenGL/OpenGLShader.h"
 namespace Astan
 {
+
+	Shader* Shader::Create(const std::string& filepath)
+	{
+		switch (Renderer::GetAPI())
+		{
+		case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
+		case RendererAPI::API::OpenGL: return new OpenGLShader(filepath);
+		}
+		AS_CORE_ASSERT(false, "Unknown RendererAPI");
+		return nullptr;
+	}
+
+
 	Shader* Shader::Create(const std::string& vertexSrc, const std::string& fragmentSrc)
 	{
 		switch (Renderer::GetAPI())
@@ -15,4 +28,5 @@ namespace Astan
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
 	}
+
 }
