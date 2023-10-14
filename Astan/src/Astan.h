@@ -5,6 +5,7 @@
 #include "Astan/Input.h"
 #include "Astan/KeyCodes.h"
 #include "Astan/MouseButtonCodes.h"
+#include "Astan/OrthographicCameraController.h"
 
 #include "Astan/Layer.h"
 #include "Astan/Log.h"
