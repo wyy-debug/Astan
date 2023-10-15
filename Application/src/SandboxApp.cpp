@@ -1,5 +1,5 @@
 #include <Astan.h>
-
+#include "Astan/Core/EntryPoint.h"
 #include "Platform/OpenGL/OpenGLShader.h"
 
 #include "imgui/imgui.h"
@@ -7,13 +7,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "sandbox2D.h"
+
 class ExampleLayer : public Astan::Layer
 {
 public:
 	ExampleLayer()
 		:Layer("Exampler"), m_CameraController(1280.0f / 720.0f,true)
 	{
-		m_VertexArray.reset(Astan::VertexArray::Create());
+		m_VertexArray = Astan::VertexArray::Create();
 
 
 		float vertices[3 * 7] = {
@@ -40,7 +42,7 @@ public:
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
 
-		m_SquareVA.reset(Astan::VertexArray::Create());
+		m_SquareVA = Astan::VertexArray::Create();
 		float squareVertices[5 * 4] = {
 			-0.5f,-0.5f,0.0f,0.0f,0.0f,
 			 0.5f,-0.5f,0.0f,1.0f,0.0f,
@@ -192,9 +194,6 @@ public:
 		m_CameraController.OnEvent(event);
 	}
 
-
-
-
 private:
 	Astan::ShaderLibrary m_ShaderLibrary;
 	Astan::Ref<Astan::Shader> m_Shader;
@@ -218,7 +217,7 @@ class Sandbox : public Astan::Application
 public:
 	Sandbox() 
 	{
-		PushLayer(new ExampleLayer());
+		PushLayer(new Sandbox2D());
 	}
 
 	~Sandbox() {}
