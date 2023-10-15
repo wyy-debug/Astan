@@ -1,5 +1,5 @@
 #pragma once
-#include "Astan/Core.h"
+#include "Astan/Core/Core.h"
 #include "Layer.h"
 
 namespace Astan{

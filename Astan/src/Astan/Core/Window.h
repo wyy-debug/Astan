@@ -2,7 +2,7 @@
 
 #include "aspch.h"
 
-#include "Astan/Core.h"
+#include "Astan/Core/Core.h"
 #include "Astan/Events/Event.h"
 
 namespace Astan {

@@ -1,6 +1,6 @@
 #pragma once
 #include "aspch.h"
-#include "Astan/Core.h"
+#include "Astan/Core/Core.h"
 
 
 namespace Astan {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Astan/Window.h"
+#include "Astan/Core/Window.h"
 #include "Astan/Renderer/GraphicsContext.h"
 
 #include <GLFW/glfw3.h>

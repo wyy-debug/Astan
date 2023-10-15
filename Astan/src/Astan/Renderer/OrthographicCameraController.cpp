@@ -1,8 +1,8 @@
 #include "aspch.h"
 #include "OrthographicCameraController.h"
 
-#include "Astan/Input.h"
-#include "Astan/KeyCodes.h"
+#include "Astan/Core/Input.h"
+#include "Astan/Core/KeyCodes.h"
 
 namespace Astan
 {

@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <glm/glm.hpp>
 
-#include "Astan/Log.h"
+#include "Astan/Core/Log.h"
 #ifdef AS_PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif // AS_PLATFORM_WINDOWS

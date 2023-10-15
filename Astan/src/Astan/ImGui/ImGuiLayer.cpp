@@ -6,7 +6,7 @@
 #include "backends/imgui_impl_opengl3.h"
 
 
-#include "Astan/Application.h"
+#include "Astan/Core/Application.h"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>

@@ -1,14 +1,14 @@
 #pragma once
 
 // For use by Astan applications 
-#include "Astan/Application.h"
-#include "Astan/Input.h"
-#include "Astan/KeyCodes.h"
-#include "Astan/MouseButtonCodes.h"
-#include "Astan/OrthographicCameraController.h"
+#include "Astan/Core/Application.h"
+#include "Astan/Core/Input.h"
+#include "Astan/Core/KeyCodes.h"
+#include "Astan/Core/MouseButtonCodes.h"
+#include "Astan/Renderer/OrthographicCameraController.h"
 
-#include "Astan/Layer.h"
-#include "Astan/Log.h"
+#include "Astan/Core/Layer.h"
+#include "Astan/Core/Log.h"
 
 
 #include "Astan/Core/Timestep.h"
@@ -28,6 +28,6 @@
 //--Renderer---------------
 
 //--Entry Point-----------
-#include "Astan/EntryPoint.h"
+#include "Astan/Core/EntryPoint.h"
 //--Entry Point-----------
 

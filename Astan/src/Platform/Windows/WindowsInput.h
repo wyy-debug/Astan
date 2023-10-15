@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Astan/Input.h"
+#include "Astan/Core/Input.h"
 
 namespace Astan 
 {
