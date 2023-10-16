@@ -27,8 +27,3 @@
 
 #include "Astan/Renderer/OrthographicCamera.h"
 //--Renderer---------------
-
-//--Entry Point-----------
-#include "Astan/Core/EntryPoint.h"
-//--Entry Point-----------
-
