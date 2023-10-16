@@ -15,28 +15,6 @@ Sandbox2D::Sandbox2D()
 void Sandbox2D::OnAttach()
 {
 
-	m_SquareVA = Astan::VertexArray::Create();
-	float squareVertices[5 * 4] = {
-		-0.5f,-0.5f,0.0f,
-		 0.5f,-0.5f,0.0f,
-		 0.5f, 0.5f,0.0f,
-		-0.5f, 0.5f,0.0f
-	};
-
-	Astan::Ref<Astan::VertexBuffer> squreVB;
-	squreVB.reset(Astan::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
-	squreVB->SetLayout({
-		{Astan::ShaderDataType::Float3, "a_Position"},
-		});
-	m_SquareVA->AddVertexBuffer(squreVB);
-
-	uint32_t squareIndices[6] = { 0,1,2,2,3,0 };
-	Astan::Ref<Astan::IndexBuffer> squareIB;
-	squareIB.reset(Astan::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t)));
-	m_SquareVA->SetIndexBuffer(squareIB);
-
-	m_FlatColorShader = Astan::Shader::Create("assets/shaders/FlatColor.glsl");
-
 }
 
 void Sandbox2D::OnDetach()
@@ -50,15 +28,12 @@ void Sandbox2D::OnUpdate(Astan::Timestep ts)
 	Astan::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 	Astan::RenderCommand::Clear();
 
-	Astan::Renderer::BeginScene(m_CameraController.GetCamera());
+	Astan::Renderer2D::BeginScene(m_CameraController.GetCamera());
+	Astan::Renderer2D::DrawQuad({ 0.0f,0.0f,0.0f }, { 1.0f,1.0f }, { 0.8f,0.2f,0.3f,1.0f });
+	Astan::Renderer2D::EndScene();
 
-	std::dynamic_pointer_cast<Astan::OpenGLShader>(m_FlatColorShader)->Bind();
-	std::dynamic_pointer_cast<Astan::OpenGLShader>(m_FlatColorShader)->UploadUniformFloat4("u_Color", m_SquareColor);
-
-	//m_FlatColorShader->Bind();
-	Astan::Renderer::Submit(m_FlatColorShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
-
-	Astan::Renderer::EndScene();
+	//std::dynamic_pointer_cast<Astan::OpenGLShader>(m_FlatColorShader)->Bind();
+	//std::dynamic_pointer_cast<Astan::OpenGLShader>(m_FlatColorShader)->UploadUniformFloat4("u_Color", m_SquareColor);
 
 }
 
