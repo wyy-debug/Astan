@@ -78,10 +78,4 @@ namespace Astan {
 		}
 	}
 
-	void ImGuiLayer::OnImGuiRender() 
-	{
-		static bool flagshowDemoWindow = true;
-		ImGui::ShowDemoWindow(&flagshowDemoWindow);
-	}
-	
 }
