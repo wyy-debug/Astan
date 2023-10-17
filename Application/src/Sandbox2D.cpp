@@ -15,6 +15,8 @@ Sandbox2D::Sandbox2D()
 
 void Sandbox2D::OnAttach()
 {
+	AS_PROFILE_FUNCTION();
+ 
 	m_CheckerboardTexture = Astan::Texture2D::Create("assets/textures/Checkerboard.png");
 }
 
@@ -26,10 +28,7 @@ void Sandbox2D::OnUpdate(Astan::Timestep ts)
 { 
 	AS_PROFILE_FUNCTION();
 
-	{
-		AS_PROFILE_SCOPE("m_CameraController::OnUpdate");
-		m_CameraController.OnUpdate(ts);
-	}
+	m_CameraController.OnUpdate(ts);
 	{
 		AS_PROFILE_SCOPE("Render Prep");
 		Astan::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });

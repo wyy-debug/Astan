@@ -225,5 +225,6 @@ public:
 
 Astan::Application* Astan::CreateApplication()
 {
+
 	return new Sandbox();
 }

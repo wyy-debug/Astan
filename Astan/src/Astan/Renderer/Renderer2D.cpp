@@ -20,6 +20,8 @@ namespace Astan
 
 	void Renderer2D::Init() 
 	{
+		AS_PROFILE_FUNCTION();
+
 		s_Data = new Renderer2DStorage();
 		s_Data->QuadVertexArray = VertexArray::Create();
 		float squareVertices[5 * 4] = {
@@ -52,17 +54,23 @@ namespace Astan
 
 	void Renderer2D::Shutdown()
 	{
+		AS_PROFILE_FUNCTION();
+
 		delete s_Data;
 	}
 
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
+		AS_PROFILE_FUNCTION();
+
 		s_Data->TextureShader->Bind();
 		s_Data->TextureShader->SetMat4("u_ViewProjection",camera.GetViewProjectionMatrix());
 	}
 
 	void Renderer2D::EndScene() 
 	{
+		AS_PROFILE_FUNCTION();
+
 	}
 
 	void Renderer2D::DrawQuad(const glm::vec2& positon, const glm::vec2& size, const glm::vec4& color)
@@ -72,6 +80,8 @@ namespace Astan
 
 	void Renderer2D::DrawQuad(const glm::vec3& positon, const glm::vec2& size, const glm::vec4& color)
 	{
+		AS_PROFILE_FUNCTION();
+
 		s_Data->TextureShader->SetFloat4("u_Color", color);
 		// Bind white texture here
 		s_Data->WhiteShader->Bind();
@@ -91,6 +101,8 @@ namespace Astan
 
 	void Renderer2D::DrawQuad(const glm::vec3& positon, const glm::vec2& size, const Ref<Texture2D>& texture)
 	{
+		AS_PROFILE_FUNCTION();
+
 		s_Data->TextureShader->SetFloat4("u_Color", glm::vec4(1.0f));
 
 		texture->Bind();

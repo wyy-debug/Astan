@@ -22,6 +22,8 @@ namespace Astan {
 
 	void ImGuiLayer::OnAttach()
 	{
+		AS_PROFILE_FUNCTION();
+
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -44,6 +46,8 @@ namespace Astan {
 
 	void ImGuiLayer::OnDetach()
 	{
+		AS_PROFILE_FUNCTION();
+
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -53,6 +57,8 @@ namespace Astan {
 
 	void ImGuiLayer::Begin()
 	{
+		AS_PROFILE_FUNCTION();
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -60,6 +66,8 @@ namespace Astan {
 
 	void ImGuiLayer::End()
 	{
+		AS_PROFILE_FUNCTION();
+
 		// …Ë÷√œ‘ æ≥ﬂ¥Á
 		ImGuiIO& io = ImGui::GetIO();
 		Application& app = Application::Get();
