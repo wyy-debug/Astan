@@ -15,6 +15,7 @@
 #include <glm/glm.hpp>
 
 #include "Astan/Core/Log.h"
+#include "Astan/Debug/Instrumentor.h"
 #ifdef AS_PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif // AS_PLATFORM_WINDOWS
