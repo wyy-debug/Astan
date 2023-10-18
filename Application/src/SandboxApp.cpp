@@ -25,7 +25,7 @@ public:
 		};
 		Astan::Ref<Astan::VertexBuffer> vertexBuffer;
 
-		vertexBuffer.reset(Astan::VertexBuffer::Create(vertices, sizeof(vertices)));
+		vertexBuffer = Astan::VertexBuffer::Create(vertices, sizeof(vertices));
 
 		Astan::BufferLayout layout =
 		{
@@ -38,7 +38,7 @@ public:
 
 		uint32_t indices[3] = { 0,1,2 };
 		Astan::Ref<Astan::IndexBuffer> indexBuffer;
-		indexBuffer.reset(Astan::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t)));
+		indexBuffer = Astan::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t));
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
 
@@ -51,7 +51,7 @@ public:
 		};
 
 		Astan::Ref<Astan::VertexBuffer> squreVB;
-		squreVB.reset(Astan::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
+		squreVB = Astan::VertexBuffer::Create(squareVertices, sizeof(squareVertices));
 		squreVB->SetLayout({
 			{Astan::ShaderDataType::Float3, "a_Position"},
 			{Astan::ShaderDataType::Float2, "a_TexCoord"},
@@ -61,7 +61,7 @@ public:
 
 		uint32_t squareIndices[6] = { 0,1,2,2,3,0 };
 		Astan::Ref<Astan::IndexBuffer> squareIB;
-		squareIB.reset(Astan::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t)));
+		squareIB = Astan::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t));
 		m_SquareVA->SetIndexBuffer(squareIB);
 
 
