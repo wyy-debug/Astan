@@ -1,5 +1,6 @@
 #pragma once
 #include "Astan.h"
+#include "ParticleSystem.h"
 
 class Sandbox2D : public Astan::Layer
 {
@@ -29,5 +30,6 @@ private:
 	std::vector<ProfileResult> m_ProfileResults;
 
 	glm::vec4 m_SquareColor = { 0.2f,0.3f,0.8f,1.0f };
-
+	ParticleSystem m_ParticleSystem;
+	ParticleProps m_Particle;
 };
