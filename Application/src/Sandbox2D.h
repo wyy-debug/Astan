@@ -22,6 +22,9 @@ private:
 	Astan::Ref<Astan::Shader> m_FlatColorShader;
 	Astan::Ref<Astan::Texture2D> m_CheckerboardTexture;
 	Astan::Ref<Astan::Texture2D> m_SpriteSheet;
+	Astan::Ref<Astan::SubTexture2D> m_TextureStaris;
+	Astan::Ref<Astan::SubTexture2D> m_TextureBarrel;
+	
 
 	struct ProfileResult
 	{
