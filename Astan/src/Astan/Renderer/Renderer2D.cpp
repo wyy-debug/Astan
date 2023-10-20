@@ -293,7 +293,6 @@ namespace Astan
 			s_Data.QuadVertexBufferPtr++;
 		}
 
-		s_Data.QuadVertexBufferPtr++;
 
 		s_Data.QuadIndexCount += 6;
 
