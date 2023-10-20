@@ -21,6 +21,7 @@ private:
 	Astan::Ref<Astan::VertexArray> m_SquareVA;
 	Astan::Ref<Astan::Shader> m_FlatColorShader;
 	Astan::Ref<Astan::Texture2D> m_CheckerboardTexture;
+	Astan::Ref<Astan::Texture2D> m_SpriteSheet;
 
 	struct ProfileResult
 	{
