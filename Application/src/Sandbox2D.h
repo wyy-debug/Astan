@@ -25,6 +25,7 @@ private:
 	Astan::Ref<Astan::SubTexture2D> m_TextureStaris;
 	Astan::Ref<Astan::SubTexture2D> m_TextureBarrel;
 	Astan::Ref<Astan::SubTexture2D> m_TextureTree;
+	Astan::Ref<Astan::Framebuffer> m_Framebuffer;
 	
 
 	struct ProfileResult

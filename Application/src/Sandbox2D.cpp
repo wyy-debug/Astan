@@ -53,8 +53,12 @@ void Sandbox2D::OnAttach()
 	m_Particle.VelocityVariation = { 3.0f, 1.0f};
 	m_Particle.Position = { 0.0f, 0.0f};
 
-	m_CameraController.SetZoomLevel(5.0f);
+	m_CameraController.SetZoomLevel(1.0f);
 
+	Astan::FramebufferSpecification fbSpec;
+	fbSpec.Width = 1280;
+	fbSpec.Height = 720;
+	m_Framebuffer = Astan::Framebuffer::Create(fbSpec);
 }
 
 void Sandbox2D::OnDetach()
@@ -72,6 +76,7 @@ void Sandbox2D::OnUpdate(Astan::Timestep ts)
 	//Render
 	{
 		AS_PROFILE_SCOPE("Render Prep");
+		m_Framebuffer->Bind();
 		Astan::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		Astan::RenderCommand::Clear();
 	}
@@ -100,6 +105,7 @@ void Sandbox2D::OnUpdate(Astan::Timestep ts)
 			}
 		}
 		Astan::Renderer2D::EndScene();
+		m_Framebuffer->Unbind();
 	}
 
 	if (Astan::Input::IsMouseButtonPressed(AS_MOUSE_BUTTON_LEFT))
@@ -136,8 +142,6 @@ void Sandbox2D::OnUpdate(Astan::Timestep ts)
 	}
 #endif
 
-	Astan::Renderer2D::EndScene();
-	
 }
 
 void Sandbox2D::OnImGuiRender()
@@ -200,8 +204,9 @@ void Sandbox2D::OnImGuiRender()
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 		ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
-		uint32_t textureID = m_CheckerboardTexture->GetRendererID();
-		ImGui::Image((void*)textureID, ImVec2{ 256.0f,256.0f });
+		uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
+
+		ImGui::Image((void*)textureID, ImVec2{ 1280.f,720.f });
 		ImGui::End();
 		ImGui::End();
 	}
