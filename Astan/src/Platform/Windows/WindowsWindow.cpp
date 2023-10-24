@@ -16,11 +16,11 @@ namespace Astan {
 	{
 		AS_CORE_ERROR("GLFW Error ({0}): {1}", error, desription);
 	}
-	Window* Window::Create(const WindowProps& props)
+	Scope<Window> Window::Create(const WindowProps& props)
 	{
 		AS_PROFILE_FUNCTION();
-
-		return new WindowsWindow(props);
+		
+		return CreateScope<WindowsWindow>(props);
 	}
 
 	WindowsWindow::WindowsWindow(const WindowProps& props)\

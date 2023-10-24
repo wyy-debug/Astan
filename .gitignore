@@ -18,6 +18,6 @@ Intermediates/
 Astan/vendor/VulkanSDK
 Hazelnut/assets/cache
 scripts/__pycache__
-Application/AstanProfile-Runtime.json
-Application/AstanProfile-Shutdown.json
-Application/AstanProfile-Startup.json
+**/AstanProfile-Runtime.json
+**/AstanProfile-Shutdown.json
+**/AstanProfile-Startup.json

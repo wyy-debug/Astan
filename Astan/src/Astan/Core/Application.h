@@ -22,7 +22,7 @@ namespace Astan {
 	class ASTAN_API Application
 	{
 	public:
-		Application();
+		Application(const std::string& name = "Astan App");
 		virtual ~Application();
 
 		void Run();

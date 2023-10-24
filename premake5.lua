@@ -19,11 +19,11 @@ IncludeDir["ImGui"] = "Astan/vendor/imgui"
 IncludeDir["glm"] = "Astan/vendor/glm"
 IncludeDir["stb_image"] = "Astan/vendor/stb_image"
 
-
-include "Astan/vendor/GLFW"
-include "Astan/vendor/Glad"
-include "Astan/vendor/imgui"
-
+group "Dependencies"
+	include "Astan/vendor/GLFW"
+	include "Astan/vendor/Glad"
+	include "Astan/vendor/imgui"
+group ""
 
 project "Astan"
 	location "Astan"
@@ -100,6 +100,61 @@ project "Astan"
 
 project "Application"
 	location "Application"
+	kind "ConsoleApp"
+	language "C++"
+	cppdialect "C++17"
+	staticruntime "on"
+
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	files
+	{
+		"%{prj.name}/src/**.h",
+		"%{prj.name}/src/**.cpp"
+	}
+
+	includedirs
+	{
+		"Astan/vendor\\spdlog\\include",
+		"Astan/src",
+		"Astan/vendor",
+		"Astan/vendor\\glm"	
+		
+	}
+
+	links
+	{
+		"Astan"
+	}
+
+	filter "system:windows"
+
+		systemversion "latest"
+
+		defines
+		{
+			"AS_PLATFORM_WINDOWS"
+		}
+
+	filter "configurations:Debug"
+		defines "AS_DEBUG"
+		runtime "Debug"
+		symbols "on"
+
+	filter "configurations:Release"
+		defines "AS_RELEASE"
+		runtime "Release"
+		symbols "on"
+
+	filter "configurations:Dist"
+		defines "AS_DIST"
+		runtime "Release"
+		symbols "on"
+
+project "Astan-Editor"
+	location "Astan-Editor"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
