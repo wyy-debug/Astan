@@ -10,21 +10,21 @@
 #include "EditorLayer.h"
 
 namespace Astan{
-	class AstanEditor : public Application
+	class Astannut : public Application
 	{
 	public:
-		AstanEditor()
-			: Application("Astan Editor")
+		Astannut()
+			: Application("Astannut")
 		{
 			PushLayer(new EditorLayer());
 		}
 
-		~AstanEditor() {}
+		~Astannut() {}
 	};
 
 	Application* CreateApplication()
 	{
 
-		return new AstanEditor();
+		return new Astannut();
 	}
 }

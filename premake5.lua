@@ -1,7 +1,7 @@
 workspace "Astan"
 	architecture "x64" 
 
-	startproject "Application"
+	startproject "Astannut"
 
 	configurations
 	{
@@ -153,8 +153,8 @@ project "Application"
 		runtime "Release"
 		symbols "on"
 
-project "Astan-Editor"
-	location "Astan-Editor"
+project "Astannut"
+	location "Astannut"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
