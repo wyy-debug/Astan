@@ -61,7 +61,8 @@ namespace Astan {
 	{ 
 		AS_PROFILE_FUNCTION();
 		//Update
-		m_CameraController.OnUpdate(ts);
+		if(m_ViewporFocused)
+			m_CameraController.OnUpdate(ts);
 
 		//Reset stats here
 		Astan::Renderer2D::ResetStats();
@@ -184,6 +185,9 @@ namespace Astan {
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
 			ImGui::Begin("Viewport");
+			m_ViewporFocused = ImGui::IsWindowFocused();
+			m_ViewporHovered = ImGui::IsWindowHovered();
+			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporFocused || !m_ViewporHovered);
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 			if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
 			{
