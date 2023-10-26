@@ -33,89 +33,58 @@ namespace Astan {
 	{
 		AS_PROFILE_FUNCTION();
  
-		m_CheckerboardTexture = Astan::Texture2D::Create("assets/textures/Checkerboard.png");
-		m_SpriteSheet = Astan::Texture2D::Create("assets/game/textures/RPGpack_sheet_2X.png");
+		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
+		m_SpriteSheet = Texture2D::Create("assets/game/textures/RPGpack_sheet_2X.png");
 	
-		m_TextureStaris = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 1,11 }, { 128,128 });
-		m_TextureTree = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2,1 }, { 128,128 }, { 1,2 });
+		m_TextureStaris = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 1,11 }, { 128,128 });
+		m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2,1 }, { 128,128 }, { 1,2 });
 	
 		m_MapWith = s_MapWidth;
 		m_MapHeight = strlen(s_MapTiles) / s_MapWidth;
 
-		s_TextureMap['D'] = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, {6,11}, {128,128});
-		s_TextureMap['W'] = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11,11}, {128,128});
+		s_TextureMap['D'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, {6,11}, {128,128});
+		s_TextureMap['W'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, {11,11}, {128,128});
 
 		m_CameraController.SetZoomLevel(1.0f);
 
-		Astan::FramebufferSpecification fbSpec;
+		FramebufferSpecification fbSpec;
 		fbSpec.Width = 1280;
 		fbSpec.Height = 720;
-		m_Framebuffer = Astan::Framebuffer::Create(fbSpec);
+		m_Framebuffer = Framebuffer::Create(fbSpec);
+
+		m_ActiveScene = CreateRef<Scene>();
+
+		auto square = m_ActiveScene->CreateEntity();
+		m_ActiveScene->Reg().emplace<TransformComponent>(square);
+		m_ActiveScene->Reg().emplace<SpriteRendererComponent>(square, glm::vec4{0.0f,1.0f,0.0f,1.0f});
 	}
 
 	void EditorLayer::OnDetach()
 	{}
 
 
-	void EditorLayer::OnUpdate(Astan::Timestep ts)
+	void EditorLayer::OnUpdate(Timestep ts)
 	{ 
 		AS_PROFILE_FUNCTION();
 		//Update
 		if(m_ViewporFocused)
 			m_CameraController.OnUpdate(ts);
 
-		//Reset stats here
-		Astan::Renderer2D::ResetStats();
+
 		//Render
-		{
-			AS_PROFILE_SCOPE("Render Prep");
-			m_Framebuffer->Bind();
-			Astan::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
-			Astan::RenderCommand::Clear();
-		}
+		Renderer2D::ResetStats();
+		m_Framebuffer->Bind();
+		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+		RenderCommand::Clear();
 
-
-		{
-			static float rotation = 0.0f;
-			rotation += ts * 50.0f;
-
-			AS_PROFILE_SCOPE("Render Draw");
-			Astan::Renderer2D::BeginScene(m_CameraController.GetCamera());
-			Astan::Renderer2D::DrawRotatedQuad({ 1.0f,0.0f }, { 0.8f,0.8f }, glm::radians(- 45.0f), {0.8f,0.2f,0.3f,1.0f});
-			Astan::Renderer2D::DrawQuad({ -1.0f,0.0f }, { 0.8f,0.8f }, { 0.8f,0.2f,0.3f,1.0f });
-			Astan::Renderer2D::DrawQuad({ 0.5f,-0.5f }, { 0.5f,0.75f }, { 0.2f,0.3f,0.8f,1.0f });
-			Astan::Renderer2D::DrawQuad({ 0.0f,0.0f,-0.1f }, {20.0f,20.0f}, m_CheckerboardTexture, 10.0f);
-			Astan::Renderer2D::DrawRotatedQuad({ -2.0f,0.5f,0.0f }, { 1.0f,1.0f }, glm::radians(rotation), m_CheckerboardTexture, 20.0f);
-			Astan::Renderer2D::EndScene();
-
-			Astan::Renderer2D::BeginScene(m_CameraController.GetCamera());
-			for (float y = -5.0f; y < 5.0f; y+=0.5f)
-			{
-				for (float x = -5.0f; x < 5.0f; x+= 0.5f)
-				{
-					glm::vec4 color = { (x + 5.0f) / 10.f,0.4f,(y + 5.0f) / 10.f,0.7f };
-					Astan::Renderer2D::DrawQuad({ x,y }, { 0.45f,0.45f }, color);
-				}
-			}
-			Astan::Renderer2D::EndScene();
-			m_Framebuffer->Unbind();
-		}
-	#if 0
-		for (uint32_t y = 0; y < m_MapHeight; y++)
-		{
-			for (uint32_t x = 0; x < m_MapWith; x++)
-			{
-				char tileType = s_MapTiles[x + y * m_MapWith];
-				Astan::Ref<Astan::SubTexture2D> texture;
-				if (s_TextureMap.find(tileType) != s_TextureMap.end())
-					texture = s_TextureMap[tileType];
-				else
-					texture = m_TextureStaris;
-
-				Astan::Renderer2D::DrawQuad({ x-m_MapWith / 2.0f,m_MapHeight - y - m_MapHeight/2.0f,0.5f }, { 1.0f,1.0f }, texture);
-			}
-		}
-	#endif
+		
+		Renderer2D::BeginScene(m_CameraController.GetCamera());
+	
+		m_ActiveScene->OnUpdate(ts);
+		
+		Renderer2D::EndScene();
+		
+		m_Framebuffer->Unbind();
 
 	}
 
@@ -165,21 +134,22 @@ namespace Astan {
 			{
 				if (ImGui::BeginMenu("File"))
 				{
-					if (ImGui::MenuItem("Exit")) Astan::Application::Get().Close();
+					if (ImGui::MenuItem("Exit")) Application::Get().Close();
 						ImGui::EndMenu();
 				}
 				ImGui::EndMenuBar();
 			}
 			ImGui::Begin("Setting");
 
-			auto stats = Astan::Renderer2D::GetStats();
+			auto stats = Renderer2D::GetStats();
 			ImGui::Text("Renderer2D Stats:");
 			ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 			ImGui::Text("Quads: %d", stats.QuadCount);
 			ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 			ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 			
-			ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
+			auto& squareColor = m_ActiveScene->Reg().get<SpriteRendererComponent>(m_SquareEntity).Color;
+			ImGui::ColorEdit4("Square Color", glm::value_ptr(squareColor));
 			
 			ImGui::End();
 
@@ -188,8 +158,9 @@ namespace Astan {
 			m_ViewporFocused = ImGui::IsWindowFocused();
 			m_ViewporHovered = ImGui::IsWindowHovered();
 			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporFocused || !m_ViewporHovered);
+			
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-			if (m_ViewportSize != *(glm::vec2*)&viewportPanelSize)
+			if (m_ViewportSize != *((glm::vec2*)&viewportPanelSize) && viewportPanelSize.x > 0 && viewportPanelSize.y > 0)
 			{
 				m_Framebuffer->Resize(uint32_t(viewportPanelSize.x),uint32_t(viewportPanelSize.y));
 				m_ViewportSize = { viewportPanelSize.x,viewportPanelSize.y };
@@ -207,7 +178,7 @@ namespace Astan {
 		{
 			ImGui::Begin("Setting");
 
-			auto stats = Astan::Renderer2D::GetStats();
+			auto stats = Renderer2D::GetStats();
 			ImGui::Text("Renderer2D Stats:");
 			ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 			ImGui::Text("Quads: %d", stats.QuadCount);
@@ -222,7 +193,7 @@ namespace Astan {
 		}
 	}
 
-	void EditorLayer::OnEvent(Astan::Event& event)
+	void EditorLayer::OnEvent(Event& event)
 	{
 		m_CameraController.OnEvent(event);
 	}

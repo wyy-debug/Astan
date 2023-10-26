@@ -25,6 +25,8 @@ namespace Astan {
 		Ref<SubTexture2D> m_TextureBarrel;
 		Ref<SubTexture2D> m_TextureTree;
 		Ref<Framebuffer> m_Framebuffer;
+		Ref<Scene> m_ActiveScene;
+		entt::entity m_SquareEntity;
 	
 
 		struct ProfileResult
