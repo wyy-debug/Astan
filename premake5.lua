@@ -18,6 +18,7 @@ IncludeDir["Glad"] = "Astan/vendor/Glad/include"
 IncludeDir["ImGui"] = "Astan/vendor/imgui"
 IncludeDir["glm"] = "Astan/vendor/glm"
 IncludeDir["stb_image"] = "Astan/vendor/stb_image"
+IncludeDir["entt"] = "Astan/vendor/entt/include"
 
 group "Dependencies"
 	include "Astan/vendor/GLFW"
@@ -62,6 +63,7 @@ project "Astan"
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.stb_image}",
+		"%{IncludeDir.entt}"
 
 	}
 	links
@@ -120,7 +122,8 @@ project "Application"
 		"Astan/vendor\\spdlog\\include",
 		"Astan/src",
 		"Astan/vendor",
-		"Astan/vendor\\glm"	
+		"%{IncludeDir.glm}"	,
+		"%{IncludeDir.entt}"
 		
 	}
 
@@ -175,7 +178,8 @@ project "Astannut"
 		"Astan/vendor\\spdlog\\include",
 		"Astan/src",
 		"Astan/vendor",
-		"Astan/vendor\\glm"	
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.entt}"
 		
 	}
 
