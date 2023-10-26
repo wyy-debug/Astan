@@ -34,7 +34,7 @@ namespace Astan
 
 		m_Registry.on_construct<TransformComponent>().connect<&OnTransformConstruct>();
 
-		if(m_Registry.has<TransformComponent>(entity))
+		if(m_Registry.all_of<TransformComponent>(entity))
 			auto& transform = m_Registry.emplace<TransformComponent>(entity,glm::mat4(1.0f));
 
 		auto view = m_Registry.view<TransformComponent>();
