@@ -14,6 +14,7 @@
 #include "Astan/ImGui/ImGuiLayer.h"
 
 #include "Astan/Scene/Scene.h"
+#include "Astan/Scene/Entity.h"
 #include "Astan/Scene/Component.h"
 
 //--Renderer---------------
