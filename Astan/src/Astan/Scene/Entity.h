@@ -15,7 +15,7 @@ namespace Astan
 		template<typename T,typename...Args>
 		T& AddComponent(Args&&... args)
 		{
-			AS_CORE_ASSERT(HasComponent<T>(),"Entity already has compontent!");
+			AS_CORE_ASSERT(!HasComponent<T>(),"Entity already has compontent!");
 			return m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 		}
 
@@ -41,7 +41,7 @@ namespace Astan
 
 		operator bool() const { return m_EntityHandle != entt::null; }
 	private:
-		entt::entity m_EntityHandle;
+		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;
 	};
 }
