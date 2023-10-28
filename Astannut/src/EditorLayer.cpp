@@ -60,6 +60,15 @@ namespace Astan {
 		square.AddComponent<SpriteRendererComponent>(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		
 		m_SquareEntity = square;
+
+		m_CameraEnity = m_ActiveScene->CreateEntity("Camera Entity");
+		m_CameraEnity.AddComponent<CameraComponent>(glm::ortho(-16.0f, 16.0f, -9.0f, 9.0f, -1.0f, 1.0f));
+
+		m_SecondCameraEnity = m_ActiveScene->CreateEntity("Camera Entity");
+		auto& cc = m_SecondCameraEnity.AddComponent<CameraComponent>(glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f));
+		cc.Primary = false;
+
+		
 	}
 
 	void EditorLayer::OnDetach()
@@ -79,13 +88,8 @@ namespace Astan {
 		m_Framebuffer->Bind();
 		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		RenderCommand::Clear();
-
 		
-		Renderer2D::BeginScene(m_CameraController.GetCamera());
-	
 		m_ActiveScene->OnUpdate(ts);
-		
-		Renderer2D::EndScene();
 		
 		m_Framebuffer->Unbind();
 
@@ -151,11 +155,19 @@ namespace Astan {
 			ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 			ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 			
-			//if (m_SquareEntity)
+			if (m_SquareEntity)
 			{
 				auto& squareColor = m_SquareEntity.GetComponent<SpriteRendererComponent>().Color;
 				ImGui::ColorEdit4("Square Color", glm::value_ptr(squareColor));
 			}
+			ImGui::DragFloat3("Camer Transform",
+				glm::value_ptr(m_CameraEnity.GetComponent<TransformComponent>().Transform[3]));
+			if (ImGui::Checkbox("Camera A", &m_Primary))
+			{
+				m_CameraEnity.GetComponent<CameraComponent>().Primary = m_Primary;
+				m_SecondCameraEnity.GetComponent<CameraComponent>().Primary = !m_Primary;
+			}
+
 			ImGui::End();
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });

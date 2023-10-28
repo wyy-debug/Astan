@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "Astan/Renderer/Camera.h"
 namespace Astan 
 {
 	struct TransformComponent
@@ -34,5 +35,17 @@ namespace Astan
 			: Tag(tag) {}
 	};
 
+	struct CameraComponent
+	{
+		Camera Camera;
+
+		bool Primary = true;
+
+		CameraComponent() = default;
+		CameraComponent(const CameraComponent&) = default;
+		CameraComponent(const glm::mat4& projection)
+			:Camera(projection) {}
+
+	};
 
 }
