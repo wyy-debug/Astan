@@ -100,9 +100,7 @@ namespace Astan {
 
 			}
 
-
 			m_Window->OnUpdate();
-
 			
 		}
 	} 

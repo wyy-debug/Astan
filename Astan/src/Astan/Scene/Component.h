@@ -1,8 +1,17 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "Astan/Renderer/Camera.h"
+#include "Astan/Scene/SceneCamera.h"
 namespace Astan 
 {
+	struct TagComponent
+	{
+		std::string Tag;
+		TagComponent() = default;
+		TagComponent(const TagComponent&) = default;
+		TagComponent(const std::string& tag)
+			: Tag(tag) {}
+	};
+
 	struct TransformComponent
 	{
 		glm::mat4 Transform{1.0f};
@@ -25,27 +34,15 @@ namespace Astan
 		SpriteRendererComponent(const glm::vec4& color)
 			: Color(color) {}
 	};
-
-	struct TagComponent
-	{
-		std::string Tag;
-		TagComponent() = default;
-		TagComponent(const TagComponent&) = default;
-		TagComponent(const std::string& tag)
-			: Tag(tag) {}
-	};
-
+	
 	struct CameraComponent
 	{
-		Camera Camera;
-
+		SceneCamera Camera;
 		bool Primary = true;
+		bool FixedAspectRatio = false;
 
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
-		CameraComponent(const glm::mat4& projection)
-			:Camera(projection) {}
-
 	};
 
 }
