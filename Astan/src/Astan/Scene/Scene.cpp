@@ -75,7 +75,21 @@ namespace Astan
 
 	void Scene::OnUpdate(Timestep ts)
 	{
-		//Render sprites
+		{
+			m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+				{
+					if (!nsc.Instance)
+					{
+						nsc.InstantiateFunction();
+						nsc.Instance->m_Entity = Entity{ entity,this };
+						nsc.OnCreateFunction(nsc.Instance);
+					}
+
+					nsc.OnUpdateFunction(nsc.Instance, ts);
+				});
+		}
+
+		//Render 2D
 		
 		Camera* mainCamera = nullptr;
 		glm::mat4* cameraTransform = nullptr;

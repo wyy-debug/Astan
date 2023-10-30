@@ -15,6 +15,7 @@
 
 #include "Astan/Scene/Scene.h"
 #include "Astan/Scene/Entity.h"
+#include "Astan/Scene/ScriptableEntity.h"
 #include "Astan/Scene/Component.h"
 
 //--Renderer---------------

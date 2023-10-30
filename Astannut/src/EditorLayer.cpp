@@ -68,7 +68,37 @@ namespace Astan {
 		auto& cc = m_SecondCameraEnity.AddComponent<CameraComponent>();
 		cc.Primary = false;
 
-		
+		class CameraController : public ScriptableEntity
+		{
+		public:
+			void OnCreate()
+			{
+				GetComponent<TransformComponent>();
+			}
+
+			void OnDestroy()
+			{
+
+			}
+
+			void OnUpdate(Timestep ts)
+			{
+				auto& transform = GetComponent<TransformComponent>().Transform;
+				float speed = 5.0f;
+				
+				if (Input::IsKeyPressed(AS_KEY_A))
+					transform[3][0] -= speed * ts;
+				if(Input::IsKeyPressed(AS_KEY_D))
+					transform[3][0] += speed * ts;
+				if(Input::IsKeyPressed(AS_KEY_W))
+					transform[3][1] += speed * ts;
+				if(Input::IsKeyPressed(AS_KEY_S))
+					transform[3][1] -= speed * ts;
+			}
+		};
+
+		m_CameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
 	}
 
 	void EditorLayer::OnDetach()
