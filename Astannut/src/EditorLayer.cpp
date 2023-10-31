@@ -97,6 +97,7 @@ namespace Astan {
 			}
 		};
 
+
 		m_CameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
 	}
@@ -118,13 +119,9 @@ namespace Astan {
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
 
-
-
-
 		//Update
 		if(m_ViewporFocused)
 			m_CameraController.OnUpdate(ts);
-
 
 		//Render
 		Renderer2D::ResetStats();

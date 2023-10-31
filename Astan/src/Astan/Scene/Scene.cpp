@@ -16,48 +16,7 @@ namespace Astan
 	}
 
 	Scene::Scene()
-	{
-#if ENTT_EXAMPLE_CODE
-		struct MeshComponent
-		{
-			bool Data;
-			MeshComponent() = default;
-		};
-		struct TransformComponent
-		{
-			glm::mat4 Transform;
-
-			TransformComponent() = default;
-			TransformComponent(const TransformComponent&) = default;
-			TransformComponent(const glm::mat4& transform)
-				: Transform(transform) {}
-
-			operator glm::mat4& () { return Transform; }
-			operator const glm::mat4& () const { return Transform; }
-		};
-
-		entt::entity entity = m_Registry.create();//组件只是一个ID，hash表
-		m_Registry.emplace<TransformComponent>(entity, glm::mat4(1.0f));
-
-		m_Registry.on_construct<TransformComponent>().connect<&OnTransformConstruct>();
-
-		if (m_Registry.all_of<TransformComponent>(entity))
-			auto& transform = m_Registry.emplace<TransformComponent>(entity, glm::mat4(1.0f));
-
-		auto view = m_Registry.view<TransformComponent>();
-		for (auto entity : view)
-		{
-			TransformComponent& transform = m_Registry.get<TransformComponent>(entity);
-		}
-
-		auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-		for (auto entity : group)
-		{
-			auto& [transform, sprite] = m_Registry.get<TransformComponent, SpriteRendererComponent>(entity);
-		}
-
-#endif
-		
+	{	
 	}
 
 	Scene::~Scene()
@@ -68,7 +27,7 @@ namespace Astan
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<TransformComponent>();
-		auto& tag = entity.AddComponent<TagComponent>();
+		auto tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Entity" : name;
 		return entity;
 	}
@@ -80,12 +39,12 @@ namespace Astan
 				{
 					if (!nsc.Instance)
 					{
-						nsc.InstantiateFunction();
+						nsc.Instance = nsc.InstantiateScript();
 						nsc.Instance->m_Entity = Entity{ entity,this };
-						nsc.OnCreateFunction(nsc.Instance);
+						nsc.Instance->OnCreate();
 					}
 
-					nsc.OnUpdateFunction(nsc.Instance, ts);
+					nsc.Instance->OnUpdate(ts);
 				});
 		}
 
@@ -97,7 +56,7 @@ namespace Astan
 			auto view = m_Registry.view<TransformComponent, CameraComponent>();
 			for (auto entity : view)
 			{
-				auto& [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
 				
 				if (camera.Primary)
 				{
@@ -115,7 +74,7 @@ namespace Astan
 			auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
 			for (auto entity : view)
 			{
-				auto& [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
+				auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
 				Renderer2D::DrawQuad(transform,sprite.Color);
 			}
 
