@@ -1,5 +1,7 @@
 #pragma once
 #include "Astan.h"
+#include "Panels/SceneHierarchyPanel.h"
+
 namespace Astan {
 	class EditorLayer : public Layer
 	{
@@ -46,5 +48,8 @@ namespace Astan {
 
 		uint32_t m_MapWith, m_MapHeight;
 		std::unordered_map<char, Ref<SubTexture2D>> s_TextureMap;
+
+		//Panels
+		SceneHierarchyPanel m_SceneHierarchyPanel;
 	};
 }

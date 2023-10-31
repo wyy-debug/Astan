@@ -73,7 +73,8 @@ namespace Astan {
 		public:
 			void OnCreate()
 			{
-				GetComponent<TransformComponent>();
+				auto& transform = GetComponent<TransformComponent>().Transform;
+				transform[3][0] = rand() % 10 - 5.0f;
 			}
 
 			void OnDestroy()
@@ -99,7 +100,9 @@ namespace Astan {
 
 
 		m_CameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+		m_SecondCameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
 
 	void EditorLayer::OnDetach()
@@ -186,6 +189,9 @@ namespace Astan {
 				}
 				ImGui::EndMenuBar();
 			}
+
+			m_SceneHierarchyPanel.OnImGuiRender();
+
 			ImGui::Begin("Setting");
 
 			auto stats = Renderer2D::GetStats();
