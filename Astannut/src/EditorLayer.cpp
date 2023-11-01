@@ -73,30 +73,30 @@ namespace Astan {
 		class CameraController : public ScriptableEntity
 		{
 		public:
-			void OnCreate()
+			virtual void OnCreate() override
 			{
-				auto& transform = GetComponent<TransformComponent>().Transform;
-				transform[3][0] = rand() % 10 - 5.0f;
+				auto& translation = GetComponent<TransformComponent>().Translation;
+				translation.x = rand() % 10 - 5.0f;
 			}
 
-			void OnDestroy()
+			virtual void OnDestory() override
 			{
 
 			}
 
-			void OnUpdate(Timestep ts)
+			virtual void OnUpdate(Timestep ts) override
 			{
-				auto& transform = GetComponent<TransformComponent>().Transform;
+				auto& translation = GetComponent<TransformComponent>().Translation;
 				float speed = 5.0f;
 				
 				if (Input::IsKeyPressed(AS_KEY_A))
-					transform[3][0] -= speed * ts;
+					translation.x -= speed * ts;
 				if(Input::IsKeyPressed(AS_KEY_D))
-					transform[3][0] += speed * ts;
+					translation.x += speed * ts;
 				if(Input::IsKeyPressed(AS_KEY_W))
-					transform[3][1] += speed * ts;
+					translation.y += speed * ts;
 				if(Input::IsKeyPressed(AS_KEY_S))
-					transform[3][1] -= speed * ts;
+					translation.y -= speed * ts;
 			}
 		};
 
