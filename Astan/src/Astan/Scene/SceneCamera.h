@@ -25,8 +25,8 @@ namespace Astan
 		void SetPerspectiveVerticalFarClip(float farClip) { m_PerspectiveFar = farClip; RecalculateProjection(); }
 
 
-		float GetOrthographicSzie() const { return m_OrthographicSize; }
-		void SetOrthographicSzie(float size) { m_OrthographicSize = size; RecalculateProjection(); }
+		float GetOrthographicSize() const { return m_OrthographicSize; }
+		void SetOrthographicSize(float size) { m_OrthographicSize = size; RecalculateProjection(); }
 		float GetOrthographicNearClip() const { return m_OrthographicNear; }
 		void SetOrthographicNearClip(float nearClip) { m_OrthographicNear = nearClip; RecalculateProjection(); }
 		float GetOrthographicFarClip() const { return m_OrthographicFar; }

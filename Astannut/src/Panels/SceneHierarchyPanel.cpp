@@ -290,9 +290,9 @@ namespace Astan
 
 				if (camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
 				{
-					float orthoSize = camera.GetOrthographicSzie();
+					float orthoSize = camera.GetOrthographicSize();
 					if (ImGui::DragFloat("Size", &orthoSize))
-						camera.SetOrthographicSzie(orthoSize);
+						camera.SetOrthographicSize(orthoSize);
 
 					float orthoNear = camera.GetOrthographicNearClip();
 					if (ImGui::DragFloat("Near", &orthoNear))

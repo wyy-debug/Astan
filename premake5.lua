@@ -24,11 +24,13 @@ IncludeDir["ImGui"] = "Astan/vendor/imgui"
 IncludeDir["glm"] = "Astan/vendor/glm"
 IncludeDir["stb_image"] = "Astan/vendor/stb_image"
 IncludeDir["entt"] = "Astan/vendor/entt/include"
+IncludeDir["yamlcpp"] = "Astan/vendor/yaml-cpp/include"
 
 group "Dependencies"
 	include "Astan/vendor/GLFW"
 	include "Astan/vendor/Glad"
 	include "Astan/vendor/imgui"
+	include "Astan/vendor/yaml-cpp"
 group ""
 
 project "Astan"
@@ -64,6 +66,7 @@ project "Astan"
 		"%{prj.name}/vendor\\spdlog\\include",
 		"%{prj.name}/src",
 		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.yamlcpp}",
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
@@ -76,6 +79,7 @@ project "Astan"
 		"GLFW",
 		"Glad",
 		"ImGui",
+		"yaml-cpp",
 		"opengl32.lib",
 		"Dwmapi.lib"
 	}
@@ -128,8 +132,7 @@ project "Application"
 		"Astan/src",
 		"Astan/vendor",
 		"%{IncludeDir.glm}"	,
-		"%{IncludeDir.entt}"
-		
+		"%{IncludeDir.entt}",
 	}
 
 	links
@@ -184,8 +187,8 @@ project "Astannut"
 		"Astan/src",
 		"Astan/vendor",
 		"%{IncludeDir.glm}",
-		"%{IncludeDir.entt}"
-		
+		"%{IncludeDir.entt}",
+
 	}
 
 	links
