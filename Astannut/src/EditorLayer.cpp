@@ -3,9 +3,12 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <chrono>
+
 #include "Astan/Scene/SceneSerializer.h"
 #include "Astan/Utils/PlatformUtils.h"
-#include <chrono>
+#include "Astan/Math/Math.h"
+
 #include "ImGuizmo.h"
 static const uint32_t s_MapWidth = 24;
 static const char* s_MapTiles = 
@@ -228,7 +231,7 @@ namespace Astan {
 			ImGui::Begin("Viewport");
 			m_ViewporFocused = ImGui::IsWindowFocused();
 			m_ViewporHovered = ImGui::IsWindowHovered();
-			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporFocused || !m_ViewporHovered);
+			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporFocused && !m_ViewporHovered);
 			
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 			m_ViewportSize = { viewportPanelSize.x,viewportPanelSize.y };
@@ -236,32 +239,47 @@ namespace Astan {
 			uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 			ImGui::Image((void*)textureID, ImVec2{ m_ViewportSize.x,m_ViewportSize.y }, ImVec2{ 0,1 }, ImVec2{ 1,0 });
 			
+			// Gizmos
 			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-			if (selectedEntity)
+			if (selectedEntity && m_GizmoType != -1)
 			{
 				ImGuizmo::SetOrthographic(false);
 				ImGuizmo::SetDrawlist();
 				float windowWidth = (float)ImGui::GetWindowWidth();
 				float windowHeight = (float)ImGui::GetWindowHeight();
 				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
+				
 				// Camera
 				auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
 				const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-				
 				const glm::mat4& cameraProjection =  camera.GetProjection();
 				glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
 				
+				//Entity
 				auto& tc = selectedEntity.GetComponent<TransformComponent>();
 				glm::mat4 transform = tc.GetTransform();
 
+				//Snapping
+				bool snap = Input::IsKeyPressed(AS_KEY_LEFT_CONTROL);
+				float snapValue = 0.5f;
+				if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
+					snapValue = 45.0f;
+
+				float snapValues[3] = { snapValue,snapValue ,snapValue };
+
 				ImGuizmo::Manipulate(glm::value_ptr(cameraView),glm::value_ptr(cameraProjection),
-					ImGuizmo::OPERATION::TRANSLATE,ImGuizmo::LOCAL,glm::value_ptr(transform));
+					(ImGuizmo::OPERATION)m_GizmoType,ImGuizmo::LOCAL,glm::value_ptr(transform),
+					nullptr,snap ? snapValues : nullptr);
 				
 				if (ImGuizmo::IsUsing())
 				{
-					glm::decompose();
-					tc.Translation = glm::vec3(transform[3]);
-
+					glm::vec3 translation, rotation, scale;
+					Math::DecomposeTransform(transform, translation, rotation, scale);
+					
+					glm::vec3 deltaRotation = rotation - tc.Rotation;
+					tc.Translation = translation;
+					tc.Rotation += deltaRotation;
+					tc.Scale = scale;
 				}
 			}
 			
@@ -330,6 +348,20 @@ namespace Astan {
 
 				break;
 			}
+
+			// Gizmos
+			case AS_KEY_Q:
+				m_GizmoType = -1;
+				break;
+			case AS_KEY_W:
+				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+				break;
+			case AS_KEY_E:
+				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+				break;
+			case AS_KEY_R:
+				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				break;
 		}
 	}
 
