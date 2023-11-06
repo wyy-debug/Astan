@@ -16,6 +16,12 @@ namespace Astan {
 		virtual void OnImGuiRender() override;
 		void OnEvent(Event& event) override;
 	private:
+		bool OnKeyPressed(KeyPressedEvent& e);
+
+		void NewScene();
+		void OpenScene();
+		void SaveScene();
+	private:
 		OrthographicCameraController m_CameraController;
 	
 		//Temp

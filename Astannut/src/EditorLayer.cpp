@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "Astan/Scene/SceneSerializer.h"
+#include "Astan/Utils/PlatformUtils.h"
 #include <chrono>
 
 static const uint32_t s_MapWidth = 24;
@@ -195,19 +196,14 @@ namespace Astan {
 			{
 				if (ImGui::BeginMenu("File"))
 				{
+					if (ImGui::MenuItem("new", "Ctrl+Shife+N"))
+						NewScene();
 					
-					if (ImGui::MenuItem("Serialize"))
-					{
-						SceneSerializer serializer(m_ActiveScene);
-						serializer.Serialize("assets/scenes/Example.hazel");
-					}
+					if (ImGui::MenuItem("Open...","Ctrl+O"))
+						OpenScene();
 
-					if (ImGui::MenuItem("Dserialize"))
-					{
-						SceneSerializer serializer(m_ActiveScene);
-						serializer.Deserialize("assets/scenes/Example.hazel");
-					}
-
+					if (ImGui::MenuItem("Save As...","Ctrl+Shife+S"))
+						SaveScene();
 
 					if (ImGui::MenuItem("Exit")) Application::Get().Close();
 						ImGui::EndMenu();
@@ -267,5 +263,74 @@ namespace Astan {
 	void EditorLayer::OnEvent(Event& event)
 	{
 		m_CameraController.OnEvent(event);
+
+		EventDispatcher dispatcher(event);
+		dispatcher.Dispatch<KeyPressedEvent>(AS_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
+	}
+
+	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
+	{ 
+		if (e.GetRepeatCount() > 0)
+			return false;
+
+		bool control = Input::IsKeyPressed(AS_KEY_RIGHT_CONTROL) || Input::IsKeyPressed(AS_KEY_LEFT_CONTROL);
+		bool shift = Input::IsKeyPressed(AS_KEY_RIGHT_SHIFT) || Input::IsKeyPressed(AS_KEY_LEFT_SHIFT);
+
+		switch (e.GetKeyCode())
+		{
+			case AS_KEY_N:
+			{
+				if (control && shift)
+					NewScene();
+
+				break;
+			}
+			case AS_KEY_O:
+			{
+				if (control)
+					OpenScene();
+
+				break;
+			}
+			case AS_KEY_S:
+			{
+				if (control && shift)
+					SaveScene();
+
+				break;
+			}
+		}
+	}
+
+
+	void EditorLayer::NewScene()
+	{
+		m_ActiveScene = CreateRef<Scene>();
+		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OpenScene() 
+	{
+		std::string filepath = FileDialogs::OpenFile("Astan Scene (*.astan)\0*.astan\0");
+		if (!filepath.empty())
+		{
+			m_ActiveScene = CreateRef<Scene>();
+			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+			SceneSerializer serializer(m_ActiveScene);
+			serializer.Deserialize(filepath);
+		}
+	}
+
+	void EditorLayer::SaveScene() 
+	{
+		std::string filepath = FileDialogs::SaveFile("Astan Scene (*.astan)\0*.astan\0");
+		if (!filepath.empty())
+		{
+			SceneSerializer serializer(m_ActiveScene);
+			serializer.Serialize(filepath);
+		}
 	}
 }
