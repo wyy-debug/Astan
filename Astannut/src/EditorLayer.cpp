@@ -6,7 +6,7 @@
 #include "Astan/Scene/SceneSerializer.h"
 #include "Astan/Utils/PlatformUtils.h"
 #include <chrono>
-
+#include "ImGuizmo.h"
 static const uint32_t s_MapWidth = 24;
 static const char* s_MapTiles = 
 "WWWWWWWWWWWWWWWWWWWWWWWW"
@@ -235,9 +235,40 @@ namespace Astan {
 			
 			uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 			ImGui::Image((void*)textureID, ImVec2{ m_ViewportSize.x,m_ViewportSize.y }, ImVec2{ 0,1 }, ImVec2{ 1,0 });
+			
+			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+			if (selectedEntity)
+			{
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::SetDrawlist();
+				float windowWidth = (float)ImGui::GetWindowWidth();
+				float windowHeight = (float)ImGui::GetWindowHeight();
+				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
+				// Camera
+				auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+				const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
+				
+				const glm::mat4& cameraProjection =  camera.GetProjection();
+				glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+				
+				auto& tc = selectedEntity.GetComponent<TransformComponent>();
+				glm::mat4 transform = tc.GetTransform();
+
+				ImGuizmo::Manipulate(glm::value_ptr(cameraView),glm::value_ptr(cameraProjection),
+					ImGuizmo::OPERATION::TRANSLATE,ImGuizmo::LOCAL,glm::value_ptr(transform));
+				
+				if (ImGuizmo::IsUsing())
+				{
+					glm::decompose();
+					tc.Translation = glm::vec3(transform[3]);
+
+				}
+			}
+			
+			
+			
 			ImGui::End();
 			ImGui::PopStyleVar();
-
 
 			ImGui::End();
 		}

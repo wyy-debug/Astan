@@ -13,3 +13,6 @@
 [submodule "Astan/vendor/yaml-cpp"]
 	path = Astan/vendor/yaml-cpp
 	url = https://github.com/thecherno/yaml-cpp
+[submodule "Astan/vendor/ImGuizmo"]
+	path = Astan/vendor/ImGuizmo
+	url = https://github.com/thecherno/imguizmo

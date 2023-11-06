@@ -25,6 +25,7 @@ IncludeDir["glm"] = "Astan/vendor/glm"
 IncludeDir["stb_image"] = "Astan/vendor/stb_image"
 IncludeDir["entt"] = "Astan/vendor/entt/include"
 IncludeDir["yamlcpp"] = "Astan/vendor/yaml-cpp/include"
+IncludeDir["ImGuizmo"] = "Astan/vendor/ImGuizmo"
 
 group "Dependencies"
 	include "Astan/vendor/GLFW"
@@ -52,8 +53,9 @@ project "Astan"
 		"%{prj.name}/src/**.cpp",
 		"%{prj.name}/vendor/stb_image/**.cpp",
 		"%{prj.name}/vendor/stb_image/**.h",
-		"%{prj.name}/vendor/glm/**.hpp",
-		"%{prj.name}/vendor/glm/glm/**.inl"
+
+		"%{prj.name}/vendor/ImGuizmo/ImGuizmo.h",
+		"%{prj.name}/vendor/ImGuizmo/ImGuizmo.cpp"
 	}
 
 	defines
@@ -71,7 +73,8 @@ project "Astan"
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.stb_image}",
-		"%{IncludeDir.entt}"
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.ImGuizmo}"
 
 	}
 	links
@@ -83,6 +86,8 @@ project "Astan"
 		"opengl32.lib",
 		"Dwmapi.lib"
 	}
+
+
 	filter "system:windows"
 		systemversion "latest"
 
@@ -188,6 +193,7 @@ project "Astannut"
 		"Astan/vendor",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.ImGuizmo}"
 
 	}
 
