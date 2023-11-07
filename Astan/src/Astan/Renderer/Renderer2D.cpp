@@ -118,10 +118,7 @@ namespace Astan
 		s_Data.TextureShader->Bind();
 		s_Data.TextureShader->SetMat4("u_ViewProjection",camera.GetViewProjectionMatrix());
 
-		s_Data.QuadIndexCount = 0;
-		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
-
-		s_Data.TextureSloteIndex = 1;
+		StartBatch();
 
 	}
 	void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
@@ -133,12 +130,27 @@ namespace Astan
 		s_Data.TextureShader->Bind();
 		s_Data.TextureShader->SetMat4("u_ViewProjection", viewProj);
 
+		StartBatch();
+	}
+
+	void Renderer2D::BeginScene(const EditorCamera& camera)
+	{
+		AS_PROFILE_FUNCTION();
+
+		glm::mat4 viewProj = camera.GetViewProjection();
+		s_Data.TextureShader->Bind();
+		s_Data.TextureShader->SetMat4("u_ViewProjection", viewProj);
+
+		StartBatch();
+	}
+
+	void Renderer2D::StartBatch()
+	{
 		s_Data.QuadIndexCount = 0;
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 
 		s_Data.TextureSloteIndex = 1;
 	}
-
 
 	void Renderer2D::EndScene() 
 	{

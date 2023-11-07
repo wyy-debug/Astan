@@ -1,6 +1,7 @@
 #pragma once
 #include "Astan.h"
 #include "Panels/SceneHierarchyPanel.h"
+#include "Astan/Renderer/EditorCamera.h"
 
 namespace Astan {
 	class EditorLayer : public Layer
@@ -39,6 +40,7 @@ namespace Astan {
 		Entity m_SecondCameraEnity;
 		bool m_Primary = true;
 	
+		EditorCamera m_EditorCamera;
 
 		struct ProfileResult
 		{
