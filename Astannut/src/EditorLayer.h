@@ -38,6 +38,7 @@ namespace Astan {
 		Entity m_SquareEntity;
 		Entity m_CameraEnity;
 		Entity m_SecondCameraEnity;
+		Entity m_HoveredEntity;
 		bool m_Primary = true;
 	
 		EditorCamera m_EditorCamera;

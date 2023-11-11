@@ -22,5 +22,6 @@ namespace Astan
 		Ref<IndexBuffer> m_IndexBuffers;
 	private:
 		uint32_t m_RendererID;
+		uint32_t m_VertexBufferIndex = 0;
 	};
 }
