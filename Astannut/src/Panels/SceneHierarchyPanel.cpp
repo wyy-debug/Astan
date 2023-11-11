@@ -25,10 +25,10 @@ namespace Astan
 
 
 		m_Context->m_Registry.each([&](auto entityID)
-		{
-			Entity entity{ entityID, m_Context.get() };
-			DrawEntityNode(entity);
-		});
+			{
+				Entity entity{ entityID, m_Context.get() };
+				DrawEntityNode(entity);
+			});
 
 
 		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
@@ -49,10 +49,16 @@ namespace Astan
 		if (m_SelectionContext)
 		{
 			DrawComponents(m_SelectionContext);
-			
+
 		}
 		ImGui::End();
 	}
+
+	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
+	{
+		m_SelectionContext = entity;
+	}
+
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
 	{
