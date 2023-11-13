@@ -1,5 +1,5 @@
 #include "aspch.h"
-#include "EditorCamera.h"
+#include "Astan/Renderer/EditorCamera.h"
 
 #include "Astan/Core/Input.h"
 #include "Astan/Core/KeyCodes.h"

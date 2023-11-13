@@ -7,7 +7,7 @@
 #include "Astan/Events/KeyEvent.h"
 namespace Astan
 {
-	class ASTAN_API ImGuiLayer : public Layer
+	class ImGuiLayer : public Layer
 	{
 	public:
 		ImGuiLayer();

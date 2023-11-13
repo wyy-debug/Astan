@@ -21,7 +21,7 @@ namespace Astan {
 		}
 	};
 
-	class ASTAN_API Window
+	class Window
 	{
 	public:
 		using EventCallbackFn = std::function<void(Event&)>;

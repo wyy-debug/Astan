@@ -1,54 +1,49 @@
 #pragma once
 #include <memory>
 
-#ifdef AS_PLATFORM_WINDOWS
-	#if AS_DYNAMIC_LINK
-		#ifdef AS_BUILD_DLL
-			#define ASTAN_API __declspec(dllexport)
-		#else
-			#define ASTAN_API __declspec(dllimport)
-		#endif
-	#else
-		#define ASTAN_API
-	#endif
-#else
-	#error Astan only support Windows!
-#endif
+#include "Astan/Core/PlatformDetection.h"
+
 
 #ifdef AS_DEBUG
-	#define AS_ENABLE_ASSERTS
-#endif // !AS_DEBUGAS_ENABLE_ASSERTS
-//
-//
-
-#ifdef AS_ENABLE_ASSERTS
-	#define AS_ASSERT(x, ...) {if(!(x)) { AS_ERROR("Assertion Failed: {0}", __VA_ARGS__);__debugbreak(); }}
-	#define AS_CORE_ASSERT(x, ...) {if(!(x)) { AS_CORE_ERROR("Assertion Failed: {0}", __VA_ARGS__);__debugbreak(); }}
+#if defined(AS_PLATFORM_WINDOWS)
+#define AS_DEBUGBREAK() __debugbreak()
+#elif defined(AS_PLATFORM_LINUX)
+#include <signal.h>
+#define AS_DEBUGBREAK() raise(SIGTRAP)
 #else
-	#define AS_ASSERT(x, ...)
-	#define AS_CORE_ASSERT(x, ...)
-#endif  
+#error "Platform doesn't support debugbreak yet!"
+#endif
+#define AS_ENABLE_ASSERTS
+#else
+#define AS_DEBUGBREAK()
+#endif
 
+#define AS_EXPAND_MACRO(x) x
+#define AS_STRINGIFY_MACRO(x) #x
 
 #define BIT(x) (1 << x)
 
+#define AS_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
-#define AS_BIND_EVENT_FN(fn) [this](auto&... args) -> decltype(auto) {return this->fn(std::forward<decltype(args)>(args)...);}
+namespace Astan {
 
-namespace Astan{
 	template<typename T>
 	using Scope = std::unique_ptr<T>;
-	template<typename T,typename ... Args>
+	template<typename T, typename ... Args>
 	constexpr Scope<T> CreateScope(Args&& ... args)
 	{
 		return std::make_unique<T>(std::forward<Args>(args)...);
 	}
-	
+
 	template<typename T>
 	using Ref = std::shared_ptr<T>;
-	template<typename T,typename ... Args>
+	template<typename T, typename ... Args>
 	constexpr Ref<T> CreateRef(Args&& ... args)
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
+
 }
+
+#include "Astan/Core/Log.h"
+#include "Astan/Core/Assert.h"

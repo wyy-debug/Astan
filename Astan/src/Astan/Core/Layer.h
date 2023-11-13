@@ -3,7 +3,7 @@
 #include "Astan/Core/Timestep.h"
 #include "Astan/Events/Event.h"
 namespace Astan {
-	class ASTAN_API Layer
+	class Layer
 	{
 	public:
 		Layer(const std::string& name = "Layer");

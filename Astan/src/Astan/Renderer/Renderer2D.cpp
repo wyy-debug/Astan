@@ -1,9 +1,9 @@
 #include "aspch.h"
-#include "Renderer2D.h"
-#include "VertexArray.h"
-#include "Shader.h"
+#include "Astan/Renderer/Renderer2D.h"
+#include "Astan/Renderer/VertexArray.h"
+#include "Astan/Renderer/Shader.h"
 
-#include "RenderCommand.h"
+#include "Astan/Renderer/RenderCommand.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 

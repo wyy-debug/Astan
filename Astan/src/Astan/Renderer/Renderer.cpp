@@ -1,8 +1,8 @@
 #include "aspch.h"
-#include "Renderer.h"
-#include "Shader.h"
+#include "Astan/Renderer/Renderer.h"
+#include "Astan/Renderer/Shader.h"
 #include "Platform/OpenGL/OpenGLShader.h"
-#include "Renderer2D.h"
+#include "Astan/Renderer/Renderer2D.h"
 
 namespace Astan {
 

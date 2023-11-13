@@ -1,9 +1,9 @@
 #pragma once
-#include "OrthographicCamera.h"
-#include "Texture.h"
-#include "SubTexture2D.h"
-#include "Camera.h"
-#include "EditorCamera.h"
+#include "Astan/Renderer/OrthographicCamera.h"
+#include "Astan/Renderer/Texture.h"
+#include "Astan/Renderer/SubTexture2D.h"
+#include "Astan/Renderer/Camera.h"
+#include "Astan/Renderer/EditorCamera.h"
 #include "Astan/Scene/Component.h"
 namespace Astan
 {

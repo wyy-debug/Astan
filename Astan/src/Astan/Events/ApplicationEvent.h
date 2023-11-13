@@ -2,7 +2,7 @@
 #include "Event.h"
 
 namespace Astan {
-	class ASTAN_API WindowResizeEvent : public Event
+	class WindowResizeEvent : public Event
 	{
 	public:
 		WindowResizeEvent(unsigned int width, unsigned height)
@@ -23,7 +23,7 @@ namespace Astan {
 		int m_Width, m_Height;
 	};
 
-	class ASTAN_API WindowCloseEvent : public Event 
+	class WindowCloseEvent : public Event 
 	{
 	public:
 		WindowCloseEvent() {}
@@ -31,7 +31,7 @@ namespace Astan {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class ASTAN_API AppTickEvent : public Event 
+	class AppTickEvent : public Event 
 	{
 	public:
 		AppTickEvent() {}
@@ -39,7 +39,7 @@ namespace Astan {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class ASTAN_API AppUpdateEvent : public Event
+	class AppUpdateEvent : public Event
 	{
 	public:
 		AppUpdateEvent() {}
@@ -47,7 +47,7 @@ namespace Astan {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class ASTAN_API AppRenderEvent : public Event
+	class AppRenderEvent : public Event
 	{
 	public:
 		AppRenderEvent() {}

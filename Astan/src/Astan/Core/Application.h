@@ -19,7 +19,7 @@
 
 
 namespace Astan {
-	class ASTAN_API Application
+	class Application
 	{
 	public:
 		Application(const std::string& name = "Astan App");
