@@ -14,7 +14,8 @@ namespace Astan {
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application(const std::string& name)
+	Application::Application(const std::string& name,ApplicationCommandLineArgs args)
+		: m_CommandLineArgs(args)
 	{
 		AS_PROFILE_FUNCTION();
 		AS_CORE_ASSERT(!s_Instance, "Application already exists!");

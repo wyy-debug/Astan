@@ -13,8 +13,8 @@ namespace Astan{
 	class Astannut : public Application
 	{
 	public:
-		Astannut()
-			: Application("Astannut")
+		Astannut(ApplicationCommandLineArgs args)
+			: Application("Astannut",args)
 		{
 			PushLayer(new EditorLayer());
 		}
@@ -22,9 +22,9 @@ namespace Astan{
 		~Astannut() {}
 	};
 
-	Application* CreateApplication()
+	Application* CreateApplication(ApplicationCommandLineArgs args)
 	{
 
-		return new Astannut();
+		return new Astannut(args);
 	}
 }
