@@ -414,8 +414,9 @@ namespace Astan {
 	{
 		if (e.GetMouseButton() == AS_MOUSE_BUTTON_LEFT)
 		{
-			if(m_ViewporHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(AS_KEY_LEFT_ALT))
+			if (m_ViewporHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(AS_KEY_LEFT_ALT))
 				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+			
 		}
 		return false;
 	}

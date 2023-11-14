@@ -200,7 +200,7 @@ namespace Astan
 
 	int OpenGLFramebuffer::ReadPixel(uint32_t attachemntIndex, int x, int y)
 	{
-		AS_CORE_ASSERT(attachemntIndex < m_ColorAttachments.size(),false);
+		AS_CORE_ASSERT(attachemntIndex < m_ColorAttachments.size());
 		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachemntIndex);
 		int pixelData;
 		glReadPixels(x, y, 1, 1,GL_RED_INTEGER,GL_INT,&pixelData);
@@ -208,7 +208,7 @@ namespace Astan
 	}
 	void OpenGLFramebuffer::ClearAttachment(uint32_t attachmentIndex, int value)
 	{
-		AS_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size(), false);
+		AS_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size());
 
 		auto& spec = m_ColorAttachmentSpecifications[attachmentIndex];
 		glClearTexImage(m_ColorAttachments[attachmentIndex], 0,

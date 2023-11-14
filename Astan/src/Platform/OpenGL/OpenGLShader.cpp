@@ -1,30 +1,29 @@
 #include "aspch.h"
-#include "OpenGLShader.h"
-
+#include "Platform/OpenGL/OpenGLShader.h"
 
 #include <fstream>
 #include <glad/glad.h>
 
 #include <glm/gtc/type_ptr.hpp>
+
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
 
 #include "Astan/Core/Timer.h"
-namespace Astan
-{
-	namespace Utils
-	{
+
+namespace Astan {
+
+	namespace Utils {
+
 		static GLenum ShaderTypeFromString(const std::string& type)
 		{
-			AS_PROFILE_FUNCTION();
-
 			if (type == "vertex")
 				return GL_VERTEX_SHADER;
 			if (type == "fragment" || type == "pixel")
 				return GL_FRAGMENT_SHADER;
 
-			AS_CORE_ASSERT(false, "Unknow shader type!");
+			AS_CORE_ASSERT(false, "Unknown shader type!");
 			return 0;
 		}
 
@@ -32,7 +31,7 @@ namespace Astan
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER: return shaderc_glsl_vertex_shader;
+			case GL_VERTEX_SHADER:   return shaderc_glsl_vertex_shader;
 			case GL_FRAGMENT_SHADER: return shaderc_glsl_fragment_shader;
 			}
 			AS_CORE_ASSERT(false);
@@ -43,7 +42,7 @@ namespace Astan
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER: return "GL_VERTEX_SHADER";
+			case GL_VERTEX_SHADER:   return "GL_VERTEX_SHADER";
 			case GL_FRAGMENT_SHADER: return "GL_FRAGMENT_SHADER";
 			}
 			AS_CORE_ASSERT(false);
@@ -52,6 +51,7 @@ namespace Astan
 
 		static const char* GetCacheDirectory()
 		{
+			// TODO: make sure the assets directory is valid
 			return "assets/cache/shader/opengl";
 		}
 
@@ -66,8 +66,8 @@ namespace Astan
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER: return ".cached_opengl.vert";
-			case GL_FRAGMENT_SHADER: return ".cached_opengl.frag";
+			case GL_VERTEX_SHADER:    return ".cached_opengl.vert";
+			case GL_FRAGMENT_SHADER:  return ".cached_opengl.frag";
 			}
 			AS_CORE_ASSERT(false);
 			return "";
@@ -77,15 +77,15 @@ namespace Astan
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER: return ".cached_vulkan.vert";
-			case GL_FRAGMENT_SHADER: return ".cached_vulkan.frag";
+			case GL_VERTEX_SHADER:    return ".cached_vulkan.vert";
+			case GL_FRAGMENT_SHADER:  return ".cached_vulkan.frag";
 			}
 			AS_CORE_ASSERT(false);
 			return "";
 		}
+
+
 	}
-
-
 
 	OpenGLShader::OpenGLShader(const std::string& filepath)
 		: m_FilePath(filepath)
@@ -96,14 +96,16 @@ namespace Astan
 
 		std::string source = ReadFile(filepath);
 		auto shaderSources = PreProcess(source);
+
 		{
 			Timer timer;
 			CompileOrGetVulkanBinaries(shaderSources);
 			CompileOrGetOpenGLBinaries();
 			CreateProgram();
-			AS_CORE_ASSERT("Shader creation took {0} ms", timer.ElapsedMillis());
+			AS_CORE_WARN("Shader creation took {0} ms", timer.ElapsedMillis());
 		}
 
+		// Extract name from filepath
 		auto lastSlash = filepath.find_last_of("/\\");
 		lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
 		auto lastDot = filepath.rfind('.');
@@ -132,25 +134,32 @@ namespace Astan
 		glDeleteProgram(m_RendererID);
 	}
 
-
 	std::string OpenGLShader::ReadFile(const std::string& filepath)
 	{
 		AS_PROFILE_FUNCTION();
 
 		std::string result;
-		std::ifstream in(filepath, std::ios::in | std::ios::binary);
+		std::ifstream in(filepath, std::ios::in | std::ios::binary); // ifstream closes itself due to RAII
 		if (in)
 		{
 			in.seekg(0, std::ios::end);
-			result.resize(in.tellg());
-			in.seekg(0, std::ios::beg);
-			in.read(&result[0], result.size());
-			in.close();
+			size_t size = in.tellg();
+			if (size != -1)
+			{
+				result.resize(size);
+				in.seekg(0, std::ios::beg);
+				in.read(&result[0], size);
+			}
+			else
+			{
+				AS_CORE_ERROR("Could not read from file '{0}'", filepath);
+			}
 		}
 		else
 		{
 			AS_CORE_ERROR("Could not open file '{0}'", filepath);
 		}
+
 		return result;
 	}
 
@@ -159,23 +168,25 @@ namespace Astan
 		AS_PROFILE_FUNCTION();
 
 		std::unordered_map<GLenum, std::string> shaderSources;
+
 		const char* typeToken = "#type";
 		size_t typeTokenLength = strlen(typeToken);
-		size_t pos = source.find(typeToken, 0);
+		size_t pos = source.find(typeToken, 0); //Start of shader type declaration line
 		while (pos != std::string::npos)
 		{
-			size_t eol = source.find_first_of("\r\n", pos);
+			size_t eol = source.find_first_of("\r\n", pos); //End of shader type declaration line
 			AS_CORE_ASSERT(eol != std::string::npos, "Syntax error");
-			size_t begin = pos + typeTokenLength + 1;
+			size_t begin = pos + typeTokenLength + 1; //Start of shader type name (after "#type " keyword)
 			std::string type = source.substr(begin, eol - begin);
 			AS_CORE_ASSERT(Utils::ShaderTypeFromString(type), "Invalid shader type specified");
 
+			size_t nextLinePos = source.find_first_not_of("\r\n", eol); //Start of shader code after shader type declaration line
+			AS_CORE_ASSERT(nextLinePos != std::string::npos, "Syntax error");
+			pos = source.find(typeToken, nextLinePos); //Start of next shader type declaration line
 
-			size_t nextLinePos = source.find_first_of("\r\n", eol);
-			pos = source.find(typeToken, nextLinePos);
-			shaderSources[Utils::ShaderTypeFromString(type)] = source.substr(nextLinePos,
-				pos - (nextLinePos == std::string::npos ? source.size() - 1 : nextLinePos));
+			shaderSources[Utils::ShaderTypeFromString(type)] = (pos == std::string::npos) ? source.substr(nextLinePos) : source.substr(nextLinePos, pos - nextLinePos);
 		}
+
 		return shaderSources;
 	}
 
@@ -205,6 +216,7 @@ namespace Astan
 				in.seekg(0, std::ios::end);
 				auto size = in.tellg();
 				in.seekg(0, std::ios::beg);
+
 				auto& data = shaderData[stage];
 				data.resize(size / sizeof(uint32_t));
 				in.read((char*)data.data(), size);
@@ -230,6 +242,7 @@ namespace Astan
 				}
 			}
 		}
+
 		for (auto&& [stage, data] : shaderData)
 			Reflect(stage, data);
 	}
@@ -252,9 +265,9 @@ namespace Astan
 		for (auto&& [stage, spirv] : m_VulkanSPIRV)
 		{
 			std::filesystem::path shaderFilePath = m_FilePath;
-			std::filesystem::path cachePath = cacheDirectory / (shaderFilePath.filename().string() + Utils::GLShaderStageCachedOpenGLFileExtension(stage));
+			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.filename().string() + Utils::GLShaderStageCachedOpenGLFileExtension(stage));
 
-			std::ifstream in(cachePath, std::ios::in | std::ios::binary);
+			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
 			if (in.is_open())
 			{
 				in.seekg(0, std::ios::end);
@@ -279,7 +292,8 @@ namespace Astan
 				}
 
 				shaderData[stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
-				std::ofstream out(cachePath, std::ios::out | std::ios::binary);
+
+				std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 				if (out.is_open())
 				{
 					auto& data = shaderData[stage];
@@ -303,11 +317,11 @@ namespace Astan
 			glSpecializeShader(shaderID, "main", 0, nullptr, nullptr);
 			glAttachShader(program, shaderID);
 		}
+
 		glLinkProgram(program);
 
 		GLint isLinked;
 		glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
-
 		if (isLinked == GL_FALSE)
 		{
 			GLint maxLength;
@@ -315,11 +329,14 @@ namespace Astan
 
 			std::vector<GLchar> infoLog(maxLength);
 			glGetProgramInfoLog(program, maxLength, &maxLength, infoLog.data());
+			AS_CORE_ERROR("Shader linking failed ({0}):\n{1}", m_FilePath, infoLog.data());
 
 			glDeleteProgram(program);
+
 			for (auto id : shaderIDs)
 				glDeleteShader(id);
 		}
+
 		for (auto id : shaderIDs)
 		{
 			glDetachShader(program, id);
@@ -334,26 +351,24 @@ namespace Astan
 		spirv_cross::Compiler compiler(shaderData);
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-		AS_CORE_TRACE("OpenGLShader::Reflect - {0}{1}", Utils::GLShaderStageToString(stage), m_FilePath);
-		AS_CORE_TRACE("		{0} uniform buffers", resources.uniform_buffers.size());
-		AS_CORE_TRACE("		{0} resourece", resources.sampled_images.size());
+		AS_CORE_TRACE("OpenGLShader::Reflect - {0} {1}", Utils::GLShaderStageToString(stage), m_FilePath);
+		AS_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
+		AS_CORE_TRACE("    {0} resources", resources.sampled_images.size());
 
 		AS_CORE_TRACE("Uniform buffers:");
-		for (const auto& resources : resources.uniform_buffers)
+		for (const auto& resource : resources.uniform_buffers)
 		{
-			const auto& bufferType = compiler.get_type(resources.base_type_id);
+			const auto& bufferType = compiler.get_type(resource.base_type_id);
 			uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
-			uint32_t binding = compiler.get_decoration(resources.id, spv::DecorationBinding);
+			uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
 			int memberCount = bufferType.member_types.size();
 
-			AS_CORE_TRACE("	{0}", resources.name);
-			AS_CORE_TRACE("		Size = {0}", bufferSize);
-			AS_CORE_TRACE("		Binding = {0}", binding);
-			AS_CORE_TRACE("		Members = {0}", memberCount);
-
+			AS_CORE_TRACE("  {0}", resource.name);
+			AS_CORE_TRACE("    Size = {0}", bufferSize);
+			AS_CORE_TRACE("    Binding = {0}", binding);
+			AS_CORE_TRACE("    Members = {0}", memberCount);
 		}
 	}
-
 
 	void OpenGLShader::Bind() const
 	{
@@ -378,8 +393,6 @@ namespace Astan
 
 	void OpenGLShader::SetIntArray(const std::string& name, int* values, uint32_t count)
 	{
-		AS_PROFILE_FUNCTION();
-
 		UploadUniformIntArray(name, values, count);
 	}
 
@@ -390,19 +403,25 @@ namespace Astan
 		UploadUniformFloat(name, value);
 	}
 
+	void OpenGLShader::SetFloat2(const std::string& name, const glm::vec2& value)
+	{
+		AS_PROFILE_FUNCTION();
+
+		UploadUniformFloat2(name, value);
+	}
+
 	void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value)
 	{
 		AS_PROFILE_FUNCTION();
 
 		UploadUniformFloat3(name, value);
 	}
-	
+
 	void OpenGLShader::SetFloat4(const std::string& name, const glm::vec4& value)
 	{
 		AS_PROFILE_FUNCTION();
 
 		UploadUniformFloat4(name, value);
-
 	}
 
 	void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
@@ -412,10 +431,10 @@ namespace Astan
 		UploadUniformMat4(name, value);
 	}
 
-	void OpenGLShader::UploadUniformInt(const std::string& name, int values)
+	void OpenGLShader::UploadUniformInt(const std::string& name, int value)
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-		glUniform1i(location, values);
+		glUniform1i(location, value);
 	}
 
 	void OpenGLShader::UploadUniformIntArray(const std::string& name, int* values, uint32_t count)
@@ -424,28 +443,28 @@ namespace Astan
 		glUniform1iv(location, count, values);
 	}
 
-	void OpenGLShader::UploadUniformFloat(const std::string& name, float values)
+	void OpenGLShader::UploadUniformFloat(const std::string& name, float value)
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-		glUniform1f(location, values);
+		glUniform1f(location, value);
 	}
 
-	void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& values)
+	void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& value)
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-		glUniform2f(location, values.x, values.y);
+		glUniform2f(location, value.x, value.y);
 	}
 
-	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& values)
+	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& value)
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-		glUniform3f(location, values.x, values.y, values.z);
+		glUniform3f(location, value.x, value.y, value.z);
 	}
 
-	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& values)
+	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& value)
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-		glUniform4f(location, values.x, values.y, values.z, values.w);
+		glUniform4f(location, value.x, value.y, value.z, value.w);
 	}
 
 	void OpenGLShader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix)
@@ -453,11 +472,11 @@ namespace Astan
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 	}
+
 	void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix)
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 	}
-
 
 }
