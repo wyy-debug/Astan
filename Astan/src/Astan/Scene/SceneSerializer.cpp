@@ -170,11 +170,7 @@ namespace Astan
 
 	bool SceneSerializer::Deserialize(const std::string& filepath)
 	{
-		std::ifstream steam(filepath);
-		std::stringstream strStream;
-		strStream << steam.rdbuf();
-
-		YAML::Node data = YAML::Load(strStream.str());
+		YAML::Node data = YAML::LoadFile(filepath);
 		if (!data["Scene"])
 			return false;
 

@@ -23,6 +23,7 @@ namespace Astan {
 		
 		void NewScene();
 		void OpenScene();
+		void OpenScene(const std::filesystem::path& path);
 		void SaveScene();
 	private:
 		OrthographicCameraController m_CameraController;
