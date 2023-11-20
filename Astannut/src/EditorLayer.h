@@ -1,6 +1,7 @@
 #pragma once
 #include "Astan.h"
 #include "Panels/SceneHierarchyPanel.h"
+#include "Panels/ContentBrowserPanel.h"
 #include "Astan/Renderer/EditorCamera.h"
 
 namespace Astan {
@@ -62,5 +63,7 @@ namespace Astan {
 		int m_GizmoType = -1;
 		//Panels
 		SceneHierarchyPanel m_SceneHierarchyPanel;
+		ContentBrowserPanel m_ContentBrowserPanel;
+
 	};
 }
