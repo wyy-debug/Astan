@@ -25,6 +25,13 @@ namespace Astan {
 		void OpenScene();
 		void OpenScene(const std::filesystem::path& path);
 		void SaveScene();
+		// UI Panels
+
+		void OnScenePlay();
+		void OnSceneStop();
+		void UI_Toolbar();
+
+
 	private:
 		OrthographicCameraController m_CameraController;
 	
@@ -33,6 +40,7 @@ namespace Astan {
 		Ref<Shader> m_FlatColorShader;
 		Ref<Texture2D> m_CheckerboardTexture;
 		Ref<Texture2D> m_SpriteSheet;
+
 		Ref<SubTexture2D> m_TextureStaris;
 		Ref<SubTexture2D> m_TextureBarrel;
 		Ref<SubTexture2D> m_TextureTree;
@@ -62,9 +70,19 @@ namespace Astan {
 		std::unordered_map<char, Ref<SubTexture2D>> s_TextureMap;
 
 		int m_GizmoType = -1;
+
+		enum class SceneState
+		{
+			Edit = 0, Play = 1
+		};
+		SceneState m_SceneState = SceneState::Edit;
+
 		//Panels
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
 
+		// Editor resources
+		Ref<Texture2D> m_IconPlay, m_IconStop;
+		
 	};
 }

@@ -39,18 +39,22 @@ namespace Astan {
 	void EditorLayer::OnAttach()
 	{
 		AS_PROFILE_FUNCTION();
- 
+
 		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
+		m_IconPlay = Texture2D::Create("Resources/Icons/PlayButton.png");
+		m_IconStop = Texture2D::Create("Resources/Icons/StopButton.png");
+
+
 		m_SpriteSheet = Texture2D::Create("assets/game/textures/RPGpack_sheet_2X.png");
-	
+
 		m_TextureStaris = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 1,11 }, { 128,128 });
 		m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2,1 }, { 128,128 }, { 1,2 });
-	
+
 		m_MapWith = s_MapWidth;
 		m_MapHeight = strlen(s_MapTiles) / s_MapWidth;
 
-		s_TextureMap['D'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, {6,11}, {128,128});
-		s_TextureMap['W'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, {11,11}, {128,128});
+		s_TextureMap['D'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 6,11 }, { 128,128 });
+		s_TextureMap['W'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 11,11 }, { 128,128 });
 
 		m_CameraController.SetZoomLevel(1.0f);
 
@@ -79,7 +83,7 @@ namespace Astan {
 
 		auto redSquare = m_ActiveScene->CreateEntity("Red Square");
 		redSquare.AddComponent<SpriteRendererComponent>(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-		
+
 		m_SquareEntity = square;
 
 		m_CameraEnity = m_ActiveScene->CreateEntity("Camera A");
@@ -107,14 +111,14 @@ namespace Astan {
 			{
 				auto& translation = GetComponent<TransformComponent>().Translation;
 				float speed = 5.0f;
-				
+
 				if (Input::IsKeyPressed(AS_KEY_A))
 					translation.x -= speed * ts;
-				if(Input::IsKeyPressed(AS_KEY_D))
+				if (Input::IsKeyPressed(AS_KEY_D))
 					translation.x += speed * ts;
-				if(Input::IsKeyPressed(AS_KEY_W))
+				if (Input::IsKeyPressed(AS_KEY_W))
 					translation.y += speed * ts;
-				if(Input::IsKeyPressed(AS_KEY_S))
+				if (Input::IsKeyPressed(AS_KEY_S))
 					translation.y -= speed * ts;
 			}
 		};
@@ -124,8 +128,8 @@ namespace Astan {
 		m_SecondCameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 #endif
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-		
-		
+
+
 	}
 
 	void EditorLayer::OnDetach()
@@ -133,35 +137,50 @@ namespace Astan {
 
 
 	void EditorLayer::OnUpdate(Timestep ts)
-	{ 
+	{
 		AS_PROFILE_FUNCTION();
-		if(FramebufferSpecification spec = m_Framebuffer->GetSpecification();
+		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
 			(spec.Width != m_ViewportSize.x || spec.Height != m_ViewportSize.y))
 		{
-			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x,(uint32_t)m_ViewportSize.y);
+			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
-
-		//Update
-		if (!m_ViewporFocused)
-			m_CameraController.OnUpdate(ts);
-		m_EditorCamera.OnUpdate(ts);
-
+		
 		//Render
 		Renderer2D::ResetStats();
 		m_Framebuffer->Bind();
 		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		RenderCommand::Clear();
-		
+
 		//Clear out entity ID attachment to -1
 		m_Framebuffer->ClearAttachment(1, -1);
 
+		switch (m_SceneState)
+		{
+			case SceneState::Edit:
+			{
+				//Update
+				if (m_ViewporFocused)
+					m_CameraController.OnUpdate(ts);
+
+				m_EditorCamera.OnUpdate(ts);
+
+				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+				break;
+			}
+			case SceneState::Play:
+			{
+				m_ActiveScene->OnUpdateRuntime(ts);
+				break;
+			}
+		}
+
 		//Update scene
-		m_ActiveScene->OnUpdateEditor(ts,m_EditorCamera);
-		
+		m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+
 		auto [mx, my] = ImGui::GetMousePos();
 		mx -= m_ViewportBounds[0].x;
 		my -= m_ViewportBounds[0].y;
@@ -173,7 +192,7 @@ namespace Astan {
 		if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 		{
 			int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
-			m_HoveredEntity = pixelData == -1 ? Entity() :Entity((entt::entity)pixelData, m_ActiveScene.get());
+			m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
 		}
 
 		m_Framebuffer->Unbind();
@@ -193,7 +212,7 @@ namespace Astan {
 			static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
 			ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-			if(opt_fullscreen)
+			if (opt_fullscreen)
 			{
 				ImGuiViewport* viewport = ImGui::GetWindowViewport();
 				ImGui::SetNextWindowPos(viewport->Pos);
@@ -214,7 +233,7 @@ namespace Astan {
 
 			if (opt_fullscreen)
 				ImGui::PopStyleVar(2);
-	
+
 			ImGuiIO& io = ImGui::GetIO();
 			ImGuiStyle& style = ImGui::GetStyle();
 			float minWinSize = style.WindowMinSize.x;
@@ -233,22 +252,22 @@ namespace Astan {
 				{
 					if (ImGui::MenuItem("new", "Ctrl+Shife+N"))
 						NewScene();
-					
-					if (ImGui::MenuItem("Open...","Ctrl+O"))
+
+					if (ImGui::MenuItem("Open...", "Ctrl+O"))
 						OpenScene();
 
-					if (ImGui::MenuItem("Save As...","Ctrl+Shife+S"))
+					if (ImGui::MenuItem("Save As...", "Ctrl+Shife+S"))
 						SaveScene();
 
 					if (ImGui::MenuItem("Exit")) Application::Get().Close();
-						ImGui::EndMenu();
+					ImGui::EndMenu();
 				}
 				ImGui::EndMenuBar();
 			}
 
 			m_SceneHierarchyPanel.OnImGuiRender();
 			m_ContentBrowserPanel.OnImGuiRender();
-			
+
 			ImGui::Begin("Stats");
 
 			std::string name = "None";
@@ -278,10 +297,10 @@ namespace Astan {
 			m_ViewporFocused = ImGui::IsWindowFocused();
 			m_ViewporHovered = ImGui::IsWindowHovered();
 			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporFocused && !m_ViewporHovered);
-			
+
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 			m_ViewportSize = { viewportPanelSize.x,viewportPanelSize.y };
-			
+
 			uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 			ImGui::Image((void*)textureID, ImVec2{ m_ViewportSize.x,m_ViewportSize.y }, ImVec2{ 0,1 }, ImVec2{ 1,0 });
 
@@ -308,7 +327,7 @@ namespace Astan {
 				//const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
 				//const glm::mat4& cameraProjection =  camera.GetProjection();
 				//glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-				
+
 				// Editor camera
 				const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
 				glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
@@ -326,24 +345,26 @@ namespace Astan {
 
 				float snapValues[3] = { snapValue,snapValue ,snapValue };
 
-				ImGuizmo::Manipulate(glm::value_ptr(cameraView),glm::value_ptr(cameraProjection),
-					(ImGuizmo::OPERATION)m_GizmoType,ImGuizmo::LOCAL,glm::value_ptr(transform),
-					nullptr,snap ? snapValues : nullptr);
-				
+				ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+					(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
+					nullptr, snap ? snapValues : nullptr);
+
 				if (ImGuizmo::IsUsing())
 				{
 					glm::vec3 translation, rotation, scale;
 					Math::DecomposeTransform(transform, translation, rotation, scale);
-					
+
 					glm::vec3 deltaRotation = rotation - tc.Rotation;
 					tc.Translation = translation;
 					tc.Rotation += deltaRotation;
 					tc.Scale = scale;
 				}
 			}
-			
+
 			ImGui::End();
 			ImGui::PopStyleVar();
+
+			UI_Toolbar();
 
 			ImGui::End();
 		}
@@ -362,8 +383,37 @@ namespace Astan {
 
 			uint32_t textureID = m_CheckerboardTexture->GetRendererID();
 			ImGui::Image((void*)textureID, ImVec2{ 256.0f,256.0f });
+
 			ImGui::End();
 		}
+	}
+
+	void EditorLayer::UI_Toolbar()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 2));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		auto& colors = ImGui::GetStyle().Colors;
+		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
+		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+		ImGui::Begin("##toolbar",nullptr,ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		
+		float size = ImGui::GetWindowHeight() - 4.0f;
+		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconStop;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+		if (ImGui::ImageButton((ImTextureID)icon->GetRendererID(),ImVec2(size,size),ImVec2(0,0),ImVec2(1,1),0))
+		{
+			if (m_SceneState == SceneState::Edit)
+				OnScenePlay();
+			else if (m_SceneState == SceneState::Play)
+				OnSceneStop();
+		}
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(3);
+		ImGui::End();
 	}
 
 	void EditorLayer::OnEvent(Event& event)
@@ -374,9 +424,9 @@ namespace Astan {
 		dispatcher.Dispatch<KeyPressedEvent>(AS_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
 		dispatcher.Dispatch<MouseButtonPressedEvent>(AS_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
 	}
-	
+
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
-	{ 
+	{
 		if (e.GetRepeatCount() > 0)
 			return false;
 
@@ -385,41 +435,41 @@ namespace Astan {
 
 		switch (e.GetKeyCode())
 		{
-			case AS_KEY_N:
-			{
-				if (control && shift)
-					NewScene();
+		case AS_KEY_N:
+		{
+			if (control && shift)
+				NewScene();
 
-				break;
-			}
-			case AS_KEY_O:
-			{
-				if (control)
-					OpenScene();
+			break;
+		}
+		case AS_KEY_O:
+		{
+			if (control)
+				OpenScene();
 
-				break;
-			}
-			case AS_KEY_S:
-			{
-				if (control && shift)
-					SaveScene();
+			break;
+		}
+		case AS_KEY_S:
+		{
+			if (control && shift)
+				SaveScene();
 
-				break;
-			}
+			break;
+		}
 
-			// Gizmos
-			case AS_KEY_Q:
-				m_GizmoType = -1;
-				break;
-			case AS_KEY_W:
-				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
-				break;
-			case AS_KEY_E:
-				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
-				break;
-			case AS_KEY_R:
-				m_GizmoType = ImGuizmo::OPERATION::SCALE;
-				break;
+		// Gizmos
+		case AS_KEY_Q:
+			m_GizmoType = -1;
+			break;
+		case AS_KEY_W:
+			m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+			break;
+		case AS_KEY_E:
+			m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+			break;
+		case AS_KEY_R:
+			m_GizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
 		}
 	}
 
@@ -429,7 +479,7 @@ namespace Astan {
 		{
 			if (m_ViewporHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(AS_KEY_LEFT_ALT))
 				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
-			
+
 		}
 		return false;
 	}
@@ -441,7 +491,7 @@ namespace Astan {
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
 
-	void EditorLayer::OpenScene() 
+	void EditorLayer::OpenScene()
 	{
 		std::string filepath = FileDialogs::OpenFile("Astan Scene (*.astan)\0*.astan\0");
 		if (!filepath.empty())
@@ -460,7 +510,7 @@ namespace Astan {
 		serializer.Deserialize(path.string());
 	}
 
-	void EditorLayer::SaveScene() 
+	void EditorLayer::SaveScene()
 	{
 		std::string filepath = FileDialogs::SaveFile("Astan Scene (*.astan)\0*.astan\0");
 		if (!filepath.empty())
@@ -469,4 +519,16 @@ namespace Astan {
 			serializer.Serialize(filepath);
 		}
 	}
+
+
+	void EditorLayer::OnScenePlay() 
+	{
+		m_SceneState = SceneState::Play;
+	};
+
+	void EditorLayer::OnSceneStop() 
+	{
+		m_SceneState = SceneState::Edit;
+	};
+	
 }
