@@ -179,7 +179,7 @@ namespace Astan {
 		}
 
 		//Update scene
-		m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+		//m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
 
 		auto [mx, my] = ImGui::GetMousePos();
 		mx -= m_ViewportBounds[0].x;
@@ -524,11 +524,13 @@ namespace Astan {
 	void EditorLayer::OnScenePlay() 
 	{
 		m_SceneState = SceneState::Play;
+		m_ActiveScene->OnRuntimeStart();
 	};
 
 	void EditorLayer::OnSceneStop() 
 	{
 		m_SceneState = SceneState::Edit;
+		m_ActiveScene->OnRuntimeStop();
 	};
 	
 }

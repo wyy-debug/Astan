@@ -25,6 +25,8 @@ workspace "Astan"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 group "Dependencies"
+	include "vendor/premake"
+	include "Astan/vendor/Box2D"
 	include "Astan/vendor/GLFW"
 	include "Astan/vendor/Glad"
 	include "Astan/vendor/imgui"
