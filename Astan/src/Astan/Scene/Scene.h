@@ -1,7 +1,9 @@
 #pragma once
-#include "entt.hpp"
-#include "Astan/Renderer/EditorCamera.h"
 #include "Astan/Core/Timestep.h"
+#include "Astan/Core/UUID.h"
+#include "Astan/Renderer/EditorCamera.h"
+#include "entt.hpp"
+
 class b2World;
 
 
@@ -15,6 +17,7 @@ namespace Astan
 		~Scene();
 
 		Entity CreateEntity(const std::string& name = std::string());
+		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
 		void OnRuntimeStart();

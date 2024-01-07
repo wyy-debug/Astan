@@ -1,15 +1,25 @@
 #pragma once
+
+#include "Astan/Scene/SceneCamera.h"
+#include "Astan/Renderer/Texture.h"
+#include "Astan/Core/UUID.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
-#include "Astan/Scene/SceneCamera.h"
-#include "Astan/Renderer/Texture.h"
-#include "ScriptableEntity.h"
 namespace Astan
 {
+	struct IDComponent
+	{
+		UUID ID;
+		
+		IDComponent() = default;
+		IDComponent(const IDComponent&) = default;
+	};
+
 	struct TagComponent
 	{
 		std::string Tag;
@@ -60,7 +70,10 @@ namespace Astan
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
 	};
-
+	
+	// Forward
+	class ScriptableEntity;
+	
 	struct NativeScriptComponent
 	{
 		ScriptableEntity* Instance = nullptr;
