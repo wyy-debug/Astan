@@ -127,8 +127,6 @@ namespace Astan {
 		m_CameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 		m_SecondCameraEnity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 #endif
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
 
 	}
 
@@ -148,7 +146,7 @@ namespace Astan {
 			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
-		
+
 		//Render
 		Renderer2D::ResetStats();
 		m_Framebuffer->Bind();
@@ -160,22 +158,22 @@ namespace Astan {
 
 		switch (m_SceneState)
 		{
-			case SceneState::Edit:
-			{
-				//Update
-				if (m_ViewporFocused)
-					m_CameraController.OnUpdate(ts);
+		case SceneState::Edit:
+		{
+			//Update
+			if (m_ViewporFocused)
+				m_CameraController.OnUpdate(ts);
 
-				m_EditorCamera.OnUpdate(ts);
+			m_EditorCamera.OnUpdate(ts);
 
-				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
-				break;
-			}
-			case SceneState::Play:
-			{
-				m_ActiveScene->OnUpdateRuntime(ts);
-				break;
-			}
+			m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+			break;
+		}
+		case SceneState::Play:
+		{
+			m_ActiveScene->OnUpdateRuntime(ts);
+			break;
+		}
 		}
 
 		//Update scene
@@ -257,7 +255,7 @@ namespace Astan {
 						OpenScene();
 
 					if (ImGui::MenuItem("Save As...", "Ctrl+Shife+S"))
-						SaveScene();
+						SaveSceneAs();
 
 					if (ImGui::MenuItem("Exit")) Application::Get().Close();
 					ImGui::EndMenu();
@@ -399,12 +397,12 @@ namespace Astan {
 		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
 
-		ImGui::Begin("##toolbar",nullptr,ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-		
+		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
 		float size = ImGui::GetWindowHeight() - 4.0f;
 		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconStop;
 		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
-		if (ImGui::ImageButton((ImTextureID)icon->GetRendererID(),ImVec2(size,size),ImVec2(0,0),ImVec2(1,1),0))
+		if (ImGui::ImageButton((ImTextureID)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0))
 		{
 			if (m_SceneState == SceneState::Edit)
 				OnScenePlay();
@@ -451,8 +449,20 @@ namespace Astan {
 		}
 		case AS_KEY_S:
 		{
-			if (control && shift)
-				SaveScene();
+			if (control)
+			{
+				if (shift)
+					SaveSceneAs();
+				else  
+					SaveScene();
+			}
+
+			break;
+		}
+		case AS_KEY_D:
+		{
+			if (control)
+				OnDuplicateEntity();
 
 			break;
 		}
@@ -489,6 +499,8 @@ namespace Astan {
 		m_ActiveScene = CreateRef<Scene>();
 		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+		m_EditorScenPath= std::filesystem::path();
 	}
 
 	void EditorLayer::OpenScene()
@@ -502,35 +514,78 @@ namespace Astan {
 
 	void EditorLayer::OpenScene(const std::filesystem::path& path)
 	{
-		m_ActiveScene = CreateRef<Scene>();
-		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		if (m_SceneState != SceneState::Edit)
+			OnSceneStop();
 
-		SceneSerializer serializer(m_ActiveScene);
-		serializer.Deserialize(path.string());
+		if (path.extension().string() != ".astan")
+		{
+			AS_WARN("Could not load {0} - not a scene file", path.filename().string());
+			return;
+		}
+
+		Ref<Scene> newScene = CreateRef<Scene>();
+		SceneSerializer serializer(newScene);
+		if (serializer.Deserialize(path.string()))
+		{
+			m_EditorScene = newScene;
+			m_EditorScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_SceneHierarchyPanel.SetContext(m_EditorScene);
+
+			m_ActiveScene = m_EditorScene;
+			m_EditorScenPath = path;
+		}
 	}
 
 	void EditorLayer::SaveScene()
 	{
+		if (!m_EditorScenPath.empty())
+			SerializeScene(m_ActiveScene, m_EditorScenPath);
+		else
+			SaveSceneAs();
+	}
+
+	void EditorLayer::SaveSceneAs()
+	{
 		std::string filepath = FileDialogs::SaveFile("Astan Scene (*.astan)\0*.astan\0");
 		if (!filepath.empty())
 		{
-			SceneSerializer serializer(m_ActiveScene);
-			serializer.Serialize(filepath);
+			SerializeScene(m_ActiveScene, filepath);
+
+			m_EditorScenPath = filepath;
 		}
 	}
 
+	void EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
+	{
+		SceneSerializer serializer(scene);
+		serializer.Serialize(path.string());
+	}
 
-	void EditorLayer::OnScenePlay() 
+	void EditorLayer::OnScenePlay()
 	{
 		m_SceneState = SceneState::Play;
+
+		m_ActiveScene = Scene::Copy(m_EditorScene);
 		m_ActiveScene->OnRuntimeStart();
+	
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	};
 
-	void EditorLayer::OnSceneStop() 
+	void EditorLayer::OnSceneStop()
 	{
 		m_SceneState = SceneState::Edit;
 		m_ActiveScene->OnRuntimeStop();
+		m_ActiveScene = m_EditorScene;
+
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	};
-	
+
+	void EditorLayer::OnDuplicateEntity()
+	{
+		if (m_SceneState != SceneState::Edit)
+			return;
+		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+		if (selectedEntity)
+			m_EditorScene->DuplicateEntity(selectedEntity);
+	}
 }
