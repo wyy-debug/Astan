@@ -259,6 +259,7 @@ namespace Astan
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+				
 				Renderer2D::DrawSprite(transform.GetTransform(), sprite, int(entity));
 			}
 		}
