@@ -60,6 +60,16 @@ namespace Astan
 		SpriteRendererComponent(const glm::vec4& color)
 			: Color(color) {}
 	};
+	
+	struct CireleRendererComponent
+	{
+		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f};
+		float Thickness = 1.0f;
+		float Fade = 0.005f;
+
+		CireleRendererComponent() = default;
+		CireleRendererComponent(const CireleRendererComponent&) = default;
+	};
 
 	struct CameraComponent
 	{

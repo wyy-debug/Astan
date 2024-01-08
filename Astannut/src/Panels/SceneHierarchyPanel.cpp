@@ -249,6 +249,15 @@ namespace Astan
 					ImGui::CloseCurrentPopup();
 				}
 			}
+
+			if (!m_SelectionContext.HasComponent<CireleRendererComponent>())
+			{
+				if (ImGui::MenuItem("Cirele Renderer"))
+				{
+					m_SelectionContext.AddComponent<CireleRendererComponent>();
+					ImGui::CloseCurrentPopup();
+				}
+			}
 			
 			if (!m_SelectionContext.HasComponent<Rigidbody2DComponent>())
 			{
@@ -356,6 +365,12 @@ namespace Astan
 				}
 
 				ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 10.0f);
+			});
+		DrawComponent<CireleRendererComponent>("Circle Renderer", entity, [](auto& component)
+			{
+				ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
+				ImGui::DragFloat("Thickness", &component.Thickness, 0.025f, 0.0f, 1.0f);
+				ImGui::DragFloat("Fade", &component.Fade, 0.00025f, 0.0f, 1.0f);
 			});
 
 		DrawComponent<Rigidbody2DComponent>("Rigidbody 2D", entity, [](auto& component)

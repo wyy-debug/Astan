@@ -187,6 +187,18 @@ namespace Astan
 			out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
 			out << YAML::EndMap;
 		}
+		
+		if (entity.HasComponent<CireleRendererComponent>())
+		{
+			out << YAML::Key << "CireleRendererComponent";
+			out << YAML::BeginMap;
+			
+			auto& cireleRendererComponent = entity.GetComponent<CireleRendererComponent>();
+			out << YAML::Key << "Color" << YAML::Value << cireleRendererComponent.Color;
+			out << YAML::Key << "Thickness" << YAML::Value << cireleRendererComponent.Thickness;
+			out << YAML::Key << "Fade" << YAML::Value << cireleRendererComponent.Fade;
+			out << YAML::EndMap;
+		}
 
 		if (entity.HasComponent<Rigidbody2DComponent>())
 		{
@@ -303,6 +315,16 @@ namespace Astan
 				{
 					auto& src = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
+				}
+
+				auto cireleRendererComponent = entity["CireleRendererComponent"];
+				if (cireleRendererComponent)
+				{
+					auto& src = deserializedEntity.AddComponent<CireleRendererComponent>();
+					src.Color = cireleRendererComponent["Color"].as<glm::vec4>();
+					src.Thickness = cireleRendererComponent["Thickness"].as<float>();
+					src.Fade = cireleRendererComponent["Fade"].as<float>();
+
 				}
 
 				auto rigidbody2DComponent = entity["Rigidbody2DComponent"];
