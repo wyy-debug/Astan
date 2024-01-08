@@ -1,5 +1,45 @@
 Scene: Untitled
 Entities:
+  - Entity: 2852371432329016411
+    TagComponent:
+      Tag: Empty Entity
+    TransformComponent:
+      Translation: [1.39999998, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [10, 0.100000001, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+    Rigidbody2DComponent:
+      BodyType: Static
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 1759337668446022950
+    TagComponent:
+      Tag: Circle
+    TransformComponent:
+      Translation: [1, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CireleRendererComponent:
+      Color: [0.516411364, 0.186450481, 0.186450481, 1]
+      Thickness: 0.150000006
+      Fade: 0.00499999989
+    Rigidbody2DComponent:
+      BodyType: Static
+      FixedRotation: false
+    CircleCollider2DComponent:
+      Offset: [0, 0]
+      Radius: 0.5
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
   - Entity: 2172817346621191300
     TagComponent:
       Tag: Left
@@ -47,12 +87,22 @@ Entities:
       Color: [0.913725495, 0, 0.835294127, 1]
   - Entity: 89323417018943603
     TagComponent:
-      Tag: Empty Entity
+      Tag: Circle 1
     TransformComponent:
-      Translation: [1.39999998, 0, 0]
+      Translation: [1.39999998, 2, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CireleRendererComponent:
-      Color: [1, 1, 1, 1]
-      Thickness: 1
+      Color: [0.247561619, 0.759299755, 0.554380357, 1]
+      Thickness: 0.150000006
       Fade: 0.00499999989
+    Rigidbody2DComponent:
+      BodyType: Dynamic
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
