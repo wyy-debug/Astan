@@ -37,7 +37,4 @@ private:
 	glm::vec4 m_SquareColor = { 0.2f,0.3f,0.8f,1.0f };
 	ParticleSystem m_ParticleSystem;
 	ParticleProps m_Particle;
-
-	uint32_t m_MapWith, m_MapHeight;
-	std::unordered_map<char, Astan::Ref<Astan::SubTexture2D>> s_TextureMap;
 };

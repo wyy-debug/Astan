@@ -10,22 +10,7 @@
 #include "Astan/Math/Math.h"
 
 #include "ImGuizmo.h"
-static const uint32_t s_MapWidth = 24;
-static const char* s_MapTiles = 
-"WWWWWWWWWWWWWWWWWWWWWWWW"
-"WWWWWWDWWDDDDWDWWWWWWWWW"
-"WWWWWDDWWDDDDDWWWWWWWWWW"
-"WWWWDWWWDDDDDDDDDWWWWWWW"
-"WWWDDDDDDDDDDDDDDWWWWWWW"
-"WWDDDDDDDDDDDDWWWWWWWWWW"
-"WDDDDDDDDDDDDDWWWWWWWWWW"
-"WWDWWWWWWWWWWWWWWWEWWWWW"
-"WWWDWWWWWWWWWWWWWWWWWWWW"
-"WWWWDWWWWWWWWWWWWWWWWWWW"
-"WWWWWDWWWWWWWWWWWWWWWWWW"
-"WWWWWWDWWWWWWWWWWWWWWWWW"
-"WWWWWWWWWWWWWWWWWWWWWWWW"
-"WWWWWWWWWWWWWWWWWWWWWWWW";
+
 namespace Astan {
 	extern const std::filesystem::path g_Assetspath;
 
@@ -35,26 +20,14 @@ namespace Astan {
 
 	}
 
-
 	void EditorLayer::OnAttach()
 	{
 		AS_PROFILE_FUNCTION();
 
 		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
 		m_IconPlay = Texture2D::Create("Resources/Icons/PlayButton.png");
+		m_IconSimulate = Texture2D::Create("Resources/Icons/SimulateButton.png");
 		m_IconStop = Texture2D::Create("Resources/Icons/StopButton.png");
-
-
-		m_SpriteSheet = Texture2D::Create("assets/game/textures/RPGpack_sheet_2X.png");
-
-		m_TextureStaris = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 1,11 }, { 128,128 });
-		m_TextureTree = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2,1 }, { 128,128 }, { 1,2 });
-
-		m_MapWith = s_MapWidth;
-		m_MapHeight = strlen(s_MapTiles) / s_MapWidth;
-
-		s_TextureMap['D'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 6,11 }, { 128,128 });
-		s_TextureMap['W'] = SubTexture2D::CreateFromCoords(m_SpriteSheet, { 11,11 }, { 128,128 });
 
 		m_CameraController.SetZoomLevel(1.0f);
 
@@ -64,7 +37,8 @@ namespace Astan {
 		fbSpec.Height = 720;
 		m_Framebuffer = Framebuffer::Create(fbSpec);
 
-		m_ActiveScene = CreateRef<Scene>();
+		m_EditorScene = CreateRef<Scene>();
+		m_ActiveScene = m_EditorScene;
 
 		auto commandLineArgs = Application::Get().GetCommandLineArgs();
 		if (commandLineArgs.Count > 1)
@@ -133,7 +107,6 @@ namespace Astan {
 	void EditorLayer::OnDetach()
 	{}
 
-
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		AS_PROFILE_FUNCTION();
@@ -158,22 +131,33 @@ namespace Astan {
 
 		switch (m_SceneState)
 		{
-		case SceneState::Edit:
-		{
-			//Update
-			if (m_ViewporFocused)
+			case SceneState::Edit:
+			{
+				//Update
+				if (m_ViewporFocused)
+					m_CameraController.OnUpdate(ts);
+
+				m_EditorCamera.OnUpdate(ts);
+
+				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+				break;
+			}
+
+			case SceneState::Simulate:
+			{
 				m_CameraController.OnUpdate(ts);
 
-			m_EditorCamera.OnUpdate(ts);
+				m_EditorCamera.OnUpdate(ts);
 
-			m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
-			break;
-		}
-		case SceneState::Play:
-		{
-			m_ActiveScene->OnUpdateRuntime(ts);
-			break;
-		}
+				m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera);
+				break;
+			}
+
+			case SceneState::Play:
+			{
+				m_ActiveScene->OnUpdateRuntime(ts);
+				break;
+			}
 		}
 
 		//Update scene
@@ -193,8 +177,66 @@ namespace Astan {
 			m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
 		}
 
+		OnOverlayRender();
+
 		m_Framebuffer->Unbind();
 
+	}
+	
+	void EditorLayer::OnOverlayRender()
+	{
+		if (m_SceneState == SceneState::Play)
+		{
+			Entity camera = m_ActiveScene->GetPrimaryCameraEntity();
+			if (!camera)
+				return;
+
+			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, camera.GetComponent<TransformComponent>().GetTransform());
+		}
+		else
+		{
+			Renderer2D::BeginScene(m_EditorCamera);
+		}
+
+		if (m_ShowPhysicsColliders)
+		{
+			// Box Colliders
+			{
+				auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, BoxCollider2DComponent>();
+				for (auto entity : view)
+				{
+					auto [tc, bc2d] = view.get<TransformComponent, BoxCollider2DComponent>(entity);
+
+					glm::vec3 translation = tc.Translation + glm::vec3(bc2d.Offset, 0.001f);
+					glm::vec3 scale = tc.Scale * glm::vec3(bc2d.Size * 2.0f, 1.0f);
+
+					glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
+						* glm::rotate(glm::mat4(1.0f),tc.Rotation.z, glm::vec3(0.0f,0.0f,1.0f))
+						* glm::scale(glm::mat4(1.0f), scale);
+
+					Renderer2D::DrawRect(transform, glm::vec4(0, 1, 0, 1));
+				}
+			}
+
+			// Circle Colliders
+			{
+				auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, CircleCollider2DComponent>();
+				for (auto entity : view)
+				{
+					auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
+
+					glm::vec3 translation = tc.Translation + glm::vec3(cc2d.Offset, 0.001f);
+					glm::vec3 scale = tc.Scale * glm::vec3(cc2d.Radius * 2.0f);
+
+					glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation) 
+						* glm::scale(glm::mat4(1.0f), scale);
+
+					Renderer2D::DrawCircle(transform, glm::vec4(0, 1, 0, 1), 0.01f);
+				}
+			}
+		}
+
+		Renderer2D::EndScene();
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -282,6 +324,12 @@ namespace Astan {
 			ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 
 			ImGui::End();
+
+			ImGui::Begin("Setting");
+			ImGui::Checkbox("Show Physics Colliders", &m_ShowPhysicsColliders);
+			ImGui::End();
+
+
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
 			ImGui::Begin("Viewport");
@@ -399,15 +447,35 @@ namespace Astan {
 
 		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
+		bool toolbarEnable = (bool)m_ActiveScene;
+
+		ImVec4 tintColor =ImVec4(1, 1, 1, 1);
+		if (!toolbarEnable)
+			tintColor.w = 0.5f;
+
 		float size = ImGui::GetWindowHeight() - 4.0f;
-		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconStop;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
-		if (ImGui::ImageButton((ImTextureID)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0))
 		{
-			if (m_SceneState == SceneState::Edit)
-				OnScenePlay();
-			else if (m_SceneState == SceneState::Play)
-				OnSceneStop();
+			Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_IconPlay : m_IconStop;
+			ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+			if (ImGui::ImageButton((ImTextureID)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0.0f,0.0f,0.0f,0.0f), tintColor) && toolbarEnable)
+			{
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+					OnScenePlay();
+				else if (m_SceneState == SceneState::Play)
+					OnSceneStop();
+			}
+		}
+		ImGui::SameLine();
+		{
+			Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_IconSimulate : m_IconStop;
+			//ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+			if (ImGui::ImageButton((ImTextureID)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnable)
+			{
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+					OnSceneSimulation();
+				else if (m_SceneState == SceneState::Simulate)
+					OnSceneStop();
+			}
 		}
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor(3);
@@ -563,6 +631,9 @@ namespace Astan {
 
 	void EditorLayer::OnScenePlay()
 	{
+		if (m_SceneState == SceneState::Simulate)
+			OnSceneStop();
+
 		m_SceneState = SceneState::Play;
 
 		m_ActiveScene = Scene::Copy(m_EditorScene);
@@ -571,10 +642,30 @@ namespace Astan {
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	};
 
+	void EditorLayer::OnSceneSimulation()
+	{
+		if (m_SceneState == SceneState::Play)
+			OnSceneStop();
+
+		m_SceneState = SceneState::Simulate;
+
+		m_ActiveScene = Scene::Copy(m_EditorScene);
+		m_ActiveScene->OnSimulationStart();
+
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
 	void EditorLayer::OnSceneStop()
 	{
+		AS_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate);
+
+		if (m_SceneState == SceneState::Play)
+			m_ActiveScene->OnRuntimeStop();
+		else if (m_SceneState == SceneState::Simulate)
+			m_ActiveScene->OnSimulationStop();
+
 		m_SceneState = SceneState::Edit;
-		m_ActiveScene->OnRuntimeStop();
+
 		m_ActiveScene = m_EditorScene;
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);

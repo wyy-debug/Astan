@@ -20,6 +20,8 @@ namespace Astan {
 	private:
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+
+		void OnOverlayRender();
 		
 		void NewScene();
 		void OpenScene();
@@ -30,6 +32,7 @@ namespace Astan {
 		void SerializeScene(Ref<Scene> scene, const std::filesystem::path& path);
 
 		void OnScenePlay();
+		void OnSceneSimulation();
 		void OnSceneStop();
 
 		void OnDuplicateEntity();
@@ -45,11 +48,6 @@ namespace Astan {
 		Ref<Shader> m_FlatColorShader;
 		
 		Ref<Texture2D> m_CheckerboardTexture;
-		Ref<Texture2D> m_SpriteSheet;
-
-		Ref<SubTexture2D> m_TextureStaris;
-		Ref<SubTexture2D> m_TextureBarrel;
-		Ref<SubTexture2D> m_TextureTree;
 		
 		Ref<Framebuffer> m_Framebuffer;
 
@@ -77,14 +75,16 @@ namespace Astan {
 		
 		glm::vec4 m_SquareColor = { 0.2f,0.3f,0.8f,1.0f };
 		glm::vec2 m_ViewportBounds[2];
-		uint32_t m_MapWith, m_MapHeight;
-		std::unordered_map<char, Ref<SubTexture2D>> s_TextureMap;
 
 		int m_GizmoType = -1;
 
+		bool m_ShowPhysicsColliders = false;
+
 		enum class SceneState
 		{
-			Edit = 0, Play = 1
+			Edit = 0,
+			Play = 1,
+			Simulate = 2
 		};
 		SceneState m_SceneState = SceneState::Edit;
 
@@ -93,7 +93,7 @@ namespace Astan {
 		ContentBrowserPanel m_ContentBrowserPanel;
 
 		// Editor resources
-		Ref<Texture2D> m_IconPlay, m_IconStop;
+		Ref<Texture2D> m_IconPlay, m_IconSimulate, m_IconStop;
 		
 	};
 }
