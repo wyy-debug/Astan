@@ -221,10 +221,10 @@ namespace Astan
 
 			// Draw circles
 			{
-				auto view = m_Registry.view<TransformComponent, CireleRendererComponent>();
+				auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
 				for (auto entity : view)
 				{
-					auto [transform, circle] = view.get<TransformComponent, CireleRendererComponent>(entity);
+					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
 					Renderer2D::DrawCircle(transform.GetTransform(), circle.Color, circle.Thickness, circle.Fade, int(entity));
 				}
 			}
@@ -378,10 +378,10 @@ namespace Astan
 		}
 
 		{
-			auto view = m_Registry.view<TransformComponent, CireleRendererComponent>();
+			auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
 			for (auto entity : view)
 			{
-				auto [transform, circle] = view.get<TransformComponent, CireleRendererComponent>(entity);
+				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
 				Renderer2D::DrawCircle(transform.GetTransform(), circle.Color, circle.Thickness, circle.Fade, int(entity));
 			}
 		}
@@ -423,7 +423,7 @@ namespace Astan
 	}
 
 	template<>
-	void Scene::OnComponentAdded<CireleRendererComponent>(Entity entity, CireleRendererComponent& component)
+	void Scene::OnComponentAdded<CircleRendererComponent>(Entity entity, CircleRendererComponent& component)
 	{
 	}
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xhash>
 namespace Astan
 {
 	class UUID
@@ -23,7 +22,7 @@ namespace std
 	{
 		std::size_t operator()(const Astan::UUID& uuid) const
 		{
-			return hash<uint64_t>()((uint64_t)uuid);
+			return ((uint64_t)uuid);
 		}
 	};
 }

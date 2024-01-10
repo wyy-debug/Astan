@@ -188,15 +188,15 @@ namespace Astan
 			out << YAML::EndMap;
 		}
 		
-		if (entity.HasComponent<CireleRendererComponent>())
+		if (entity.HasComponent<CircleRendererComponent>())
 		{
-			out << YAML::Key << "CireleRendererComponent";
+			out << YAML::Key << "CircleRendererComponent";
 			out << YAML::BeginMap;
 			
-			auto& cireleRendererComponent = entity.GetComponent<CireleRendererComponent>();
-			out << YAML::Key << "Color" << YAML::Value << cireleRendererComponent.Color;
-			out << YAML::Key << "Thickness" << YAML::Value << cireleRendererComponent.Thickness;
-			out << YAML::Key << "Fade" << YAML::Value << cireleRendererComponent.Fade;
+			auto& circleRendererComponent = entity.GetComponent<CircleRendererComponent>();
+			out << YAML::Key << "Color" << YAML::Value << circleRendererComponent.Color;
+			out << YAML::Key << "Thickness" << YAML::Value << circleRendererComponent.Thickness;
+			out << YAML::Key << "Fade" << YAML::Value << circleRendererComponent.Fade;
 			out << YAML::EndMap;
 		}
 
@@ -333,13 +333,13 @@ namespace Astan
 					src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
 				}
 
-				auto cireleRendererComponent = entity["CireleRendererComponent"];
-				if (cireleRendererComponent)
+				auto circleRendererComponent = entity["CircleRendererComponent"];
+				if (circleRendererComponent)
 				{
-					auto& src = deserializedEntity.AddComponent<CireleRendererComponent>();
-					src.Color = cireleRendererComponent["Color"].as<glm::vec4>();
-					src.Thickness = cireleRendererComponent["Thickness"].as<float>();
-					src.Fade = cireleRendererComponent["Fade"].as<float>();
+					auto& src = deserializedEntity.AddComponent<CircleRendererComponent>();
+					src.Color = circleRendererComponent["Color"].as<glm::vec4>();
+					src.Thickness = circleRendererComponent["Thickness"].as<float>();
+					src.Fade = circleRendererComponent["Fade"].as<float>();
 
 				}
 

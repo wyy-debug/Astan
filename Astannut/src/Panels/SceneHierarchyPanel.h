@@ -23,6 +23,9 @@ namespace Astan
 		void DrawEntityNode(Entity entity);
 		void DrawComponents(Entity entity);
 	private:
+		template<typename T>
+		void DisplayAddComponentEntry(const std::string& entryName);
+
 		Ref<Scene> m_Context;
 		Entity m_SelectionContext;
 	};

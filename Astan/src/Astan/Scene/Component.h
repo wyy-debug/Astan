@@ -61,14 +61,14 @@ namespace Astan
 			: Color(color) {}
 	};
 	
-	struct CireleRendererComponent
+	struct CircleRendererComponent
 	{
 		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f};
 		float Thickness = 1.0f;
 		float Fade = 0.005f;
 
-		CireleRendererComponent() = default;
-		CireleRendererComponent(const CireleRendererComponent&) = default;
+		CircleRendererComponent() = default;
+		CircleRendererComponent(const CircleRendererComponent&) = default;
 	};
 
 	struct CameraComponent
@@ -160,7 +160,7 @@ namespace Astan
 
 	using AllComponents = 
 		ComponentGroup<TransformComponent, SpriteRendererComponent,
-			CireleRendererComponent, CameraComponent, NativeScriptComponent,
+			CircleRendererComponent, CameraComponent, NativeScriptComponent,
 			Rigidbody2DComponent, BoxCollider2DComponent, CircleCollider2DComponent>;
 
 }
