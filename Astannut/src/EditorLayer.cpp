@@ -86,13 +86,13 @@ namespace Astan {
 				auto& translation = GetComponent<TransformComponent>().Translation;
 				float speed = 5.0f;
 
-				if (Input::IsKeyPressed(AS_KEY_A))
+				if (Input::IsKeyPressed(Key::A))
 					translation.x -= speed * ts;
-				if (Input::IsKeyPressed(AS_KEY_D))
+				if (Input::IsKeyPressed(Key::D))
 					translation.x += speed * ts;
-				if (Input::IsKeyPressed(AS_KEY_W))
+				if (Input::IsKeyPressed(Key::W))
 					translation.y += speed * ts;
-				if (Input::IsKeyPressed(AS_KEY_S))
+				if (Input::IsKeyPressed(Key::S))
 					translation.y -= speed * ts;
 			}
 		};
@@ -384,7 +384,7 @@ namespace Astan {
 				glm::mat4 transform = tc.GetTransform();
 
 				//Snapping
-				bool snap = Input::IsKeyPressed(AS_KEY_LEFT_CONTROL);
+				bool snap = Input::IsKeyPressed(Key::LeftControl);
 				float snapValue = 0.5f;
 				if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
 					snapValue = 45.0f;
@@ -493,29 +493,29 @@ namespace Astan {
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
 	{
-		if (e.GetRepeatCount() > 0)
+		if (e.IsRepeat())
 			return false;
 
-		bool control = Input::IsKeyPressed(AS_KEY_RIGHT_CONTROL) || Input::IsKeyPressed(AS_KEY_LEFT_CONTROL);
-		bool shift = Input::IsKeyPressed(AS_KEY_RIGHT_SHIFT) || Input::IsKeyPressed(AS_KEY_LEFT_SHIFT);
+		bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
 
 		switch (e.GetKeyCode())
 		{
-		case AS_KEY_N:
+		case Key::N:
 		{
 			if (control && shift)
 				NewScene();
 
 			break;
 		}
-		case AS_KEY_O:
+		case Key::O:
 		{
 			if (control)
 				OpenScene();
 
 			break;
 		}
-		case AS_KEY_S:
+		case Key::S:
 		{
 			if (control)
 			{
@@ -527,7 +527,7 @@ namespace Astan {
 
 			break;
 		}
-		case AS_KEY_D:
+		case Key::D:
 		{
 			if (control)
 				OnDuplicateEntity();
@@ -536,16 +536,16 @@ namespace Astan {
 		}
 
 		// Gizmos
-		case AS_KEY_Q:
+		case Key::Q:
 			m_GizmoType = -1;
 			break;
-		case AS_KEY_W:
+		case Key::W:
 			m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
-		case AS_KEY_E:
+		case Key::E:
 			m_GizmoType = ImGuizmo::OPERATION::ROTATE;
 			break;
-		case AS_KEY_R:
+		case Key::R:
 			m_GizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
@@ -555,7 +555,7 @@ namespace Astan {
 	{
 		if (e.GetMouseButton() == AS_MOUSE_BUTTON_LEFT)
 		{
-			if (m_ViewporHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(AS_KEY_LEFT_ALT))
+			if (m_ViewporHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(Key::LeftAlt))
 				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
 
 		}

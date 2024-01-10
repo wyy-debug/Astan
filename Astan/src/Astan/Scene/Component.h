@@ -153,4 +153,14 @@ namespace Astan
 
 	};
 
+	template<typename...Component>
+	struct ComponentGroup
+	{
+	};
+
+	using AllComponents = 
+		ComponentGroup<TransformComponent, SpriteRendererComponent,
+			CireleRendererComponent, CameraComponent, NativeScriptComponent,
+			Rigidbody2DComponent, BoxCollider2DComponent, CircleCollider2DComponent>;
+
 }

@@ -59,7 +59,7 @@ namespace Astan
 
 	void EditorCamera::OnUpdate(Timestep ts)
 	{
-		if (Input::IsKeyPressed(AS_KEY_LEFT_ALT))
+		if (Input::IsKeyPressed(Key::LeftAlt))
 		{
 			const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
 			glm::vec2 delta = (mouse - m_InitialMousePositon) * 0.003f;

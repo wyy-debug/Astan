@@ -39,11 +39,6 @@ void Sandbox2D::OnAttach()
 	m_TextureStaris = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 1,11 }, { 128,128 });
 	m_TextureTree = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, { 2,1 }, { 128,128 }, { 1,2 });
 	
-	m_MapWith = s_MapWidth;
-	m_MapHeight = strlen(s_MapTiles) / s_MapWidth;
-
-	s_TextureMap['D'] = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, {6,11}, {128,128});
-	s_TextureMap['W'] = Astan::SubTexture2D::CreateFromCoords(m_SpriteSheet, {11,11}, {128,128});
 
 	m_Particle.ColorBegin = { 254 / 255.0f,212 / 255.0f,123 / 255.0f,1.0f };
 	m_Particle.ColorEnd = { 254 / 255.0f,109 / 255.0f,41 / 255.0f,1.0f };

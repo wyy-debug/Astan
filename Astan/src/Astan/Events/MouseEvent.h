@@ -1,7 +1,9 @@
 #pragma once
-#include "Event.h"
-#include <sstream>
 
+#include "Astan/Events/Event.h"
+#include "Astan/Core/MouseCodes.h"
+
+#include <sstream>
 namespace Astan{
 	class MouseMovedEvent : public Event
 	{
@@ -17,8 +19,8 @@ namespace Astan{
 			ss << "MouseMovedEvent" << m_MouseX << "," << m_MouseY;
 			return ss.str();
 		}
-		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 		EVENT_CLASS_TYPE(MouseMoved)
+		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	private:
 		float m_MouseX, m_MouseY;
 	};
@@ -38,8 +40,8 @@ namespace Astan{
 			ss << "MouseScrolledEvent" << m_XOffset << "," << m_YOffset;
 			return ss.str();
 		}
-		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 		EVENT_CLASS_TYPE(MouseScrolled)
+		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	private:
 		float m_XOffset, m_YOffset;
 	};
@@ -51,15 +53,16 @@ namespace Astan{
 
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	protected:
-		MouseButtonEvent(int button)
+		MouseButtonEvent(const MouseCode button)
 			: m_Button(button) {}
+
 		int m_Button;
 	};
 
 	class MouseButtonPressedEvent : public MouseButtonEvent
 	{
 	public:
-		MouseButtonPressedEvent(int button) 
+		MouseButtonPressedEvent(const MouseCode button) 
 			:MouseButtonEvent(button) {}
 		
 		std::string ToString() const override
@@ -74,7 +77,7 @@ namespace Astan{
 	class MouseButtonReleasedEvent : public MouseButtonEvent
 	{
 	public:
-		MouseButtonReleasedEvent(int button)
+		MouseButtonReleasedEvent(const MouseCode button)
 			:MouseButtonEvent(button) {}
 
 		std::string ToString() const override

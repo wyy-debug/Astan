@@ -17,20 +17,20 @@
 namespace Astan
 {
 
-	template<typename...Component>
-	static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
+	template<typename... Component>
+		static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
 	{
 		([&]()
-		{
-			auto view = src.view<Componet>();
-			for (auto srcEntity : view)
 			{
-				entt::entity dstEntity = enttMap.at(src.get<IDComponent>(srcEntity).ID);
+				auto view = src.view<Component>();
+				for (auto srcEntity : view)
+				{
+					entt::entity dstEntity = enttMap.at(src.get<IDComponent>(srcEntity).ID);
 
-				auto& srcComponent = src.get<Component>(srcEntity);
-				dst.emplace_or_replace<Component>(dstEntity,srcComponent);
-			}
-		}(), ...)
+					auto& srcComponent = src.get<Component>(srcEntity);
+					dst.emplace_or_replace<Component>(dstEntity, srcComponent);
+				}
+			}(), ...);
 	}
 
 	template<typename... Component>
@@ -43,10 +43,10 @@ namespace Astan
 	static void CopyComponentIfExists(Entity dst, Entity src)
 	{
 		([&]()
-		{
-			if (src.HasComponent<Component>())
-				dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
-		}(), ...);
+			{
+				if (src.HasComponent<Component>())
+					dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
+			}(), ...);
 	}
 
 	template<typename... Component>
@@ -54,6 +54,7 @@ namespace Astan
 	{
 		CopyComponentIfExists<Component...>(dst, src);
 	}
+
 
 
 	static b2BodyType Rigidbody2DTypeToBox2D(Rigidbody2DComponent::BodyType bodyType)
