@@ -37,6 +37,7 @@ project "Astan"
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.mono}",
 		"%{IncludeDir.yamlcpp}",
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.VulkanSDK}"
@@ -49,7 +50,9 @@ project "Astan"
 		"Glad",
 		"ImGui",
 		"yaml-cpp",
-		"opengl32.lib"
+		"opengl32.lib",
+
+		"%{Library.mono}"
 	}
 	filter "files:vendor/ImGuizmo/**.cpp"
 	flags { "NoPCH" }
@@ -58,6 +61,14 @@ project "Astan"
 		systemversion "latest"
 		defines
 		{
+		}
+
+		links
+		{
+			"%{Library.WinSock}",
+			"%{Library.WinMM}",
+			"%{Library.WinVersion}",
+			"%{Library.BCrypt}",
 		}
 		
 	filter "configurations:Debug"

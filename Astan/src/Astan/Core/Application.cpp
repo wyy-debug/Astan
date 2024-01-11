@@ -5,6 +5,7 @@
 
 
 #include "Astan/Renderer/Renderer.h"
+#include "Astan/Scripting/ScriptEngine.h"
 
 #include <glfw/glfw3.h>
 
@@ -24,6 +25,7 @@ namespace Astan {
 		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
 
 		Renderer::Init();
+		ScriptEngine::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -34,6 +36,8 @@ namespace Astan {
 	Application::~Application()
 	{
 		AS_PROFILE_FUNCTION();
+
+		ScriptEngine::Shutdown();
 
 	}
 

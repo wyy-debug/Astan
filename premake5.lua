@@ -33,6 +33,15 @@ group "Dependencies"
 	include "Astan/vendor/yaml-cpp"
 group ""
 
-include "Astan"
-include "Application"
-include "Astannut"
+group "Core"
+	include "Astan"
+	include "Astan-ScriptCore"
+group ""
+
+group "Tools"
+	include "Astannut"
+group ""
+
+group "Misc"
+	include "Application"
+group ""
