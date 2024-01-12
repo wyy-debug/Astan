@@ -1,77 +1,83 @@
 #include "aspch.h"
 #include "ScriptEngine.h"
 
+#include "ScriptGlue.h"
+
 #include "mono/jit/jit.h"
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object.h"
 namespace Astan
 {
-	char* ReadBytes(const std::string& filepath, uint32_t* outSize)
+
+	namespace Utils
 	{
-		std::ifstream stream(filepath, std::ios::binary | std::ios::ate);
-
-		if (!stream)
+		static char* ReadBytes(const std::filesystem::path& filepath, uint32_t* outSize)
 		{
-			return nullptr;
+			std::ifstream stream(filepath, std::ios::binary | std::ios::ate);
+
+			if (!stream)
+			{
+				return nullptr;
+			}
+
+			std::streampos end = stream.tellg();
+			stream.seekg(0, std::ios::beg);
+			uint32_t size = end - stream.tellg();
+
+			if (size == 0)
+			{
+				return nullptr;
+			}
+
+			char* buffer = new char[size];
+			stream.read((char*)buffer, size);
+			stream.close();
+
+			*outSize = size;
+			return buffer;
 		}
 
-		std::streampos end = stream.tellg();
-		stream.seekg(0, std::ios::beg);
-		uint32_t size = end - stream.tellg();
-
-		if (size == 0)
+		static MonoAssembly* LoadMonoAssembly(const std::filesystem::path& assemblyPath)
 		{
-			return nullptr;
+			uint32_t fileSize = 0;
+			char* fileData = ReadBytes(assemblyPath, &fileSize);
+
+			MonoImageOpenStatus status;
+			MonoImage* image = mono_image_open_from_data_full(fileData, fileSize, 1, &status, 0);
+
+			if (status != MONO_IMAGE_OK)
+			{
+				const char* errorMessage = mono_image_strerror(status);
+				return nullptr;
+			}
+
+			MonoAssembly* assembly = mono_assembly_load_from_full(image, assemblyPath.string().c_str(), &status, 0);
+			mono_image_close(image);
+
+			delete[] fileData;
+
+			return assembly;
 		}
 
-		char* buffer = new char[size];
-		stream.read((char*)buffer, size);
-		stream.close();
+		static void PrintAassemblyTypes(MonoAssembly* assembely)
+		{
+			MonoImage* image = mono_assembly_get_image(assembely);
+			const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
+			int32_t numTypes = mono_table_info_get_rows(typeDefinitionsTable);
 
-		*outSize = size;
-		return buffer;
+			for (int32_t i = 0; i < numTypes; i++)
+			{
+				uint32_t cols[MONO_TYPEDEF_SIZE];
+				mono_metadata_decode_row(typeDefinitionsTable, i, cols, MONO_TYPEDEF_SIZE);
+
+				const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
+				const char* name = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
+
+				AS_CORE_TRACE("{}.{}", nameSpace, name);
+			}
+		}
+
 	}
-
-	MonoAssembly* LoadCSharpAssembly(const std::string& assemblyPath)
-	{
-		uint32_t fileSize = 0;
-		char* fileData = ReadBytes(assemblyPath, &fileSize);
-
-		MonoImageOpenStatus status;
-		MonoImage* image = mono_image_open_from_data_full(fileData, fileSize, 1, &status, 0);
-
-		if (status != MONO_IMAGE_OK)
-		{
-			const char* errorMessage = mono_image_strerror(status);
-			return nullptr;
-		}
-
-		MonoAssembly* assembly = mono_assembly_load_from_full(image, assemblyPath.c_str(), &status, 0);
-		mono_image_close(image);
-
-		delete[] fileData;
-
-		return assembly;
-	}
-
-	void PrintAassemblyTypes(MonoAssembly* assembely)
-	{
-		MonoImage* image = mono_assembly_get_image(assembely);
-		const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
-		int32_t numTypes = mono_table_info_get_rows(typeDefinitionsTable);
-
-		for (int32_t i = 0; i < numTypes; i++)
-		{
-			uint32_t cols[MONO_TYPEDEF_SIZE];
-			mono_metadata_decode_row(typeDefinitionsTable, i, cols, MONO_TYPEDEF_SIZE);
-
-			const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
-			const char* name = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
-
-			AS_CORE_TRACE("{}.{}", nameSpace, name);
-		}
-	}
-
 
 	// signer instance
 	struct ScriptEngineData
@@ -80,6 +86,9 @@ namespace Astan
 		MonoDomain* AppDomain = nullptr;
 
 		MonoAssembly* CoreAssembly = nullptr;
+		MonoImage* CoreAssemblyImage = nullptr;
+
+		ScriptClass EntityClass;
 	};
 
 	static ScriptEngineData* s_Data= nullptr;
@@ -87,13 +96,55 @@ namespace Astan
 	void ScriptEngine::Init()
 	{
 		s_Data = new ScriptEngineData();
+
 		InitMono();
+		LoadAssembly("Resources/Scripts/Astan-ScriptCore.dll");
+
+		ScriptGlue::RegisterFunctions();
+
+		// Rertrieve and instantiate class (with constructor)
+		s_Data->EntityClass = ScriptClass("Astan", "Entity");
+		
+		MonoObject* instance  = s_Data->EntityClass.Instantiate();
+
+		// Call function
+		MonoMethod* printMessageFunc = s_Data->EntityClass.GetMethod("PrintMessage", 0);
+		s_Data->EntityClass.InvokeMethod(instance, printMessageFunc);
+
+		// Call function with with param
+		MonoMethod* PrintIntFunc = s_Data->EntityClass.GetMethod("PrintInt", 1);
+
+		int value = 5;
+		void* param = &value;
+
+		s_Data->EntityClass.InvokeMethod(instance, PrintIntFunc, &param);
+
+		MonoMethod* PrintIntsFunc = s_Data->EntityClass.GetMethod("PrintInts", 2);
+		int value2 = 508;
+		void* params[2] = { &value,&value2 };
+
+		s_Data->EntityClass.InvokeMethod(instance, PrintIntsFunc, params);
+
+		MonoString* monoString = mono_string_new(s_Data->AppDomain, "Hello World from c++!");
+		MonoMethod* printCustomMessageFunc = s_Data->EntityClass.GetMethod("PrintCustomMessage", 1);
+		void* stringParam = monoString;
+		s_Data->EntityClass.InvokeMethod(instance, printCustomMessageFunc, &stringParam);
+
+		//AS_CORE_ASSERT(false);
 	}
 
 	void ScriptEngine::Shutdown()
 	{
 		ShutdownMono();
 		delete s_Data;
+	}
+	
+	void ScriptEngine::ShutdownMono()
+	{
+		//mono_domain_unload(s_Data->AppDomain);
+		s_Data->AppDomain = nullptr;
+		//mono_jit_cleanup(s_Data->RootDomain);
+		s_Data->RootDomain = nullptr;
 	}
 
 	void ScriptEngine::InitMono()
@@ -103,56 +154,48 @@ namespace Astan
 
 		MonoDomain* rootDomain = mono_jit_init("AstanJITRuntime");
 		AS_CORE_ASSERT(rootDomain);
+
 		// Store the root domain pointer
 		s_Data->RootDomain = rootDomain;
+	}
 
+	void ScriptEngine::LoadAssembly(const std::filesystem::path& filepath)
+	{
 		// Create an App Domain
 		s_Data->AppDomain = mono_domain_create_appdomain("AstanScriptRuntime", nullptr);
 		mono_domain_set(s_Data->AppDomain, true);
 
 		// Move this maybe
-		s_Data->CoreAssembly = LoadCSharpAssembly("Resources/Scripts/Astan-ScriptCore.dll");
-		PrintAassemblyTypes(s_Data->CoreAssembly);
-
-		MonoImage* assemblyImage = mono_assembly_get_image(s_Data->CoreAssembly);
-		MonoClass* monoClass =  mono_class_from_name(assemblyImage, "Astan", "Main");
-
-		// 1.create an object (and call constructor)
-		MonoObject* instance = mono_object_new(s_Data->AppDomain, monoClass);
-		mono_runtime_object_init(instance);
-		
-		// 2.call function
-		MonoMethod* printMessageFunc = mono_class_get_method_from_name(monoClass, "PrintMessage", 0);
-		mono_runtime_invoke(printMessageFunc, instance, nullptr, nullptr); 
-
-		// 3.call function with with param
-		MonoMethod* PrintIntFunc = mono_class_get_method_from_name(monoClass, "PrintInt", 1);
-		
-		int value = 5;
-		void* param = &value;
-
-		mono_runtime_invoke(PrintIntFunc, instance, &param, nullptr);
-		
-		MonoMethod* PrintIntsFunc = mono_class_get_method_from_name(monoClass, "PrintInt", 1);
-		int value2 = 500;
-		void* params[2] = { &value,&value2 };
-
-		mono_runtime_invoke(PrintIntsFunc, instance, &param, nullptr);
-		
-		MonoString* monoString = mono_string_new(s_Data->AppDomain, "Hello World from c++!");
-		MonoMethod* printCustomMessageFunc = mono_class_get_method_from_name(monoClass, "PrintCustomMessage", 1);
-		void* stringParam = monoString;
-		mono_runtime_invoke(printCustomMessageFunc, instance, &stringParam, nullptr);
-		
-		//AS_CORE_ASSERT(false);
+		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath);
+		s_Data->CoreAssemblyImage = mono_assembly_get_image(s_Data->CoreAssembly);
 
 	}
-	
-	void ScriptEngine::ShutdownMono()
+
+	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)
 	{
-		//mono_domain_unload(s_Data->AppDomain);
-		s_Data->AppDomain = nullptr;
-		//mono_jit_cleanup(s_Data->RootDomain);
-		s_Data->RootDomain = nullptr;
+		MonoObject* instance = mono_object_new(s_Data->AppDomain, monoClass);
+		mono_runtime_object_init(instance);
+		return instance;
+	}
+
+	ScriptClass::ScriptClass(const std::string& classNamespace, const std::string& className)
+		: m_ClassNamespace(classNamespace), m_ClassName(className)
+	{
+		m_MonoClass = mono_class_from_name(s_Data->CoreAssemblyImage, classNamespace.c_str(), className.c_str());
+	}
+
+	MonoObject* ScriptClass::Instantiate()
+	{
+		return ScriptEngine::InstantiateClass(m_MonoClass);
+	}
+
+	MonoMethod* ScriptClass::GetMethod(const std::string& name, int parameterCount)
+	{
+		return mono_class_get_method_from_name(m_MonoClass, name.c_str(), parameterCount);
+	}
+
+	MonoObject* ScriptClass::InvokeMethod(MonoObject* instance, MonoMethod* method, void** params)
+	{
+		return mono_runtime_invoke(method, instance, params, nullptr);
 	}
 }
