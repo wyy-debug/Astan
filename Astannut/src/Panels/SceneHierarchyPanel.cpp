@@ -5,6 +5,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include "Astan/Scene/Component.h"
+#include "Astan/Scripting/ScriptEngine.h"
 
 namespace Astan
 {
@@ -233,6 +234,7 @@ namespace Astan
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			DisplayAddComponentEntry<CameraComponent>("Camera");
+			DisplayAddComponentEntry<ScriptComponent>("Script");
 			DisplayAddComponentEntry<SpriteRendererComponent>("Sprite Renderer");
 			DisplayAddComponentEntry<CircleRendererComponent>("Circle Renderer");
 			DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
@@ -327,6 +329,24 @@ namespace Astan
 
 				ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 10.0f);
 			});
+
+		DrawComponent<ScriptComponent>("Script", entity, [](auto& component)
+			{
+				bool scriptClassExits = ScriptEngine::EntityClassExits(component.ClassName);
+
+				static char buffer[64];
+				strcpy(buffer, component.ClassName.c_str());
+				
+				if (!scriptClassExits)
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
+
+				if (ImGui::InputText("Class", buffer, sizeof(buffer)))
+					component.ClassName = buffer;
+
+				if (!scriptClassExits)
+					ImGui::PopStyleColor();
+			});
+
 		DrawComponent<CircleRendererComponent>("Circle Renderer", entity, [](auto& component)
 			{
 				ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));

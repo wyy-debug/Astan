@@ -72,7 +72,6 @@ namespace Astan
 
 				const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
 				const char* name = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
-
 				AS_CORE_TRACE("{}.{}", nameSpace, name);
 			}
 		}
@@ -89,6 +88,12 @@ namespace Astan
 		MonoImage* CoreAssemblyImage = nullptr;
 
 		ScriptClass EntityClass;
+
+		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
+		std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
+		
+		// Runtime
+		Scene* SceneContext = nullptr;
 	};
 
 	static ScriptEngineData* s_Data= nullptr;
@@ -99,38 +104,41 @@ namespace Astan
 
 		InitMono();
 		LoadAssembly("Resources/Scripts/Astan-ScriptCore.dll");
-
+		LoadAssemblyClasses(s_Data->CoreAssembly);
+		
 		ScriptGlue::RegisterFunctions();
 
-		// Rertrieve and instantiate class (with constructor)
 		s_Data->EntityClass = ScriptClass("Astan", "Entity");
-		
-		MonoObject* instance  = s_Data->EntityClass.Instantiate();
+#if 0
+		//// Rertrieve and instantiate class (with constructor)
+		//
+		//MonoObject* instance  = s_Data->EntityClass.Instantiate();
 
-		// Call function
-		MonoMethod* printMessageFunc = s_Data->EntityClass.GetMethod("PrintMessage", 0);
-		s_Data->EntityClass.InvokeMethod(instance, printMessageFunc);
+		//// Call function
+		//MonoMethod* printMessageFunc = s_Data->EntityClass.GetMethod("PrintMessage", 0);
+		//s_Data->EntityClass.InvokeMethod(instance, printMessageFunc);
 
-		// Call function with with param
-		MonoMethod* PrintIntFunc = s_Data->EntityClass.GetMethod("PrintInt", 1);
+		//// Call function with with param
+		//MonoMethod* PrintIntFunc = s_Data->EntityClass.GetMethod("PrintInt", 1);
 
-		int value = 5;
-		void* param = &value;
+		//int value = 5;
+		//void* param = &value;
 
-		s_Data->EntityClass.InvokeMethod(instance, PrintIntFunc, &param);
+		//s_Data->EntityClass.InvokeMethod(instance, PrintIntFunc, &param);
 
-		MonoMethod* PrintIntsFunc = s_Data->EntityClass.GetMethod("PrintInts", 2);
-		int value2 = 508;
-		void* params[2] = { &value,&value2 };
+		//MonoMethod* PrintIntsFunc = s_Data->EntityClass.GetMethod("PrintInts", 2);
+		//int value2 = 508;
+		//void* params[2] = { &value,&value2 };
 
-		s_Data->EntityClass.InvokeMethod(instance, PrintIntsFunc, params);
+		//s_Data->EntityClass.InvokeMethod(instance, PrintIntsFunc, params);
 
-		MonoString* monoString = mono_string_new(s_Data->AppDomain, "Hello World from c++!");
-		MonoMethod* printCustomMessageFunc = s_Data->EntityClass.GetMethod("PrintCustomMessage", 1);
-		void* stringParam = monoString;
-		s_Data->EntityClass.InvokeMethod(instance, printCustomMessageFunc, &stringParam);
+		//MonoString* monoString = mono_string_new(s_Data->AppDomain, "Hello World from c++!");
+		//MonoMethod* printCustomMessageFunc = s_Data->EntityClass.GetMethod("PrintCustomMessage", 1);
+		//void* stringParam = monoString;
+		//s_Data->EntityClass.InvokeMethod(instance, printCustomMessageFunc, &stringParam);
 
-		//AS_CORE_ASSERT(false);
+		////AS_CORE_ASSERT(false);
+#endif
 	}
 
 	void ScriptEngine::Shutdown()
@@ -171,6 +179,86 @@ namespace Astan
 
 	}
 
+	std::unordered_map<std::string, Ref<ScriptClass>> ScriptEngine::GetEntityClasses()
+	{
+		return s_Data->EntityClasses;
+	}
+
+	bool ScriptEngine::EntityClassExits(const std::string& fullClassName)
+	{
+		return s_Data->EntityClasses.find(fullClassName) != s_Data->EntityClasses.end();
+	}
+
+	void ScriptEngine::OnCreateEntity(Entity entity)
+	{
+		const auto& sc = entity.GetComponent<ScriptComponent>();
+		if (ScriptEngine::EntityClassExits(sc.ClassName))
+		{
+			Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_Data->EntityClasses[sc.ClassName], entity);
+			s_Data->EntityInstances[entity.GetUUID()] = instance;
+			instance->InvokeOnCreate();
+		}
+	}
+
+	void ScriptEngine::OnUpdateEntity(Entity entity, Timestep ts)
+	{
+		UUID entityUUID = entity.GetUUID();
+		AS_CORE_ASSERT(s_Data->EntityInstances.find(entityUUID) != s_Data->EntityInstances.end());
+
+		Ref<ScriptInstance> instance = s_Data->EntityInstances[entityUUID];
+		instance->InvokeOnUpdate((float)ts);
+	}
+
+	Scene* ScriptEngine::GetSceneContext()
+	{
+		return s_Data->SceneContext;
+	}
+
+	void ScriptEngine::OnRuntimeStart(Scene* scene)
+	{
+		s_Data->SceneContext = scene;
+	}
+	
+	void ScriptEngine::OnRuntimeStop()
+	{
+		s_Data->SceneContext = nullptr;
+	}
+
+	void ScriptEngine::LoadAssemblyClasses(MonoAssembly* assembly)
+	{
+		s_Data->EntityClasses.clear();
+
+		MonoImage* image = mono_assembly_get_image(assembly);
+		const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
+		int32_t numTypes = mono_table_info_get_rows(typeDefinitionsTable);
+		MonoClass* entityClass = mono_class_from_name(s_Data->CoreAssemblyImage, "Astan", "Entity");
+
+		for (int32_t i = 0; i < numTypes; i++)
+		{
+			uint32_t cols[MONO_TYPEDEF_SIZE];
+			mono_metadata_decode_row(typeDefinitionsTable, i, cols, MONO_TYPEDEF_SIZE);
+
+			const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
+			const char* name = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
+			std::string fullName;
+			if (strlen(nameSpace) != 0)
+				fullName = fmt::format("{}.{}", nameSpace, name);
+			else
+				fullName = name;
+
+			MonoClass* monoClass = mono_class_from_name(s_Data->CoreAssemblyImage, nameSpace, name);
+			
+			if (monoClass == entityClass)
+				continue;
+			
+			bool isEntity = mono_class_is_subclass_of(monoClass, entityClass, false);
+			if( isEntity)
+			{ 
+				s_Data->EntityClasses[fullName] = CreateRef<ScriptClass>(nameSpace, name);
+			}
+		}
+	}
+
 	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)
 	{
 		MonoObject* instance = mono_object_new(s_Data->AppDomain, monoClass);
@@ -196,6 +284,36 @@ namespace Astan
 
 	MonoObject* ScriptClass::InvokeMethod(MonoObject* instance, MonoMethod* method, void** params)
 	{
-		return mono_runtime_invoke(method, instance, params, nullptr);
+		MonoObject* exception = nullptr;
+		return mono_runtime_invoke(method, instance, params, &exception);
+	}
+	
+	ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
+		:m_ScriptClass(scriptClass)
+	{
+		m_Instance = scriptClass->Instantiate();
+
+		m_Constructor = s_Data->EntityClass.GetMethod(".ctor", 1);
+		m_OnCreateMethod = scriptClass->GetMethod("OnCreate", 0);
+		m_OnUpdateMethod = scriptClass->GetMethod("OnUpdate", 1);
+
+		{
+			UUID entityID = entity.GetUUID();
+			void* param = &entityID;
+			m_ScriptClass->InvokeMethod(m_Instance, m_Constructor, &param);
+		}
+
+	}
+
+	void ScriptInstance::InvokeOnCreate()
+	{
+		m_ScriptClass->InvokeMethod(m_Instance, m_OnCreateMethod);
+	}
+
+	void ScriptInstance::InvokeOnUpdate(float ts)
+	{
+		int value = 5;
+		void* param = &ts;
+		m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, &param);
 	}
 }

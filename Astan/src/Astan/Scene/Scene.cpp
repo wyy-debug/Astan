@@ -4,6 +4,7 @@
 #include "Component.h"
 #include "ScriptableEntity.h"
 #include "Astan/Renderer/Renderer2D.h"
+#include "Astan/Scripting/ScriptEngine.h"
 #include <glm/glm.hpp>
 #include "Entity.h"
 
@@ -18,7 +19,7 @@ namespace Astan
 {
 
 	template<typename... Component>
-		static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
+	static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
 	{
 		([&]()
 			{
@@ -119,17 +120,33 @@ namespace Astan
 		entity.AddComponent<TransformComponent>();
 		auto& tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Entity" : name;
+
+		m_EntityMap[uuid] = entity;
+
 		return entity;
 	}
 
 	void Scene::DestroyEntity(Entity entity)
 	{
 		m_Registry.destroy(entity);
+		m_EntityMap.erase(entity.GetUUID());
 	}
 
 	void Scene::OnRuntimeStart()
 	{
 		OnPhysics2DStart();
+		// Script
+		{
+			ScriptEngine::OnRuntimeStart(this);
+			// Instantiate all script entities
+
+			auto view = m_Registry.view<ScriptComponent>();
+			for (auto e : view)
+			{
+				Entity entity = { e, this };
+				ScriptEngine::OnCreateEntity(entity);
+			}
+		}
 	};
 
 	void Scene::OnSimulationStart()
@@ -140,6 +157,8 @@ namespace Astan
 	void Scene::OnRuntimeStop()
 	{
 		OnPhysics2DStop();
+
+		ScriptEngine::OnRuntimeStop();
 	};
 
 	void Scene::OnSimulationStop()
@@ -149,7 +168,16 @@ namespace Astan
 
 	void Scene::OnUpdateRuntime(Timestep ts)
 	{
+		// Update script
 		{
+			// C# Entity OnUpdate
+			auto view = m_Registry.view<ScriptComponent>();
+			for (auto e : view)
+			{
+				Entity entity = { e, this };
+				ScriptEngine::OnUpdateEntity(entity, ts);
+			}
+
 			m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
 				{
 					if (!nsc.Instance)
@@ -291,6 +319,15 @@ namespace Astan
 
 	}
 
+	Entity Scene::GetEntityByUUID(UUID uuid)
+	{
+		if (m_EntityMap.find(uuid) != m_EntityMap.end())
+			return { m_EntityMap.at(uuid),this };
+
+		return {};
+	}
+
+
 	Entity Scene::GetPrimaryCameraEntity() 
 	{
 		auto view = m_Registry.view<CameraComponent>();
@@ -410,6 +447,11 @@ namespace Astan
 	{
 		if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
 			component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
+	}
+
+	template<>
+	void Scene::OnComponentAdded<ScriptComponent>(Entity entity, ScriptComponent& component)
+	{
 	}
 
 	template<>
