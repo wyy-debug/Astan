@@ -3,6 +3,8 @@
 #include "ScriptEngine.h"
 
 #include "Astan/Core/UUID.h"
+#include "Astan/Core/KeyCodes.h"
+#include "Astan/Core/Input.h"
 #include "Astan/Scene/Scene.h"
 #include "Astan/Scene/Entity.h"
 
@@ -47,6 +49,11 @@ namespace Astan
 		entity.GetComponent<TransformComponent>().Translation = *translation;
 	}
 
+	static bool Input_IsKeyDown(KeyCode keycode)
+	{
+		return Input::IsKeyPressed(keycode);
+	}
+
 	void ScriptGlue::RegisterFunctions()
 	{
 		AS_ADD_INTERNAL_CALL(NativeLog);
@@ -54,5 +61,6 @@ namespace Astan
 		AS_ADD_INTERNAL_CALL(NativeLog_VectorDot);
 		AS_ADD_INTERNAL_CALL(Entity_GetTranslation);
 		AS_ADD_INTERNAL_CALL(Entity_SetTranslation);
+		AS_ADD_INTERNAL_CALL(Input_IsKeyDown);
 	}
 }
