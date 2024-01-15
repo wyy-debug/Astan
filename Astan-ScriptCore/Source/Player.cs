@@ -11,9 +11,13 @@ namespace Sandbox
 {
     public class Player : Entity
     {
+        private TransformComponent m_Transform;
+        private Rigidbody2DComponent m_RigidBody;
         void OnCreate()
         {
             Console.WriteLine($"Player.OnCreate - {ID}");
+            m_Transform = GetComponet<TransformComponent>();
+            m_RigidBody = GetComponet<Rigidbody2DComponent>();
         }
 
         void OnUpdate(float ts)
@@ -32,11 +36,13 @@ namespace Sandbox
             else if (Input.IsKeyDown(KeyCode.D))
                 velocity.X = 1f;
 
+            // m_RigidBody.ApplyLinearImpulse(velocity.XY, Vector2.Zero, true);
+            m_RigidBody.ApplyLinearImpulse(velocity.XY, true);
             velocity *= speed;
 
-            Vector3 translation = Translation;
-            translation += velocity * ts;
-            Translation = translation;
+            //Vector3 translation = m_Transform.Translation;
+            //translation += velocity * ts;
+            //m_Transform.Translation = translation;
 
         }
 

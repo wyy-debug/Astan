@@ -106,9 +106,11 @@ namespace Astan
 		LoadAssembly("Resources/Scripts/Astan-ScriptCore.dll");
 		LoadAssemblyClasses(s_Data->CoreAssembly);
 		
+		ScriptGlue::RegisterComponents();
 		ScriptGlue::RegisterFunctions();
-
 		s_Data->EntityClass = ScriptClass("Astan", "Entity");
+
+
 #if 0
 		//// Rertrieve and instantiate class (with constructor)
 		//
@@ -222,6 +224,8 @@ namespace Astan
 	void ScriptEngine::OnRuntimeStop()
 	{
 		s_Data->SceneContext = nullptr;
+
+		s_Data->EntityInstances.clear();
 	}
 
 	void ScriptEngine::LoadAssemblyClasses(MonoAssembly* assembly)
@@ -257,6 +261,10 @@ namespace Astan
 				s_Data->EntityClasses[fullName] = CreateRef<ScriptClass>(nameSpace, name);
 			}
 		}
+	}
+	MonoImage* ScriptEngine::GetCoreAssemblyImage()
+	{
+		return s_Data->CoreAssemblyImage;
 	}
 
 	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)
@@ -307,13 +315,16 @@ namespace Astan
 
 	void ScriptInstance::InvokeOnCreate()
 	{
-		m_ScriptClass->InvokeMethod(m_Instance, m_OnCreateMethod);
+		if(m_OnCreateMethod)
+			m_ScriptClass->InvokeMethod(m_Instance, m_OnCreateMethod);
 	}
 
 	void ScriptInstance::InvokeOnUpdate(float ts)
 	{
-		int value = 5;
-		void* param = &ts;
-		m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, &param);
+		if (m_OnUpdateMethod)
+		{
+			void* param = &ts;
+			m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, &param);
+		}
 	}
 }

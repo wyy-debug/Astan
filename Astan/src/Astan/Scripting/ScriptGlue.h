@@ -6,5 +6,6 @@ namespace Astan
 	{
 	public:
 		static void RegisterFunctions();
+		static void RegisterComponents();
 	};
 }
