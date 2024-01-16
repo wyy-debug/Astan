@@ -35,7 +35,7 @@ namespace Astan
 		template<typename T>
 		T& GetComponent()
 		{
-			AS_CORE_ASSERT(HasComponent<T>(), "Entity does not have compontent!");
+			//AS_CORE_ASSERT(HasComponent<T>(), "Entity does not have compontent!");
 			return m_Scene->m_Registry.get<T>(m_EntityHandle);
 		}
 

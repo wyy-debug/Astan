@@ -47,8 +47,6 @@ Entities:
       Translation: [-0.349999994, 0, 0.349999994]
       Rotation: [0, -0.785398185, 0]
       Scale: [1, 1, 1]
-    ScriptComponent:
-      ClassName: Sandbox.Player
     SpriteRendererComponent:
       Color: [1, 0, 0.949019611, 1]
   - Entity: 12406318971042291158
@@ -78,6 +76,8 @@ Entities:
         OrthographicFar: 1
       Primary: true
       FixedAspectRatio: false
+    ScriptComponent:
+      ClassName: Sandbox.Camera
   - Entity: 11790150248668738141
     TagComponent:
       Tag: Top
@@ -94,8 +94,6 @@ Entities:
       Translation: [1.39999998, 2, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    ScriptComponent:
-      ClassName: Sandbox.Player
     CircleRendererComponent:
       Color: [0.97374177, 0.0170458052, 0.0170458052, 1]
       Thickness: 0.125
