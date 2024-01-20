@@ -330,7 +330,7 @@ namespace Astan
 				ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 10.0f);
 			});
 
-		DrawComponent<ScriptComponent>("Script", entity, [](auto& component)
+		DrawComponent<ScriptComponent>("Script", entity, [entity](auto& component) mutable
 			{
 				bool scriptClassExits = ScriptEngine::EntityClassExits(component.ClassName);
 
@@ -342,6 +342,26 @@ namespace Astan
 
 				if (ImGui::InputText("Class", buffer, sizeof(buffer)))
 					component.ClassName = buffer;
+				
+				// Fields
+				Ref<ScriptInstance> scriptInstance = ScriptEngine::GetEntityScriptInstance(entity.GetUUID());
+				if (scriptInstance)
+				{
+					const auto& fields = scriptInstance->GetScriptClass()->GetFields();
+					
+					
+					for (const auto& [name,field] : fields)
+					{
+						if (field.Type == ScriptFieldType::Float)
+						{
+							float data = scriptInstance->GetFieldValue<float>(name);
+							if (ImGui::DragFloat(name.c_str(), &data))
+							{
+								scriptInstance->SetFieldValue(name, data);
+							}
+						}
+					}
+				}
 
 				if (!scriptClassExits)
 					ImGui::PopStyleColor();
