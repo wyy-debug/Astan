@@ -1,8 +1,12 @@
 #include "aspch.h"
 #include "SceneSerializer.h"
+
 #include "Entity.h"
 #include "Component.h"
+#include "Astan/Scripting/ScriptEngine.h"
+
 #include <fstream>
+
 #include "yaml-cpp/yaml.h"
 namespace YAML {
 	template<>
@@ -75,10 +79,40 @@ namespace YAML {
 			return true;
 		}
 	};
+
+	template<>
+	struct convert<Astan::UUID>
+	{
+		static Node encode(const Astan::UUID& uuid)
+		{
+			Node node;
+			node.push_back((uint64_t)uuid);
+			return node;
+		}
+
+		static bool decode(const Node& node, Astan::UUID& uuid)
+		{
+			uuid = node.as<uint64_t>();
+			return true;
+		}
+	};
 }
 
 namespace Astan
 {
+#define FIELD_TYPE(FieldType, Type)						\
+			case ScriptFieldType::FieldType:			\
+					out << scriptField.GetValue<Type>();\
+						break
+
+#define READ_SCRIPT_FIELD(FieldType, Type)             \
+	case ScriptFieldType::FieldType:                   \
+	{                                                  \
+		Type data = scriptField["Data"].as<Type>();    \
+		fieldInstance.SetValue(data);                  \
+		break;                                         \
+	}
+
 	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
 	{
 		out << YAML::Flow;
@@ -183,9 +217,54 @@ namespace Astan
 			auto& scriptComponent = entity.GetComponent<ScriptComponent>();
 
 			out << YAML::Key << "ScriptComponent";
-			out << YAML::BeginMap;
+			out << YAML::BeginMap;// ScriptComponent
 			out << YAML::Key << "ClassName" << YAML::Value << scriptComponent.ClassName;
-			out << YAML::EndMap;
+
+			// Fields
+			Ref<ScriptClass> entityClass = ScriptEngine::GetEntityClass(scriptComponent.ClassName);
+			const auto& fields = entityClass->GetFields();
+			if (fields.size() > 0)
+			{
+				out << YAML::Key << "ScriptFields" << YAML::Value;
+				auto& entityFields = ScriptEngine::GetScriptFieldMap(entity);
+				out << YAML::BeginSeq;	
+				for (const auto& [name, field] : fields)
+				{
+					if (entityFields.find(name) == entityFields.end())
+						continue;
+
+					out << YAML::BeginMap;// ScriptFields
+					out << YAML::Key << "Name" << YAML::Value << name;
+					out << YAML::Key << "Type" << YAML::Value << Utils::ScriptFieldTypeToString(field.Type);
+					
+					out << YAML::Key << "Data" << YAML::Value;
+					ScriptFieldInstance& scriptField = entityFields.at(name);
+
+					switch (field.Type)
+					{
+						FIELD_TYPE(Float, float);
+						FIELD_TYPE(Double, double);
+						FIELD_TYPE(Bool, bool);
+						FIELD_TYPE(Char, char);
+						FIELD_TYPE(Byte, int8_t);
+						FIELD_TYPE(Short, int16_t);
+						FIELD_TYPE(Int, int32_t);
+						FIELD_TYPE(Long, int64_t);
+						FIELD_TYPE(UByte, uint8_t);
+						FIELD_TYPE(UShort, uint16_t);
+						FIELD_TYPE(UInt, uint32_t);
+						FIELD_TYPE(ULong, uint64_t);
+						FIELD_TYPE(Vector2, glm::vec2);
+						FIELD_TYPE(Vector3, glm::vec3);
+						FIELD_TYPE(Vector4, glm::vec4);
+						FIELD_TYPE(Entity, UUID);
+					}
+					out << YAML::EndMap;// ScriptFields
+				}
+
+				out << YAML::EndSeq;// ScriptComponent
+			}
+			out << YAML::EndMap;// ScriptComponent
 		}
 
 		if (entity.HasComponent<SpriteRendererComponent>())
@@ -348,6 +427,50 @@ namespace Astan
 				{
 					auto& src = deserializedEntity.AddComponent<ScriptComponent>();
 					src.ClassName = scriptComponent["ClassName"].as<std::string>();
+
+					auto scriptFields = scriptComponent["ScriptFields"];
+					if (scriptFields)
+					{
+						Ref<ScriptClass> entityClass = ScriptEngine::GetEntityClass(src.ClassName);
+						AS_CORE_ASSERT(entityClass);
+						const auto& fields = entityClass->GetFields();
+
+						auto& entityFields = ScriptEngine::GetScriptFieldMap(deserializedEntity);
+
+						for (auto scriptField : scriptFields)
+						{
+							std::string name = scriptField["Name"].as<std::string>();
+							std::string typeString = scriptField["Type"].as<std::string>();
+							ScriptFieldType type = Utils::ScriptFieldTypeFormString(typeString);
+
+							ScriptFieldInstance& fieldInstance = entityFields[name];
+							AS_CORE_ASSERT(fields.find(name) != fields.end());
+							if (fields.find(name) == fields.end())
+								continue;
+
+							fieldInstance.Field = fields.at(name);
+
+							switch (type)
+							{
+								READ_SCRIPT_FIELD(Float, float);
+								READ_SCRIPT_FIELD(Double, double);
+								READ_SCRIPT_FIELD(Bool, bool);
+								READ_SCRIPT_FIELD(Char, char);
+								READ_SCRIPT_FIELD(Byte, int8_t);
+								READ_SCRIPT_FIELD(Short, int16_t);
+								READ_SCRIPT_FIELD(Int, int32_t);
+								READ_SCRIPT_FIELD(Long, int64_t);
+								READ_SCRIPT_FIELD(UByte, uint8_t);
+								READ_SCRIPT_FIELD(UShort, uint16_t);
+								READ_SCRIPT_FIELD(UInt, uint32_t);
+								READ_SCRIPT_FIELD(ULong, uint64_t);
+								READ_SCRIPT_FIELD(Vector2, glm::vec2);
+								READ_SCRIPT_FIELD(Vector3, glm::vec3);
+								READ_SCRIPT_FIELD(Vector4, glm::vec4);
+								READ_SCRIPT_FIELD(Entity, UUID);
+							}
+						}
+					}
 				}
 
 				auto circleRendererComponent = entity["CircleRendererComponent"];

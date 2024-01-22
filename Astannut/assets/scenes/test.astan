@@ -9,6 +9,10 @@ Entities:
       Scale: [1, 1, 1]
     ScriptComponent:
       ClassName: Sandbox.Player
+      ScriptFields:
+        - Name: Speed
+          Type: Float
+          Data: 10
     CircleRendererComponent:
       Color: [0.97374177, 0.0170458052, 0.0170458052, 1]
       Thickness: 0.125

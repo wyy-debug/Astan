@@ -44,8 +44,7 @@ namespace Astan {
 		if (commandLineArgs.Count > 1)
 		{
 			auto sceneFilePath = commandLineArgs[1];
-			SceneSerializer serializer(m_ActiveScene);
-			serializer.Deserialize(sceneFilePath);
+			OpenScene(sceneFilePath);
 		}
 
 		m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
@@ -348,7 +347,7 @@ namespace Astan {
 
 			m_ViewporFocused = ImGui::IsWindowFocused();
 			m_ViewporHovered = ImGui::IsWindowHovered();
-			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporFocused && !m_ViewporHovered);
+			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporHovered);
 
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 			m_ViewportSize = { viewportPanelSize.x,viewportPanelSize.y };
