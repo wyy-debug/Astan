@@ -39,6 +39,8 @@ namespace Astan
 
 		Entity GetPrimaryCameraEntity();
 
+		bool IsRunning() { return m_IsRunning; }
+
 		template<typename... Components>
 		auto GetAllEntitiesWith()
 		{
@@ -58,6 +60,8 @@ namespace Astan
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 		b2World* m_PhysicsWorld = nullptr;
+		bool m_IsRunning = false;
+
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 

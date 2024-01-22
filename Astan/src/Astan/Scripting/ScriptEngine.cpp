@@ -153,6 +153,9 @@ namespace Astan
 
 		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
 		std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
+
+		using ScriptFieldMap = std::unordered_map<std::string, ScriptFieldInstance>;
+		std::unordered_map<UUID, ScriptFieldMap> EntityScriptFields;
 		
 		// Runtime
 		Scene* SceneContext = nullptr;
@@ -257,6 +260,17 @@ namespace Astan
 		return s_Data->EntityClasses;
 	}
 
+	ScriptFieldMap& ScriptEngine::GetScriptFieldMap(Entity entity)
+	{
+		AS_CORE_ASSERT(entity);
+
+		UUID entityID = entity.GetUUID();
+		//AS_CORE_ASSERT(s_Data->EntityScriptFields.find(entityID) != s_Data->EntityScriptFields.end());
+
+		return s_Data->EntityScriptFields[entityID];
+	}
+
+
 	bool ScriptEngine::EntityClassExits(const std::string& fullClassName)
 	{
 		return s_Data->EntityClasses.find(fullClassName) != s_Data->EntityClasses.end();
@@ -267,8 +281,18 @@ namespace Astan
 		const auto& sc = entity.GetComponent<ScriptComponent>();
 		if (ScriptEngine::EntityClassExits(sc.ClassName))
 		{
+			UUID entityID = entity.GetUUID();
 			Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_Data->EntityClasses[sc.ClassName], entity);
 			s_Data->EntityInstances[entity.GetUUID()] = instance;
+
+			// Copy field values
+			if(s_Data->EntityScriptFields.find(entityID) != s_Data->EntityScriptFields.end())
+			{
+				const ScriptFieldMap& fieldMap = s_Data->EntityScriptFields.at(entityID);
+				for (const auto& [name, fieldInstance] : fieldMap)
+					instance->SetFieldValueInternal(name, fieldInstance.m_Buffer);
+			}
+
 			instance->InvokeOnCreate();
 		}
 	}
@@ -298,6 +322,13 @@ namespace Astan
 		if (it == s_Data->EntityInstances.end())
 			return nullptr;
 		return it->second;
+	}
+
+	Ref<ScriptClass> ScriptEngine::GetEntityClass(const std::string& name)
+	{
+		if (s_Data->EntityClasses.find(name) == s_Data->EntityClasses.end())
+			return nullptr;
+		return s_Data->EntityClasses.at(name);
 	}
 
 
