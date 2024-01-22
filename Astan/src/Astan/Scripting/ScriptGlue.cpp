@@ -73,6 +73,12 @@ namespace Astan
 		body->ApplyLinearImpulseToCenter(b2Vec2(impulse->x, impulse->y), wake);
 	}
 
+	static MonoObject* GetScriptInstance(UUID entityID)
+	{
+		return ScriptEngine::GetManagedInstance(entityID);
+	}
+
+
 	static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -80,6 +86,21 @@ namespace Astan
 		
 		MonoType* managedType = mono_reflection_type_get_type(componentType);
 		return s_EntityHasComponentFuncs.at(managedType)(entity);
+	}
+	
+	static uint64_t Entity_FindEntityByName(MonoString* name)
+	{
+		char* nameCStr = mono_string_to_utf8(name);
+
+		Scene* scene = ScriptEngine::GetSceneContext();
+		AS_CORE_ASSERT(scene);
+		Entity entity = scene->FindEntityByName(nameCStr);
+		mono_free(nameCStr);
+
+		if (!entity)
+			return 0;
+
+		return entity.GetUUID();
 	}
 
 	static bool Input_IsKeyDown(KeyCode keycode)
@@ -124,6 +145,10 @@ namespace Astan
 		AS_ADD_INTERNAL_CALL(NativeLog_VectorDot);
 
 		AS_ADD_INTERNAL_CALL(Entity_HasComponent);
+		AS_ADD_INTERNAL_CALL(Entity_FindEntityByName);
+
+		AS_ADD_INTERNAL_CALL(GetScriptInstance);
+
 		AS_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
 		AS_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
 

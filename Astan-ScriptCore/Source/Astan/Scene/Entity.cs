@@ -14,6 +14,7 @@ namespace Astan {
 
         public readonly ulong ID;
 
+
         public Vector3 Translation
         { 
             get 
@@ -41,5 +42,21 @@ namespace Astan {
             T component =  new T() { Entity = this };
             return component;
         }
+
+        public Entity FindEntityByName(string name)
+        {
+            ulong entity = InternalCalls.Entity_FindEntityByName(name);
+            if (entity == 0)
+                return null;
+            return new Entity(entity);
+        }
+        
+        public T As<T>() where T : Entity, new() 
+        {
+            object instance =  InternalCalls.GetScriptInstance(ID);
+            return instance as T;
+            
+        }
     }
 }
+ 
