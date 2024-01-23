@@ -7,9 +7,13 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object.h"
 #include "mono/metadata/tabledefs.h"
+#include "mono/metadata/mono-debug.h"
 
 #include "FileWatch.h"
 #include "Astan/Core/Application.h"
+#include "Astan/Core/Buffer.h"
+#include "Astan/Core/FileSystem.h"
+
 namespace Astan
 {
 
@@ -62,7 +66,7 @@ namespace Astan
 			return buffer;
 		}
 
-		static MonoAssembly* LoadMonoAssembly(const std::filesystem::path& assemblyPath)
+		static MonoAssembly* LoadMonoAssembly(const std::filesystem::path& assemblyPath, bool loadPDB = false)
 		{
 			uint32_t fileSize = 0;
 			char* fileData = ReadBytes(assemblyPath, &fileSize);
@@ -74,6 +78,19 @@ namespace Astan
 			{
 				const char* errorMessage = mono_image_strerror(status);
 				return nullptr;
+			}
+
+			if (loadPDB)
+			{
+				std::filesystem::path pdbPath = assemblyPath;
+				pdbPath.replace_extension(".pdb");
+
+				if (std::filesystem::exists(pdbPath))
+				{
+					ScopedBuffer pdbFileData = FileSystem::ReadFileBinary(pdbPath);
+					mono_debug_open_image_from_memory(image, pdbFileData.As<const mono_byte>(), pdbFileData.Size());
+					AS_CORE_INFO("Loaded PDB {}", pdbPath);
+				}
 			}
 
 			MonoAssembly* assembly = mono_assembly_load_from_full(image, assemblyPath.string().c_str(), &status, 0);
@@ -137,6 +154,12 @@ namespace Astan
 		
 		Scope<filewatch::FileWatch<std::string>> AppAssemblyFileWatcher;
 		bool AssemblyReloadPending = false;
+
+#ifdef AS_DEBUG
+		bool EnableDebugging = false;
+#else
+		bool EnableDebugging = true;
+#endif
 
 		// Runtime
 		Scene* SceneContext = nullptr;
@@ -225,8 +248,22 @@ namespace Astan
 		// set mono assemblies lib
 		mono_set_assemblies_path("mono/lib");
 
+		if (s_Data->EnableDebugging)
+		{
+			const char* argv[2] = {
+				"--debugger-agent=transport=dt_socket,address=127.0.0.1:2550,server=y,suspend=n,loglevel=3,logfile=MonoDebugger.log",
+				"--soft-breakpoints"
+			};
+
+			mono_jit_parse_options(2, (char**)argv);
+			mono_debug_init(MONO_DEBUG_FORMAT_MONO);
+		}
+
 		MonoDomain* rootDomain = mono_jit_init("AstanJITRuntime");
 		AS_CORE_ASSERT(rootDomain);
+		
+		if (s_Data->EnableDebugging)
+			mono_debug_domain_create(s_Data->RootDomain);
 
 		// Store the root domain pointer
 		s_Data->RootDomain = rootDomain;
@@ -239,6 +276,7 @@ namespace Astan
 		mono_domain_set(s_Data->AppDomain, true);
 
 		s_Data->CoreAssemblyFilepath = filepath;
+		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath, s_Data->EnableDebugging);
 
 		// Move this maybe
 		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath);
@@ -250,6 +288,7 @@ namespace Astan
 	{
 		// Move this maybe
 		s_Data->AppAssemblyFilepath = filepath;
+		s_Data->AppAssembly = Utils::LoadMonoAssembly(filepath, s_Data->EnableDebugging);
 		s_Data->AppAssembly = Utils::LoadMonoAssembly(filepath);
 		s_Data->AppAssemblyImage = mono_assembly_get_image(s_Data->AppAssembly);
 
