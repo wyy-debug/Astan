@@ -34,6 +34,7 @@ namespace Astan {
 		void OnScenePlay();
 		void OnSceneSimulation();
 		void OnSceneStop();
+		void OnScenePause();
 
 		void OnDuplicateEntity();
 		// UI Panels
@@ -93,7 +94,7 @@ namespace Astan {
 		ContentBrowserPanel m_ContentBrowserPanel;
 
 		// Editor resources
-		Ref<Texture2D> m_IconPlay, m_IconSimulate, m_IconStop;
+		Ref<Texture2D> m_IconPlay, m_IconStep, m_IconPause, m_IconSimulate, m_IconStop;
 		
 	};
 }
