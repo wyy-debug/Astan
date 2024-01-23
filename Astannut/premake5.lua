@@ -16,8 +16,9 @@ project "Astannut"
 		"%{wks.location}/Astan/vendor/spdlog/include",
 		"%{wks.location}/Astan/src",
 		"%{wks.location}/Astan/vendor",
-		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.filewatch}",
+		"%{IncludeDir.glm}",
 		"%{IncludeDir.ImGuizmo}"
 	}
 	links

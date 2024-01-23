@@ -39,7 +39,6 @@ namespace Astan {
 		virtual ~Application();
 
 		void Run();
-
 		void OnEvent(Event& e);
 
 		void PushLayer(Layer* layer);
@@ -51,9 +50,13 @@ namespace Astan {
 		static Application& Get() { return *s_Instance; }
 
 		ApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs;}
+
+		void SubmitToMainThread(const std::function<void()> &function);
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
+		
+		void ExecuteMainThreadQueue();
 	private:
 		ApplicationCommandLineArgs m_CommandLineArgs;
 		std::unique_ptr<Window> m_Window;
@@ -64,6 +67,8 @@ namespace Astan {
 		Timestep m_Timestep;
 		float m_LastFrameTime = 0.0f;
 
+		std::vector<std::function<void()>> m_MainThreadQueue;
+		std::mutex m_MainThreadQueueMutex;
 	private:
 		static Application* s_Instance;
 	};

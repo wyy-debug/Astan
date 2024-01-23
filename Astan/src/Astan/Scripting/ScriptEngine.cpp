@@ -8,6 +8,8 @@
 #include "mono/metadata/object.h"
 #include "mono/metadata/tabledefs.h"
 
+#include "FileWatch.h"
+#include "Astan/Core/Application.h"
 namespace Astan
 {
 
@@ -124,19 +126,37 @@ namespace Astan
 		MonoAssembly* AppAssembly = nullptr;
 		MonoImage* AppAssemblyImage = nullptr;
 
+		std::filesystem::path CoreAssemblyFilepath;
+		std::filesystem::path AppAssemblyFilepath;
+
 		ScriptClass EntityClass;
 
 		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
 		std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
-
-		using ScriptFieldMap = std::unordered_map<std::string, ScriptFieldInstance>;
 		std::unordered_map<UUID, ScriptFieldMap> EntityScriptFields;
 		
+		Scope<filewatch::FileWatch<std::string>> AppAssemblyFileWatcher;
+		bool AssemblyReloadPending = false;
+
 		// Runtime
 		Scene* SceneContext = nullptr;
 	};
 
 	static ScriptEngineData* s_Data= nullptr;
+
+	static void OnAppAssemblyFileSystemEvent(const std::string& path, const filewatch::Event chang_type)
+	{
+		if (!s_Data->AssemblyReloadPending && chang_type == filewatch::Event::modified)
+		{
+			s_Data->AssemblyReloadPending = true;
+
+			Application::Get().SubmitToMainThread([]()
+				{
+					s_Data->AppAssemblyFileWatcher.reset();
+					ScriptEngine::ReloadAssembly();
+				});
+		}
+	}
 
 	void ScriptEngine::Init()
 	{
@@ -182,6 +202,8 @@ namespace Astan
 
 		////AS_CORE_ASSERT(false);
 #endif
+
+
 	}
 
 	void ScriptEngine::Shutdown()
@@ -216,6 +238,8 @@ namespace Astan
 		s_Data->AppDomain = mono_domain_create_appdomain("AstanScriptRuntime", nullptr);
 		mono_domain_set(s_Data->AppDomain, true);
 
+		s_Data->CoreAssemblyFilepath = filepath;
+
 		// Move this maybe
 		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath);
 		s_Data->CoreAssemblyImage = mono_assembly_get_image(s_Data->CoreAssembly);
@@ -225,9 +249,26 @@ namespace Astan
 	void ScriptEngine::LoadAppAssembly(const std::filesystem::path& filepath)
 	{
 		// Move this maybe
+		s_Data->AppAssemblyFilepath = filepath;
 		s_Data->AppAssembly = Utils::LoadMonoAssembly(filepath);
 		s_Data->AppAssemblyImage = mono_assembly_get_image(s_Data->AppAssembly);
 
+		s_Data->AppAssemblyFileWatcher = CreateScope<filewatch::FileWatch<std::string>>(filepath.string(), OnAppAssemblyFileSystemEvent);
+		s_Data->AssemblyReloadPending = false;
+	}
+
+	void ScriptEngine::ReloadAssembly()
+	{
+		mono_domain_set(mono_get_root_domain(), false);
+		mono_domain_unload(s_Data->AppDomain);
+
+		LoadAssembly(s_Data->CoreAssemblyFilepath);
+		LoadAppAssembly(s_Data->AppAssemblyFilepath);
+		LoadAssemblyClasses();
+
+		ScriptGlue::RegisterComponents();
+
+		s_Data->EntityClass = ScriptClass("Astan", "Entity", true);
 	}
 
 	std::unordered_map<std::string, Ref<ScriptClass>> ScriptEngine::GetEntityClasses()
