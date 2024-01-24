@@ -18,6 +18,8 @@
 #include "Astan/Scene/ScriptableEntity.h"
 #include "Astan/Scene/Component.h"
 
+#include "Astan/Project/Project.h"
+
 //--Renderer---------------
 
 #include "Astan/Renderer/Renderer.h"

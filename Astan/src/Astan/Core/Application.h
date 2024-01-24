@@ -32,10 +32,17 @@ namespace Astan {
 		}
 	};
 
+	struct ApplicationSpecification
+	{
+		std::string Name = "Astan Application";
+		std::string WorkingDirectory;
+		ApplicationCommandLineArgs CommandLineArgs;
+	};
+
 	class Application
 	{
 	public:
-		Application(const std::string& name = "Astan App", ApplicationCommandLineArgs args = ApplicationCommandLineArgs() );
+		Application(const ApplicationSpecification& specification);
 		virtual ~Application();
 
 		void Run();
@@ -49,7 +56,7 @@ namespace Astan {
 		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
 		static Application& Get() { return *s_Instance; }
 
-		ApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs;}
+		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 
 		void SubmitToMainThread(const std::function<void()> &function);
 	private:
@@ -58,7 +65,7 @@ namespace Astan {
 		
 		void ExecuteMainThreadQueue();
 	private:
-		ApplicationCommandLineArgs m_CommandLineArgs;
+		ApplicationSpecification m_Specification;
 		std::unique_ptr<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;

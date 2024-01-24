@@ -1,14 +1,12 @@
 #include "aspch.h"
 #include "ContentBrowserPanel.h"
+#include "Astan/Project/Project.h"
 #include <imgui/imgui.h>
 
 namespace Astan
 {
-	//Once we have projects, change this
-	extern const std::filesystem::path g_Assetspath = "assets";
-
 	ContentBrowserPanel::ContentBrowserPanel()
-		: m_CurrentDirectory(g_Assetspath)
+		:m_BaseDirectory(Project::GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory)
 	{
 		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
 		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
@@ -18,7 +16,7 @@ namespace Astan
 	{
 		ImGui::Begin("Content Browser");
 
-		if (m_CurrentDirectory != std::filesystem::path(g_Assetspath))
+		if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory))
 		{
 			if (ImGui::Button("<-"))
 			{
@@ -40,8 +38,7 @@ namespace Astan
 		for (auto& directoryEntry : std::filesystem::directory_iterator(m_CurrentDirectory))
 		{
 			const auto& path = directoryEntry.path();
-			auto relativePath = std::filesystem::relative(path, g_Assetspath);
-			std::string filenameString = relativePath.filename().string();
+			std::string filenameString = path.filename().string();
 			
 			ImGui::PushID(filenameString.c_str());
 			Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
@@ -51,6 +48,7 @@ namespace Astan
 
 			if (ImGui::BeginDragDropSource())
 			{
+				std::filesystem::path  relativePath(path);
 				const wchar_t* itemPath = relativePath.c_str();
 				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
 				ImGui::EndDragDropSource();
