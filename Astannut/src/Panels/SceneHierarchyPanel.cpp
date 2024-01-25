@@ -5,6 +5,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include "Astan/Scene/Component.h"
+#include "Astan/UI/UI.h"
 #include "Astan/Scripting/ScriptEngine.h"
 
 namespace Astan
@@ -335,15 +336,15 @@ namespace Astan
 				static char buffer[64];
 				strcpy_s(buffer, sizeof(buffer), component.ClassName.c_str());
 				
-				if (!scriptClassExits)
-					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
+				UI::ScopedStyleColor textColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f), !scriptClassExits);
 
 				if (ImGui::InputText("Class", buffer, sizeof(buffer)))
 				{
 					component.ClassName = buffer;
-					bool vaildScriptClass = ScriptEngine::EntityClassExits(component.ClassName);
-
+					return;
 				}
+				
+
 				// Fields
 				bool sceneRuning = m_Context->IsRunning();
 				if(sceneRuning)
@@ -404,9 +405,6 @@ namespace Astan
 						}
 					}
 				}
-
-				if (!scriptClassExits)
-					ImGui::PopStyleColor();
 			});
 
 		DrawComponent<CircleRendererComponent>("Circle Renderer", entity, [](auto& component)

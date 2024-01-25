@@ -50,7 +50,9 @@ namespace Astan {
 		}
 		else
 		{
-			NewProject();
+			//NewProject();
+			if (!OpenProject())
+				Application::Get().Close();
 		}
 
 		m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
@@ -301,13 +303,18 @@ namespace Astan {
 			{
 				if (ImGui::BeginMenu("File"))
 				{
-					if (ImGui::MenuItem("new", "Ctrl+Shife+N"))
+					if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
+						OpenProject();
+
+					ImGui::Separator();
+
+					if (ImGui::MenuItem("New Scene", "Ctrl+N"))
 						NewScene();
 
-					if (ImGui::MenuItem("Open...", "Ctrl+O"))
-						OpenScene();
+					if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+						SaveScene();
 
-					if (ImGui::MenuItem("Save As...", "Ctrl+Shife+S"))
+					if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shife+S"))
 						SaveSceneAs();
 
 					if (ImGui::MenuItem("Exit")) Application::Get().Close();
@@ -556,7 +563,7 @@ namespace Astan {
 		case Key::O:
 		{
 			if (control)
-				OpenScene();
+				OpenProject();
 
 			break;
 		}
@@ -612,6 +619,17 @@ namespace Astan {
 	{
 		Project::New();
 	}
+
+	bool EditorLayer::OpenProject()
+	{
+		std::string filepath = FileDialogs::OpenFile("Astan Project (*.aproj)\0*.aproj\0");
+		if (filepath.empty())
+			return false;
+
+		OpenProject(filepath);
+		return true;
+	}
+
 	void EditorLayer::OpenProject(const std::filesystem::path& path) 
 	{
 		if(Project::Load(path));
