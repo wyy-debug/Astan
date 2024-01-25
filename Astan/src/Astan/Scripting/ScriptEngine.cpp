@@ -13,6 +13,7 @@
 #include "Astan/Core/Application.h"
 #include "Astan/Core/Buffer.h"
 #include "Astan/Core/FileSystem.h"
+#include "Astan/Project/Project.h"
 
 namespace Astan
 {
@@ -157,12 +158,16 @@ namespace Astan
 		s_Data = new ScriptEngineData();
 
 		InitMono();
+		ScriptGlue::RegisterFunctions();
+		
 		LoadAssembly("Resources/Scripts/Astan-ScriptCore.dll");
-		LoadAppAssembly("SandboxProject/Assets/Scripts/Binaries/Sandbox.dll");
+		
+		auto scriptModulePath = Project::GetAssetDirectory() / Project::GetActive()->GetConfig().ScriptModulePath;
+
+		LoadAppAssembly(scriptModulePath);
 		LoadAssemblyClasses();
 		
 		ScriptGlue::RegisterComponents();
-		ScriptGlue::RegisterFunctions();
 		s_Data->EntityClass = ScriptClass("Astan", "Entity", true);
 
 
