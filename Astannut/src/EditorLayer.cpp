@@ -1,9 +1,11 @@
 #include "EditorLayer.h"
-#include "imgui/imgui.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <chrono>
+
+#include <imgui/imgui.h>
+
 
 #include "Astan/Scene/SceneSerializer.h"
 #include "Astan/Utils/PlatformUtils.h"
@@ -339,7 +341,9 @@ namespace Astan {
 			ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 			ImGui::Text("Quads: %d", stats.QuadCount);
 			ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
-			ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+			ImGui::Text("Indices: %ud", stats.GetTotalIndexCount());
+
+
 
 			ImGui::End();
 
@@ -360,6 +364,7 @@ namespace Astan {
 
 			m_ViewporFocused = ImGui::IsWindowFocused();
 			m_ViewporHovered = ImGui::IsWindowHovered();
+
 			Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewporHovered);
 
 			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
@@ -553,54 +558,81 @@ namespace Astan {
 
 		switch (e.GetKeyCode())
 		{
-		case Key::N:
-		{
-			if (control && shift)
-				NewScene();
-
-			break;
-		}
-		case Key::O:
-		{
-			if (control)
-				OpenProject();
-
-			break;
-		}
-		case Key::S:
-		{
-			if (control)
+			case Key::N:
 			{
-				if (shift)
-					SaveSceneAs();
-				else  
-					SaveScene();
+				if (control && shift)
+					NewScene();
+
+				break;
+			}
+			case Key::O:
+			{
+				if (control)
+					OpenProject();
+
+				break;
+			}
+			case Key::S:
+			{
+				if (control)
+				{
+					if (shift)
+						SaveSceneAs();
+					else  
+						SaveScene();
+				}
+
+				break;
+			}
+			case Key::D:
+			{
+				if (control)
+					OnDuplicateEntity();
+
+				break;
 			}
 
-			break;
+			// Gizmos
+			case Key::Q:
+			{
+				if (!ImGuizmo::IsUsing())
+					m_GizmoType = -1;
+				break;
+			}
+			case Key::W:
+			{
+				if (!ImGuizmo::IsUsing())
+					m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+				break;
+			}
+			case Key::E:
+			{
+				if(!ImGuizmo::IsUsing())
+					m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+				break;
+			}
+			case Key::R:
+			{
+				if (!ImGuizmo::IsUsing())
+					m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				break;
+			}
+		
+			case Key::Delete:
+			{
+				if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
+				{
+					Entity seletcdEntity =  m_SceneHierarchyPanel.GetSelectedEntity();
+					if (seletcdEntity)
+					{
+						m_SceneHierarchyPanel.SetSelectedEntity({});
+						m_ActiveScene->DestroyEntity(seletcdEntity);
+					}
+				}
+				break;
+			}
 		}
-		case Key::D:
-		{
-			if (control)
-				OnDuplicateEntity();
-
-			break;
-		}
-
-		// Gizmos
-		case Key::Q:
-			m_GizmoType = -1;
-			break;
-		case Key::W:
-			m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
-			break;
-		case Key::E:
-			m_GizmoType = ImGuizmo::OPERATION::ROTATE;
-			break;
-		case Key::R:
-			m_GizmoType = ImGuizmo::OPERATION::SCALE;
-			break;
-		}
+			
 	}
 
 	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
