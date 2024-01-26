@@ -19,3 +19,6 @@
 [submodule "Astan/vendor/Box2D"]
 	path = Astan/vendor/Box2D
 	url = https://github.com/thecherno/box2d
+[submodule "Astan/vendor/msdf-atlas-gen"]
+	path = Astan/vendor/msdf-atlas-gen
+	url = https://github.com/TheCherno/msdf-atlas-gen

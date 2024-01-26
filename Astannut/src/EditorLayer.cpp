@@ -1,16 +1,15 @@
 #include "EditorLayer.h"
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <chrono>
+#include "Astan/Math/Math.h"
+#include "Astan/Scene/SceneSerializer.h"
+#include "Astan/Utils/PlatformUtils.h"
+#include "Astan/Scripting/ScriptEngine.h"
+#include "Astan/Renderer/Font.h"
 
 #include <imgui/imgui.h>
 
 
-#include "Astan/Scene/SceneSerializer.h"
-#include "Astan/Utils/PlatformUtils.h"
-#include "Astan/Math/Math.h"
-#include "Astan/Scripting/ScriptEngine.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "ImGuizmo.h"
 
@@ -19,6 +18,7 @@ namespace Astan {
 	EditorLayer::EditorLayer()
 		:Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
+		Font font("assets/fonts/opensans/OpenSans-Regular.ttf");
 
 	}
 
