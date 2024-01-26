@@ -7,6 +7,7 @@
 #include "Astan/Core/Input.h"
 #include "Astan/Scene/Scene.h"
 #include "Astan/Scene/Entity.h"
+#include "Astan/Physics/Physics2D.h"
 
 #include "mono/metadata/object.h"
 #include "mono/metadata/reflection.h"
@@ -52,26 +53,7 @@ namespace Astan
 		entity.GetComponent<TransformComponent>().Translation = *translation;
 	}
 
-	static void RigidBody2DComponent_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
-	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		Entity entity = scene->GetEntityByUUID(entityID);
-		
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
-		body->ApplyLinearImpulse(b2Vec2(impulse->x, impulse->y), b2Vec2(point->x, point->y), wake);
-	}
 
-	
-	static void RigidBody2DComponent_ApplyLinearImpulseToCenter(UUID entityID, glm::vec2* impulse, bool wake)
-	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		Entity entity = scene->GetEntityByUUID(entityID);
-
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
-		body->ApplyLinearImpulseToCenter(b2Vec2(impulse->x, impulse->y), wake);
-	}
 
 	static MonoObject* GetScriptInstance(UUID entityID)
 	{
@@ -103,10 +85,70 @@ namespace Astan
 		return entity.GetUUID();
 	}
 
+	static void Rigidbody2DComponent_ApplyLinearImpulse(UUID entityID, glm::vec2* impuse, glm::vec2* point, bool wake)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		AS_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		AS_CORE_ASSERT(entity);
+
+		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		body->ApplyLinearImpulse(b2Vec2(impuse->x, impuse->y), b2Vec2(point->x, point->y), wake);
+	}
+
+	static void Rigidbody2DComponent_ApplyLinearImpulseToCenter(UUID entityID,glm::vec2* impulse,bool wake)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		AS_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		AS_CORE_ASSERT(entity);
+
+		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		body->ApplyLinearImpulseToCenter(b2Vec2(impulse->x, impulse->y), wake);
+	}
+	static void Rigidbody2DComponent_GetLinearVelocity(UUID entityID, glm::vec2* outLinearVelocity)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		AS_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		AS_CORE_ASSERT(entity);
+
+		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		const b2Vec2& linearVelocity = body->GetLinearVelocity();
+		*outLinearVelocity = glm::vec2(linearVelocity.x, linearVelocity.y);
+	}
+
+	static Rigidbody2DComponent::BodyType Rigidbody2DComponent_GetType(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		AS_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		AS_CORE_ASSERT(entity);
+
+		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		return Utils::Rigidbody2DTypeFromBox2DBody(body->GetType());
+	}
+
+	static void Rigidbody2DComponent_SetType(UUID entityID, Rigidbody2DComponent::BodyType bodyType)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		AS_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		AS_CORE_ASSERT(entity);
+
+		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		body->SetType(Utils::Rigidbody2DTypeToBox2DBody(bodyType));
+	}
 	static bool Input_IsKeyDown(KeyCode keycode)
 	{
 		return Input::IsKeyPressed(keycode);
 	}
+
 	template<typename... Component>
 	static void RegisterComponent()
 	{
@@ -126,6 +168,7 @@ namespace Astan
 				s_EntityHasComponentFuncs[managedType] = [](Entity entity) { return entity.HasComponent<Component>(); };
 			}(), ...);
 	}
+
 	template<typename... Component>
 	static void RegisterComponent(ComponentGroup<Component...>)
 	{
@@ -152,9 +195,12 @@ namespace Astan
 		AS_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
 		AS_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
 
-		AS_ADD_INTERNAL_CALL(RigidBody2DComponent_ApplyLinearImpulse);
-		AS_ADD_INTERNAL_CALL(RigidBody2DComponent_ApplyLinearImpulseToCenter);
-		
+		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulse);
+		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulseToCenter);
+		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_GetLinearVelocity);
+		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_GetType);
+		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_SetType);
+
 		AS_ADD_INTERNAL_CALL(Input_IsKeyDown);
 	}
 }

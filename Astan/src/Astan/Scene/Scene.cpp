@@ -5,6 +5,7 @@
 #include "ScriptableEntity.h"
 #include "Astan/Renderer/Renderer2D.h"
 #include "Astan/Scripting/ScriptEngine.h"
+#include "Astan/Physics/Physics2D.h"
 #include <glm/glm.hpp>
 #include "Entity.h"
 
@@ -379,7 +380,7 @@ namespace Astan
 			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
 
 			b2BodyDef bodyDef;
-			bodyDef.type = Rigidbody2DTypeToBox2D(rb2d.Type);
+			bodyDef.type = Utils::Rigidbody2DTypeToBox2DBody(rb2d.Type);
 			bodyDef.position.Set(transform.Translation.x, transform.Translation.y);
 			bodyDef.angle = transform.Rotation.z;
 
