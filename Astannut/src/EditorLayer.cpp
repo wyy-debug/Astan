@@ -15,11 +15,12 @@
 
 namespace Astan {
 
+	static Ref<Font> s_Font;
+
 	EditorLayer::EditorLayer()
 		:Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
-		Font font("assets/fonts/opensans/OpenSans-Regular.ttf");
-
+		s_Font = Font::GetDefault();
 	}
 
 	void EditorLayer::OnAttach()
@@ -349,9 +350,10 @@ namespace Astan {
 
 			ImGui::Begin("Setting");
 			ImGui::Checkbox("Show Physics Colliders", &m_ShowPhysicsColliders);
+
+			ImGui::Image((ImTextureID)s_Font->GetAtlasTexture()->GetRendererID(), { 512,512 }, { 0,1 }, { 1,0 });
+
 			ImGui::End();
-
-
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
 			ImGui::Begin("Viewport");
