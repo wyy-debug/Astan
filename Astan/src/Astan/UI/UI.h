@@ -1,15 +1,17 @@
 #pragma once
 
 #include <imgui/imgui.h>
-namespace Astan::UI
-{
+
+namespace Astan::UI {
+
 	struct ScopedStyleColor
 	{
 		ScopedStyleColor() = default;
+
 		ScopedStyleColor(ImGuiCol idx, ImVec4 color, bool predicate = true)
 			: m_Set(predicate)
 		{
-			if(predicate)
+			if (predicate)
 				ImGui::PushStyleColor(idx, color);
 		}
 
@@ -22,10 +24,12 @@ namespace Astan::UI
 
 		~ScopedStyleColor()
 		{
-			ImGui::PopStyleColor();
+			if (m_Set)
+				ImGui::PopStyleColor();
 		}
 	private:
 		bool m_Set = false;
-
 	};
+
+
 }

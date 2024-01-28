@@ -4,6 +4,7 @@
 #include "Astan/Renderer/SubTexture2D.h"
 #include "Astan/Renderer/Camera.h"
 #include "Astan/Renderer/EditorCamera.h"
+#include "Astan/Renderer/Font.h"
 #include "Astan/Scene/Component.h"
 namespace Astan
 {
@@ -45,11 +46,20 @@ namespace Astan
 		static void DrawRect(const glm::vec3& position, glm::vec2& size, const glm::vec4& color, int entityID = -1);
 		static void DrawRect(const glm::mat4& transform,const glm::vec4& color, int entityID = -1);
 
-		static float GetLineWidth();
-		static void SetLineWidth(float width);
-
 		static void StartBatch();
 		static void DrawSprite(const glm::mat4& transform, SpriteRendererComponent& src,int entityID);
+		
+		struct TextParams
+		{
+			glm::vec4 Color{ 1.0f };
+			float Kerning = 0.0f;
+			float LineSpacing = 0.0f;
+		};
+		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
+		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
+
+		static float GetLineWidth();
+		static void SetLineWidth(float width);
 		struct Statices
 		{
 			uint32_t DrawCalls = 0;

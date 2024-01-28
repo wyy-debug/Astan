@@ -95,9 +95,9 @@ namespace Astan {
 #define LCG_MULTIPLIER 6364136223846793005ull
 #define LCG_INCREMENT 1442695040888963407ull
 #define THREAD_COUNT 8
-		// if MSDF || MTSDF
+		//if MSDF || MTSDF
 
-		/*uint64_t coloringSeed = 0;
+		uint64_t coloringSeed = 0;
 		bool expensiveColoring = false;
 		if (expensiveColoring)
 		{
@@ -114,7 +114,7 @@ namespace Astan {
 				glyphSeed *= LCG_MULTIPLIER;
 				glyph.edgeColoring(msdfgen::edgeColoringInkTrap, DEFAULT_ANGLE_THRESHOLD, glyphSeed);
 			}
-		}*/
+		}
 
 
 		m_AtlasTexture = CreateAndCacheAtlas<uint8_t, float, 3, msdf_atlas::msdfGenerator>("Test", (float)emSize, m_Data->Glyphs, m_Data->FontGeometry, width, height);
