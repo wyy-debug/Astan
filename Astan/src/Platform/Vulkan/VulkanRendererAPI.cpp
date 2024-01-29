@@ -1,30 +1,27 @@
 #include "aspch.h"
-#include <vulkan/vulkan.h>
-#include <glfw/glfw3.h>
-
 #include "VulkanRendererAPI.h"
 
 namespace Astan
 {
 	void VulkanRendererAPI::Init()
 	{
-		createInstance();
-		initDebugMessenger();
-		createWindowSurface();
-		initPhysicalDevice();
-		createLogicalDevice();
-		createCommandPool();
-		createCommandPools();
-		createDescriptorPool();
-		createSync();
-		createSwapchain();
-		createSwapchainImageViews();
-		createFramebufferImageAndView();
-		createAssetAllocator();
+		CreateInstance();
+		InitDebugMessenger();
+		CreateWindowSurface();
+		InitPhysicalDevice();
+		CreateLogicalDevice();
+		CreateCommandPool();
+		CreateCommandPools();
+		CreateDescriptorPool();
+		CreateSync();
+		CreateSwapchain();
+		CreateSwapchainImageViews();
+		CreateFramebufferImageAndView();
+		CreateAssetAllocator();
 	}
 
 
-	void VulkanRendererAPI::createInstance()
+	void VulkanRendererAPI::CreateInstance()
 	{
 		m_vulkan_api_version = VK_API_VERSION_1_0;
 
@@ -64,17 +61,17 @@ namespace Astan
 	}
 
 	// TODO Debug Manage
-	void VulkanRendererAPI::initDebugMessenger()
+	void VulkanRendererAPI::InitDebugMessenger()
 	{
 	}
 
-	void VulkanRendererAPI::createWindowSurface()
+	void VulkanRendererAPI::CreateWindowSurface()
 	{
 		if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
 			AS_CORE_ERROR("glfwCreateWindowSurface failed!");
 	}
 
-	void VulkanRendererAPI::initPhysicalDevice()
+	void VulkanRendererAPI::InitPhysicalDevice()
 	{
 		uint32_t physical_device_cout;
 		vkEnumeratePhysicalDevices(m_instance, &physical_device_cout, nullptr);
@@ -87,47 +84,70 @@ namespace Astan
 			std::vector<VkPhysicalDevice> physical_devices(physical_device_cout);
 			vkEnumeratePhysicalDevices(m_instance, &physical_device_cout, physical_devices.data());
 
-			std::vector<std::pair<int,VkPhysicalDevice>>
+			for (const auto& device : physical_devices)
+			{
+				if (IsDeviceSuitable(device))
+					m_physical_device = device;
+					break;
+			}
+			if (m_physical_device == VK_NULL_HANDLE)
+				AS_CORE_ERROR("faild to find a suitable GPU");
 		}
 
 	}
 
-	void VulkanRendererAPI::createLogicalDevice()
+	void VulkanRendererAPI::CreateLogicalDevice()
 	{
 	}
 
-	void VulkanRendererAPI::createCommandPool()
+	void VulkanRendererAPI::CreateCommandPool()
 	{
 	}
 
-	void VulkanRendererAPI::createCommandPools()
+	void VulkanRendererAPI::CreateCommandPools()
 	{
 	}
 
-	void VulkanRendererAPI::createDescriptorPool()
+	void VulkanRendererAPI::CreateDescriptorPool()
 	{
 	}
 
-	void VulkanRendererAPI::createSync()
+	void VulkanRendererAPI::CreateSync()
 	{
 	}
 
-	void VulkanRendererAPI::createSwapchain()
+	void VulkanRendererAPI::CreateSwapchain()
 	{
 	}
 
-	void VulkanRendererAPI::createSwapchainImageViews()
+	void VulkanRendererAPI::CreateSwapchainImageViews()
 	{
 	}
 
-	void VulkanRendererAPI::createFramebufferImageAndView()
+	void VulkanRendererAPI::CreateFramebufferImageAndView()
 	{
 	}
 
-	void VulkanRendererAPI::createAssetAllocator()
+	void VulkanRendererAPI::CreateAssetAllocator()
 	{
 	}
 	// -----------------------------//
+	// TODO pick GPU
+	bool VulkanRendererAPI::IsDeviceSuitable(VkPhysicalDevice physicalm_device)
+	{
+		return true;
+	}
 
 
+
+	//----------------------------//
+
+	void VulkanRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {}
+	void VulkanRendererAPI::SetClearColor(const glm::vec4& color) {}
+	void VulkanRendererAPI::Clear() {}
+
+	void VulkanRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount) {}
+	void VulkanRendererAPI::DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount) {}
+
+	void VulkanRendererAPI::SetLineWidth(float thickness) {}
 }

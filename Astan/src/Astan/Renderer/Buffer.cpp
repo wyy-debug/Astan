@@ -12,6 +12,7 @@ namespace Astan
 		{
 			case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
 			case RendererAPI::API::OpenGL: return CreateRef<OpenGLVertexBuffer>(size);
+			case RendererAPI::API::Vulkan: return CreateRef<OpenGLVertexBuffer>(size);
 		}
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
@@ -23,6 +24,7 @@ namespace Astan
 		{
 			case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
 			case RendererAPI::API::OpenGL: return CreateRef<OpenGLVertexBuffer>(vertices, size);
+			case RendererAPI::API::Vulkan: return CreateRef<OpenGLVertexBuffer>(vertices, size);
 		}
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
@@ -34,6 +36,7 @@ namespace Astan
 		{
 		case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
 		case RendererAPI::API::OpenGL: return CreateRef<OpenGLIndexBuffer>(indices, count);
+		case RendererAPI::API::Vulkan: return CreateRef<OpenGLIndexBuffer>(indices, count);
 		}
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;

@@ -1,9 +1,12 @@
 #pragma once
 #include "Astan/Renderer/RendererAPI.h"
 
+#include <vulkan/vulkan.h>
+#include <glfw/glfw3.h>
+
 namespace Astan
 {
-	class VulkanRendererAPI : RendererAPI
+	class VulkanRendererAPI :public RendererAPI
 	{
 	public:
 		virtual void Init() override;
@@ -32,26 +35,27 @@ namespace Astan
 		/// 12.	Framebuffer image and view
 		/// 13.	Asset allocator
 
-		void createInstance();
-		void initDebugMessenger();
-		void createWindowSurface();
-		void initPhysicalDevice();
-		void createLogicalDevice();
-		void createCommandPool();
-		void createCommandPools();
-		void createDescriptorPool();
-		void createSync();
-		void createSwapchain();
-		void createSwapchainImageViews();
-		void createFramebufferImageAndView();
-		void createAssetAllocator();
+		void CreateInstance();
+		void InitDebugMessenger();
+		void CreateWindowSurface();
+		void InitPhysicalDevice();
+		void CreateLogicalDevice();
+		void CreateCommandPool();
+		void CreateCommandPools();
+		void CreateDescriptorPool();
+		void CreateSync();
+		void CreateSwapchain();
+		void CreateSwapchainImageViews();
+		void CreateFramebufferImageAndView();
+		void CreateAssetAllocator();
 
 		// ----------------------------- //
-
-	private:
+		bool IsDeviceSuitable(VkPhysicalDevice physicalm_device);
+	public:
 		VkInstance m_instance{ nullptr };
 		GLFWwindow* m_window{ nullptr };
 		VkSurfaceKHR m_surface{ nullptr };
+		VkPhysicalDevice m_physical_device{ nullptr };
 		uint32_t m_vulkan_api_version{ VK_API_VERSION_1_0 };
 
 	};

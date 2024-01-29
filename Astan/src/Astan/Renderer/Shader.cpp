@@ -12,6 +12,7 @@ namespace Astan
 		{
 		case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
 		case RendererAPI::API::OpenGL: return std::make_shared<OpenGLShader>(filepath);
+		case RendererAPI::API::Vulkan: return std::make_shared<OpenGLShader>(filepath);
 		}
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
@@ -24,6 +25,7 @@ namespace Astan
 		{
 		case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
 		case RendererAPI::API::OpenGL: return std::make_shared<OpenGLShader>(name, vertexSrc, fragmentSrc);
+		case RendererAPI::API::Vulkan: return std::make_shared<OpenGLShader>(name, vertexSrc, fragmentSrc);
 		}
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
