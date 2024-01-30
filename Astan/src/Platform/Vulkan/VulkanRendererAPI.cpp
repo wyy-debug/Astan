@@ -1,6 +1,5 @@
 #include "aspch.h"
 #include "VulkanRendererAPI.h"
-
 namespace Astan
 {
 	void VulkanRendererAPI::Init()
@@ -34,8 +33,7 @@ namespace Astan
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.apiVersion = m_vulkan_api_version;
 
-
-		uint32_t                    enabledLayerCount;
+		uint32_t enabledLayerCount;
 		const char* const* ppEnabledLayerNames;
 		const char* const* ppEnabledExtensionNames;
 
@@ -67,6 +65,8 @@ namespace Astan
 
 	void VulkanRendererAPI::CreateWindowSurface()
 	{
+		if (m_window == nullptr)
+			SetWindowHandle();
 		if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
 			AS_CORE_ERROR("glfwCreateWindowSurface failed!");
 	}
@@ -138,6 +138,11 @@ namespace Astan
 		return true;
 	}
 
+	void VulkanRendererAPI::SetWindowHandle()
+	{
+		Application& app = Application::Get();
+		m_window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+	}
 
 
 	//----------------------------//

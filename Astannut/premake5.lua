@@ -19,7 +19,9 @@ project "Astannut"
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.filewatch}",
 		"%{IncludeDir.glm}",
-		"%{IncludeDir.ImGuizmo}"
+		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.VulkanSDK}"
 	}
 	links
 	{

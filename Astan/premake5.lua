@@ -55,7 +55,7 @@ project "Astan"
 		"msdf-atlas-gen",
 		"yaml-cpp",
 		"opengl32.lib",
-
+		"%{Library.Vulkan}",
 		"%{Library.mono}"
 	}
 	filter "files:vendor/ImGuizmo/**.cpp"
