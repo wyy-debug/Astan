@@ -1,5 +1,6 @@
 #include "aspch.h"
 #include "VulkanRendererAPI.h"
+#include <set>
 namespace Astan
 {
 	void VulkanRendererAPI::Init()
@@ -44,11 +45,11 @@ namespace Astan
 		
 		// TODO fix this
 		uint32_t glfwExtensionsCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
+		
+		m_glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
 		
 		instance_create_info.enabledExtensionCount = glfwExtensionsCount;
-		instance_create_info.ppEnabledExtensionNames = glfwExtensions;
+		instance_create_info.ppEnabledExtensionNames = m_glfwExtensions;
 		
 		// TODO next
 		instance_create_info.enabledLayerCount = 0;
@@ -73,24 +74,24 @@ namespace Astan
 
 	void VulkanRendererAPI::InitPhysicalDevice()
 	{
-		uint32_t physical_device_cout;
-		vkEnumeratePhysicalDevices(m_instance, &physical_device_cout, nullptr);
-		if (physical_device_cout)
+		uint32_t physicalDeviceCount;
+		vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, nullptr);
+		if (physicalDeviceCount == 0)
 		{
 			AS_CORE_INFO("enumerate physical devices failed!");
 		}
 		else
 		{
-			std::vector<VkPhysicalDevice> physical_devices(physical_device_cout);
-			vkEnumeratePhysicalDevices(m_instance, &physical_device_cout, physical_devices.data());
+			std::vector<VkPhysicalDevice> physical_devices(physicalDeviceCount);
+			vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physical_devices.data());
 
 			for (const auto& device : physical_devices)
 			{
 				if (IsDeviceSuitable(device))
-					m_physical_device = device;
+					m_physicalDevice = device;
 					break;
 			}
-			if (m_physical_device == VK_NULL_HANDLE)
+			if (m_physicalDevice == VK_NULL_HANDLE)
 				AS_CORE_ERROR("faild to find a suitable GPU");
 		}
 
@@ -98,6 +99,49 @@ namespace Astan
 
 	void VulkanRendererAPI::CreateLogicalDevice()
 	{
+		m_queueIndices = findQueueFamilies(m_physicalDevice);
+
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		std::set<uint32_t> queueFamilies = { m_queueIndices.graphicsFamily.value() };
+
+		float queuePriority = 1.0f;
+		for (uint32_t queueFamily : queueFamilies)
+		{
+			VkDeviceQueueCreateInfo queueCreateInfo{};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = queueFamily;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
+
+		// physical device features
+		VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
+		physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+
+		// support inerfficient readback storage buffer
+		physicalDeviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
+
+		// support independent blending
+		physicalDeviceFeatures.independentBlend = VK_TRUE;
+
+		// device create info
+
+		VkDeviceCreateInfo deviceCreateInfo{};
+		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
+		deviceCreateInfo.enabledExtensionCount = 0;
+		deviceCreateInfo.ppEnabledExtensionNames = m_glfwExtensions;
+		deviceCreateInfo.enabledLayerCount = 0;
+
+		if (vkCreateDevice(m_physicalDevice, &deviceCreateInfo, nullptr, &m_device) != VK_SUCCESS)
+			AS_CORE_ERROR("vulkan create device error");
+
+		// init queues of this device
+		VkQueue vkGraphicsQueue;
+		vkGetDeviceQueue(m_device, m_queueIndices.graphicsFamily.value(), 0, &vkGraphicsQueue);
 	}
 
 	void VulkanRendererAPI::CreateCommandPool()
@@ -142,6 +186,27 @@ namespace Astan
 	{
 		Application& app = Application::Get();
 		m_window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+	}
+
+	QueueFamilyIndices VulkanRendererAPI::findQueueFamilies(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices;
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+		
+		int i = 0;
+		for (const auto& queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				indices.graphicsFamily = i;
+
+			if (indices.isComplete())
+				break;
+			i++;
+		}
+		return indices;
 	}
 
 

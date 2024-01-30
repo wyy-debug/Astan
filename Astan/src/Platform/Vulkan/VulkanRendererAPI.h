@@ -1,6 +1,7 @@
 #pragma once
 #include "Astan/Renderer/RendererAPI.h"
 #include "Astan/Core/Application.h"
+#include "VulkanStruct.h"
 
 #include <vulkan/vulkan.h>
 #include <glfw/glfw3.h>
@@ -52,13 +53,16 @@ namespace Astan
 
 		// ----------------------------- //
 		bool IsDeviceSuitable(VkPhysicalDevice physicalm_device);
+		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	public:
 
 		GLFWwindow* m_window{nullptr};
 		VkInstance m_instance{ nullptr };
 		VkSurfaceKHR m_surface{ nullptr };
-		VkPhysicalDevice m_physical_device{ nullptr };
+		VkPhysicalDevice m_physicalDevice{ nullptr };
 		uint32_t m_vulkan_api_version{ VK_API_VERSION_1_0 };
-
+		QueueFamilyIndices  m_queueIndices;
+		const char** m_glfwExtensions;
+		VkDevice m_device;
 	};
 }
