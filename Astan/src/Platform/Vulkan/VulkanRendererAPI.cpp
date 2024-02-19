@@ -11,7 +11,7 @@ namespace Astan
 		InitPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPool();
-		CreateCommandPools();
+		CreateCommandBuffers();
 		CreateDescriptorPool();
 		CreateSync();
 		CreateSwapchain();
@@ -142,13 +142,27 @@ namespace Astan
 		// init queues of this device
 		VkQueue vkGraphicsQueue;
 		vkGetDeviceQueue(m_device, m_queueIndices.graphicsFamily.value(), 0, &vkGraphicsQueue);
+		// TODO Set Graphics Queue
+
 	}
 
 	void VulkanRendererAPI::CreateCommandPool()
 	{
+		// graphics command pool 
+		{
+			VkCommandPoolCreateInfo cmdPoolInfo = {};
+			cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			cmdPoolInfo.queueFamilyIndex = m_queueIndices.graphicsFamily.value();
+			cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+			if (vkCreateCommandPool(m_device, &cmdPoolInfo, nullptr, &m_cmdPool) != VK_SUCCESS)
+			{
+				AS_CORE_ERROR("vk create command pool");
+			}
+		}
 	}
 
-	void VulkanRendererAPI::CreateCommandPools()
+	void VulkanRendererAPI::CreateCommandBuffers()
 	{
 	}
 

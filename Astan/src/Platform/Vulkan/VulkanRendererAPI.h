@@ -43,7 +43,7 @@ namespace Astan
 		void InitPhysicalDevice();
 		void CreateLogicalDevice();
 		void CreateCommandPool();
-		void CreateCommandPools();
+		void CreateCommandBuffers();
 		void CreateDescriptorPool();
 		void CreateSync();
 		void CreateSwapchain();
@@ -64,5 +64,6 @@ namespace Astan
 		QueueFamilyIndices  m_queueIndices;
 		const char** m_glfwExtensions;
 		VkDevice m_device;
+		VkCommandPool m_cmdPool;
 	};
 }
