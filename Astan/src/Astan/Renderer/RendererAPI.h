@@ -1,8 +1,8 @@
 #pragma once
 
-#include <glm/glm.hpp>
-//#include <vk_mem_alloc.h>
-
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include <vma/vk_mem_alloc.h>
 
 #include "VertexArray.h"
 #include "RendererStruct.h"
@@ -51,8 +51,7 @@ namespace Astan
 		virtual void CreateBuffer(RHIDeviceSize size, RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory* &bufferMemory) = 0;
 		virtual void CreateBufferAndInitialize(RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& bufferMemory, RHIDeviceSize size, void* data = nullptr, int datasize = 0) = 0;
 		
-		// TODO VMA AMD Vulkan Memory Manager
-		/*virtual bool CreateBufferVMA(VmaAllocator allocator,
+		virtual bool CreateBufferVMA(VmaAllocator allocator,
 			const RHIBufferCreateInfo* pBufferCreateInfo,
 			const VmaAllocationCreateInfo* pAllocationCreateInfo,
 			RHIBuffer*& pBuffer,
@@ -65,7 +64,7 @@ namespace Astan
 			RHIDeviceSize minAlignment,
 			RHIBuffer*& pBuffer,
 			VmaAllocation* pAllocation,
-			VmaAllocationInfo* pAllocationInfo) = 0;*/
+			VmaAllocationInfo* pAllocationInfo) = 0;
 	
 		virtual void CopyBuffer(RHIBuffer* scrBuffer, RHIBuffer* dstBuffer, RHIDeviceSize srcOffset, RHIDeviceSize dstOffset, RHIDeviceSize size) = 0;
 		virtual void CreateImage(uint32_t imageWidth, uint32_t imageHegiht, RHIFormat format, RHIImageTiling imageTiling,
@@ -73,10 +72,10 @@ namespace Astan
 			RHIImage*& image, RHIDeviceMemory*& memory, RHIImageCreateFlags imageCreateFlags, uint32_t arrayLayers, uint32_t miplevels) = 0;
 		virtual void CreateImageView(RHIImage* image, RHIFormat format, RHIImageAspectFlags imageAspectFlags, RHIImageViewType viewType,
 			uint32_t layoutCount, uint32_t miplevels, RHIImageView*& imageView) = 0;
-		// virtual void CreateGlobalImage(RHIImage*& image, RHIImageView*& imageView, VmaAllocation& imageAllocation, uint32_t textureImageWidth,
-		//	uint32_t textureImageHeight, void* textureImagePixels, RHIFormat TextureImageFormat, uint32_t miplevels = 0) = 0;
-		// virtual void CreateCubeMap(RHIImage*& image, RHIImageView*& imageView, VmaAllocation& imageAllocation, uint32_t textureImageWidth,
-		// 	uint32_t textureImageHeight, std::array<void*, 6> textureImagePixels, RHIFormat textureImageFormat, uint32_t miplevels) = 0;
+		virtual void CreateGlobalImage(RHIImage*& image, RHIImageView*& imageView, VmaAllocation& imageAllocation, uint32_t textureImageWidth,
+			uint32_t textureImageHeight, void* textureImagePixels, RHIFormat TextureImageFormat, uint32_t miplevels = 0) = 0;
+		virtual void CreateCubeMap(RHIImage*& image, RHIImageView*& imageView, VmaAllocation& imageAllocation, uint32_t textureImageWidth,
+			uint32_t textureImageHeight, std::array<void*, 6> textureImagePixels, RHIFormat textureImageFormat, uint32_t miplevels) = 0;
 		virtual void CreateCommandPool() = 0;
 		virtual bool CreateCommandPool(const RHICommandPoolCreateInfo* pCreateInfo, RHICommandPool*& pCommandPool) = 0;
 		virtual bool CreateDescriptorPool(const RHIDescriptorPoolCreateInfo* pCreateInfo, RHIDescriptorPool*& pDescriptorPool) = 0;

@@ -1,10 +1,13 @@
 #pragma once
-#include "Astan/Renderer/RendererAPI.h"
+
 #include "Astan/Core/Application.h"
-#include "VulkanRHIResource.h"
-#include <map>
+#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
-#include <glfw/glfw3.h>
+
+#include <functional>
+#include <map>
+#include <vector>
+#include "VulkanRHIResource.h"
 
 namespace Astan
 {
@@ -47,7 +50,7 @@ namespace Astan
         RHISampler* CreateShaderModule(const std::vector<unsigned char>& shader_code) override;
         void CreateBuffer(RHIDeviceSize size, RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory) override;
         void CreateBufferAndInitialize(RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory, RHIDeviceSize size, void* data = nullptr, int datasize = 0) override;
-        /*bool CreateBufferVMA(VmaAllocator allocator,
+        bool CreateBufferVMA(VmaAllocator allocator,
             const RHIBufferCreateInfo* pBufferCreateInfo,
             const VmaAllocationCreateInfo* pAllocationCreateInfo,
             RHIBuffer*& pBuffer,
@@ -60,14 +63,14 @@ namespace Astan
             RHIDeviceSize minAlignment,
             RHIBuffer*& pBuffer,
             VmaAllocation* pAllocation,
-            VmaAllocationInfo* pAllocationInfo) override;*/
+            VmaAllocationInfo* pAllocationInfo) override;
         void CopyBuffer(RHIBuffer* srcBuffer, RHIBuffer* dstBuffer, RHIDeviceSize srcOffset, RHIDeviceSize dstOffset, RHIDeviceSize size) override;
         void CreateImage(uint32_t image_width, uint32_t image_height, RHIFormat format, RHIImageTiling image_tiling, RHIImageUsageFlags image_usage_flags, RHIMemoryPropertyFlags memory_property_flags,
             RHIImage*& image, RHIDeviceMemory*& memory, RHIImageCreateFlags image_create_flags, uint32_t array_layers, uint32_t miplevels) override;
         void CreateImageView(RHIImage* image, RHIFormat format, RHIImageAspectFlags image_aspect_flags, RHIImageViewType view_type, uint32_t layout_count, uint32_t miplevels,
             RHIImageView*& image_view) override;
-        //void CreateGlobalImage(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, void* texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels = 0) override;
-        //void CreateCubeMap(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, std::array<void*, 6> texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels) override;
+        void CreateGlobalImage(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, void* texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels = 0) override;
+        void CreateCubeMap(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, std::array<void*, 6> texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels) override;
         bool CreateCommandPool(const RHICommandPoolCreateInfo* pCreateInfo, RHICommandPool*& pCommandPool) override;
         bool CreateDescriptorPool(const RHIDescriptorPoolCreateInfo* pCreateInfo, RHIDescriptorPool*& pDescriptorPool) override;
         bool CreateDescriptorSetLayout(const RHIDescriptorSetLayoutCreateInfo* pCreateInfo, RHIDescriptorSetLayout*& pSetLayout) override;
@@ -235,7 +238,7 @@ namespace Astan
         std::vector<VkFramebuffer> m_swapchain_framebuffers;
 
         // asset allocator use VMA library
-        // VmaAllocator m_assets_allocator;
+        VmaAllocator m_assets_allocator;
 
         // function pointers
         PFN_vkCmdBeginDebugUtilsLabelEXT _vkCmdBeginDebugUtilsLabelEXT;

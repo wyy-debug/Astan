@@ -2,8 +2,14 @@
 
 #include "Astan/Renderer/RendererAPI.h"
 
+#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
-#include <optional>
+
+#include <array>
+#include <cstdint>
+#include <map>
+#include <vector>
+#include <cmath>
 
 namespace Astan
 {

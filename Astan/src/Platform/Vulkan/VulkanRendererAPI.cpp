@@ -1,13 +1,24 @@
 #include "aspch.h"
-#include "VulkanRendererAPI.h"
+#define GLFW_INCLUDE_VULKAN
+
+#include <iostream>
+#include <stdexcept>
+#include <vector>
+#include <cstring>
+#include <cstdlib>
+#include <optional>
 #include <set>
+#include <vma/vk_mem_alloc.h>
+
+#include "VulkanUtil.h"
+#include "VulkanRendererAPI.h"
+#include "VulkanRHIResource.h"
 
 #define ASTAN_XSTR(s) ASTAN_STR(s)
 #define ASTAN_STR(s) #s
 namespace Astan
 {
 
-	
 	void VulkanRendererAPI::SetWindowHandle()
 	{
 		Application& app = Application::Get();
@@ -162,27 +173,27 @@ namespace Astan
 
 	void VulkanRendererAPI::CreateSwapchainImageViews()
 	{
-		//m_swapchain_imageviews.resize(m_swapchain_images.size());
+		m_swapchain_imageviews.resize(m_swapchain_images.size());
 
-		//// create imageview (one for each this time) for all swapchain images
-		//for (size_t i = 0; i < m_swapchain_images.size(); i++)
-		//{
-		//	VkImageView vk_image_view;
-		//	vk_image_view = VulkanUtil::createImageView(m_device,
-		//		m_swapchain_images[i],
-		//		(VkFormat)m_swapchain_image_format,
-		//		VK_IMAGE_ASPECT_COLOR_BIT,
-		//		VK_IMAGE_VIEW_TYPE_2D,
-		//		1,
-		//		1);
-		//	m_swapchain_imageviews[i] = new VulkanImageView();
-		//	((VulkanImageView*)m_swapchain_imageviews[i])->setResource(vk_image_view);
-		//}
+		// create imageview (one for each this time) for all swapchain images
+		for (size_t i = 0; i < m_swapchain_images.size(); i++)
+		{
+			VkImageView vk_image_view;
+			vk_image_view = VulkanUtil::createImageView(m_device,
+				m_swapchain_images[i],
+				(VkFormat)m_swapchain_image_format,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_VIEW_TYPE_2D,
+				1,
+				1);
+			m_swapchain_imageviews[i] = new VulkanImageView();
+			((VulkanImageView*)m_swapchain_imageviews[i])->setResource(vk_image_view);
+		}
 	}
 
 	void VulkanRendererAPI::CreateFramebufferImageAndView()
 	{
-		/*VulkanUtil::createImage(m_physical_device,
+		VulkanUtil::createImage(m_physical_device,
 			m_device,
 			m_swapchain_extent.width,
 			m_swapchain_extent.height,
@@ -198,7 +209,7 @@ namespace Astan
 			1);
 
 		((VulkanImageView*)m_depth_image_view)->setResource(
-			VulkanUtil::createImageView(m_device, ((VulkanImage*)m_depth_image)->getResource(), (VkFormat)m_depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 1, 1));*/
+			VulkanUtil::createImageView(m_device, ((VulkanImage*)m_depth_image)->getResource(), (VkFormat)m_depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, 1, 1));
 
 	}
 
@@ -223,6 +234,16 @@ namespace Astan
 
 	void VulkanRendererAPI::CreateBufferAndInitialize(RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory, RHIDeviceSize size, void* data, int datasize)
 	{
+	}
+
+	bool VulkanRendererAPI::CreateBufferVMA(VmaAllocator allocator, const RHIBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, RHIBuffer*& pBuffer, VmaAllocation* pAllocation, VmaAllocationInfo* pAllocationInfo)
+	{
+		return false;
+	}
+
+	bool VulkanRendererAPI::CreateBufferWithAlignmentVMA(VmaAllocator allocator, const RHIBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, RHIDeviceSize minAlignment, RHIBuffer*& pBuffer, VmaAllocation* pAllocation, VmaAllocationInfo* pAllocationInfo)
+	{
+		return false;
 	}
 
 	void VulkanRendererAPI::Init()
@@ -676,7 +697,7 @@ namespace Astan
 
 	void VulkanRendererAPI::CreateAssetAllocator()
 	{
-		/*VmaVulkanFunctions vulkanFunctions = {};
+		VmaVulkanFunctions vulkanFunctions = {};
 		vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
 		vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
@@ -687,7 +708,7 @@ namespace Astan
 		allocatorCreateInfo.instance = m_instance;
 		allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
 
-		vmaCreateAllocator(&allocatorCreateInfo, &m_assets_allocator);*/
+		//vmaCreateAllocator(&allocatorCreateInfo, &m_assets_allocator);
 	}
 
 	bool VulkanRendererAPI::isPointLightShadowEnabled()
@@ -706,6 +727,12 @@ namespace Astan
 	{
 	}
 	void VulkanRendererAPI::CreateImageView(RHIImage* image, RHIFormat format, RHIImageAspectFlags image_aspect_flags, RHIImageViewType view_type, uint32_t layout_count, uint32_t miplevels, RHIImageView*& image_view)
+	{
+	}
+	void VulkanRendererAPI::CreateGlobalImage(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, void* texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels)
+	{
+	}
+	void VulkanRendererAPI::CreateCubeMap(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, std::array<void*, 6> texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels)
 	{
 	}
 	bool VulkanRendererAPI::CreateCommandPool(const RHICommandPoolCreateInfo* pCreateInfo, RHICommandPool*& pCommandPool)
@@ -911,10 +938,40 @@ namespace Astan
 	}
 	RHICommandBuffer* VulkanRendererAPI::BeginSingleTimeCommands()
 	{
-		return nullptr;
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = ((VulkanCommandPool*)m_rhi_command_pool)->getResource();
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer command_buffer;
+		vkAllocateCommandBuffers(m_device, &allocInfo, &command_buffer);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		_vkBeginCommandBuffer(command_buffer, &beginInfo);
+
+		RHICommandBuffer* rhi_command_buffer = new VulkanCommandBuffer();
+		((VulkanCommandBuffer*)rhi_command_buffer)->setResource(command_buffer);
+		return rhi_command_buffer;
 	}
 	void VulkanRendererAPI::EndSingleTimeCommands(RHICommandBuffer* command_buffer)
 	{
+		VkCommandBuffer vk_command_buffer = ((VulkanCommandBuffer*)command_buffer)->getResource();
+		_vkEndCommandBuffer(vk_command_buffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &vk_command_buffer;
+
+		vkQueueSubmit(((VulkanQueue*)m_graphics_queue)->getResource(), 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(((VulkanQueue*)m_graphics_queue)->getResource());
+
+		vkFreeCommandBuffers(m_device, ((VulkanCommandPool*)m_rhi_command_pool)->getResource(), 1, &vk_command_buffer);
+		delete(command_buffer);
 	}
 	bool VulkanRendererAPI::PrepareBeforePass(std::function<void()> passUpdateAfterRecreateSwapchain)
 	{
@@ -1087,22 +1144,75 @@ namespace Astan
 	}
 	VkFormat VulkanRendererAPI::findDepthFormat()
 	{
-		return VkFormat();
+		return findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
 	VkFormat VulkanRendererAPI::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 	{
+		for (VkFormat format : candidates)
+		{
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+			{
+				return format;
+			}
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+			{
+				return format;
+			}
+		}
+
+		AS_CORE_ERROR("findSupportedFormat failed");
 		return VkFormat();
 	}
 	VkSurfaceFormatKHR VulkanRendererAPI::chooseSwapchainSurfaceFormatFromDetails(const std::vector<VkSurfaceFormatKHR>& available_surface_formats)
 	{
-		return VkSurfaceFormatKHR();
+		for (const auto& surface_format : available_surface_formats)
+		{
+			// TODO: select the VK_FORMAT_B8G8R8A8_SRGB surface format,
+			// there is no need to do gamma correction in the fragment shader
+			if (surface_format.format == VK_FORMAT_B8G8R8A8_UNORM &&
+				surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				return surface_format;
+			}
+		}
+		return available_surface_formats[0];
 	}
 	VkPresentModeKHR VulkanRendererAPI::chooseSwapchainPresentModeFromDetails(const std::vector<VkPresentModeKHR>& available_present_modes)
 	{
-		return VkPresentModeKHR();
+		for (VkPresentModeKHR present_mode : available_present_modes)
+        {
+            if (VK_PRESENT_MODE_MAILBOX_KHR == present_mode)
+            {
+                return VK_PRESENT_MODE_MAILBOX_KHR;
+            }
+        }
+
+        return VK_PRESENT_MODE_FIFO_KHR;
 	}
 	VkExtent2D VulkanRendererAPI::chooseSwapchainExtentFromDetails(const VkSurfaceCapabilitiesKHR& capabilities)
 	{
-		return VkExtent2D();
+		if (capabilities.currentExtent.width != UINT32_MAX)
+		{
+			return capabilities.currentExtent;
+		}
+		else
+		{
+			int width, height;
+			glfwGetFramebufferSize(m_window, &width, &height);
+
+			VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+
+			actualExtent.width =
+				std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.height =
+				std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+			return actualExtent;
+		}
 	}
 }
