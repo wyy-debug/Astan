@@ -1,0 +1,38 @@
+#pragma once
+
+#include "Astan/Renderer/Texture.h"
+
+#include <glad/glad.h>
+
+namespace Astan
+{
+	class VulkanTexture2D : public Texture2D
+	{
+	public:
+		VulkanTexture2D(const TextureSpecification& specification);
+		VulkanTexture2D(const std::string& path);
+		virtual ~VulkanTexture2D();
+
+		virtual const TextureSpecification& GetSpecification() const override { return m_Specification; }
+
+		virtual uint32_t GetWidth() const override { return m_Width; }
+		virtual uint32_t GetHeight() const override { return m_Height; }
+		virtual uint32_t GetRendererID() const override { return m_RendererID; }
+		virtual void SetData(void* data, uint32_t size) override;
+
+		virtual void Bind(uint32_t slot = 0) const override;
+
+		virtual bool operator==(const Texture& other) const override
+		{
+			return m_RendererID == ((VulkanTexture2D&)other).m_RendererID;
+		};
+
+	private:
+		TextureSpecification m_Specification;
+
+		std::string m_Path;
+		uint32_t m_Width, m_Height;
+		uint32_t m_RendererID;
+		GLenum m_InternalFormat, m_DataFormat;
+	};
+}

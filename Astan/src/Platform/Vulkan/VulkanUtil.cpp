@@ -365,12 +365,12 @@ namespace Astan
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-        /*vmaCreateImage(static_cast<VulkanRendererAPI*>(rhi)->m_assets_allocator,
+        vmaCreateImage(static_cast<VulkanRendererAPI*>(rhi)->m_assets_allocator,
             &image_create_info,
             &allocInfo,
             &image,
             &image_allocation,
-            NULL);*/
+            NULL);
 
         // layout transitions -- image layout is set from none to destination
         transitionImageLayout(rhi,
@@ -481,12 +481,12 @@ namespace Astan
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
         //TODO vmaCreateImage 
-        /*vmaCreateImage(static_cast<VulkanRendererAPI*>(rhi)->m_assets_allocator,
+        vmaCreateImage(static_cast<VulkanRendererAPI*>(rhi)->m_assets_allocator,
             &image_create_info,
             &allocInfo,
             &image,
             &image_allocation,
-            NULL);*/
+            NULL);
 
         VkBuffer       inefficient_staging_buffer;
         VkDeviceMemory inefficient_staging_buffer_memory;

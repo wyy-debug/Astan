@@ -649,7 +649,6 @@ namespace Astan {
 		return false;
 	}
 
-
 	void EditorLayer::NewProject()
 	{
 		Project::New();
@@ -681,7 +680,6 @@ namespace Astan {
 	{
 		//Project::SaveActive();
 	}
-
 
 	void EditorLayer::NewScene()
 	{

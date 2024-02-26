@@ -5,7 +5,8 @@
 #include <imgui_internal.h>
 
 #include "examples/imgui_impl_glfw.h"
-#include "examples/imgui_impl_opengl3.h"
+#include "examples/imgui_impl_vulkan.h"
+//#include "examples/imgui_impl_opengl3.h"
 
 
 #include "Astan/Core/Application.h"
@@ -52,16 +53,19 @@ namespace Astan {
 
 		Application& app = Application::Get();
 		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
-		ImGui_ImplGlfw_InitForOpenGL(window, true);
-		ImGui_ImplOpenGL3_Init("#version 410");
+		ImGui_ImplGlfw_InitForVulkan(window, true);
+		//TODO
+		//ImGui_ImplGlfw_InitForOpenGL(window, true);
+		//ImGui_ImplVulkan_Init("#version 410");
+		//ImGui_ImplOpenGL3_Init("#version 410");
 	}
 
 
 	void ImGuiLayer::OnDetach()
 	{
 		AS_PROFILE_FUNCTION();
-
-		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
+		//ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}
@@ -80,7 +84,8 @@ namespace Astan {
 	{
 		AS_PROFILE_FUNCTION();
 
-		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplVulkan_NewFrame();
+		//ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
@@ -97,7 +102,7 @@ namespace Astan {
 
 		// ‰÷»æ ˝æ›
 		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData());
 
 		// ÷ÿªÊ£ø
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {

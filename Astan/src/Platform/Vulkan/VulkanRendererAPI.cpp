@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <optional>
 #include <set>
+#define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
 #include "VulkanUtil.h"
@@ -708,7 +709,7 @@ namespace Astan
 		allocatorCreateInfo.instance = m_instance;
 		allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
 
-		//vmaCreateAllocator(&allocatorCreateInfo, &m_assets_allocator);
+		vmaCreateAllocator(&allocatorCreateInfo, &m_assets_allocator);
 	}
 
 	bool VulkanRendererAPI::isPointLightShadowEnabled()
