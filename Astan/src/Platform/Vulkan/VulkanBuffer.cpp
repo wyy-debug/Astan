@@ -1,10 +1,16 @@
 #include "aspch.h"
+#include "vulkan/vulkan.h"
 #include "VulkanBuffer.h"
+#include "VulkanRendererAPI.h"
+
 
 namespace Astan
 {
 	VulkanVertexBuffer::VulkanVertexBuffer(uint32_t size)
 	{
+		Ref<VulkanRendererAPI> rhi;
+		VkBufferCreateInfo bufferInfo = {};
+		//buffer
 	}
 	VulkanVertexBuffer::VulkanVertexBuffer(float* vertices, uint32_t size)
 	{

@@ -231,20 +231,96 @@ namespace Astan
 
 	void VulkanRendererAPI::CreateBuffer(RHIDeviceSize size, RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory)
 	{
+		VkBuffer vk_buffer;
+        VkDeviceMemory vk_device_memory;
+        
+        VulkanUtil::createBuffer(m_physical_device, m_device, size, usage, properties, vk_buffer, vk_device_memory);
+
+        buffer = new VulkanBuffer();
+        buffer_memory = new VulkanDeviceMemory();
+        ((VulkanBuffer*)buffer)->setResource(vk_buffer);
+        ((VulkanDeviceMemory*)buffer_memory)->setResource(vk_device_memory);
 	}
 
 	void VulkanRendererAPI::CreateBufferAndInitialize(RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory, RHIDeviceSize size, void* data, int datasize)
 	{
+		VkBuffer vk_buffer;
+		VkDeviceMemory vk_device_memory;
+
+		VulkanUtil::createBufferAndInitialize(m_device, m_physical_device, usage, properties, &vk_buffer, &vk_device_memory, size, data, datasize);
+
+		buffer = new VulkanBuffer();
+		buffer_memory = new VulkanDeviceMemory();
+		((VulkanBuffer*)buffer)->setResource(vk_buffer);
+		((VulkanDeviceMemory*)buffer_memory)->setResource(vk_device_memory);
 	}
 
 	bool VulkanRendererAPI::CreateBufferVMA(VmaAllocator allocator, const RHIBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, RHIBuffer*& pBuffer, VmaAllocation* pAllocation, VmaAllocationInfo* pAllocationInfo)
 	{
-		return false;
+		VkBuffer vk_buffer;
+		VkBufferCreateInfo buffer_create_info{};
+		buffer_create_info.sType = (VkStructureType)pBufferCreateInfo->sType;
+		buffer_create_info.pNext = (const void*)pBufferCreateInfo->pNext;
+		buffer_create_info.flags = (VkBufferCreateFlags)pBufferCreateInfo->flags;
+		buffer_create_info.size = (VkDeviceSize)pBufferCreateInfo->size;
+		buffer_create_info.usage = (VkBufferUsageFlags)pBufferCreateInfo->usage;
+		buffer_create_info.sharingMode = (VkSharingMode)pBufferCreateInfo->sharingMode;
+		buffer_create_info.queueFamilyIndexCount = pBufferCreateInfo->queueFamilyIndexCount;
+		buffer_create_info.pQueueFamilyIndices = (const uint32_t*)pBufferCreateInfo->pQueueFamilyIndices;
+
+		pBuffer = new VulkanBuffer();
+		VkResult result = vmaCreateBuffer(allocator,
+			&buffer_create_info,
+			pAllocationCreateInfo,
+			&vk_buffer,
+			pAllocation,
+			pAllocationInfo);
+
+		((VulkanBuffer*)pBuffer)->setResource(vk_buffer);
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	bool VulkanRendererAPI::CreateBufferWithAlignmentVMA(VmaAllocator allocator, const RHIBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, RHIDeviceSize minAlignment, RHIBuffer*& pBuffer, VmaAllocation* pAllocation, VmaAllocationInfo* pAllocationInfo)
 	{
-		return false;
+		VkBuffer vk_buffer;
+		VkBufferCreateInfo buffer_create_info{};
+		buffer_create_info.sType = (VkStructureType)pBufferCreateInfo->sType;
+		buffer_create_info.pNext = (const void*)pBufferCreateInfo->pNext;
+		buffer_create_info.flags = (VkBufferCreateFlags)pBufferCreateInfo->flags;
+		buffer_create_info.size = (VkDeviceSize)pBufferCreateInfo->size;
+		buffer_create_info.usage = (VkBufferUsageFlags)pBufferCreateInfo->usage;
+		buffer_create_info.sharingMode = (VkSharingMode)pBufferCreateInfo->sharingMode;
+		buffer_create_info.queueFamilyIndexCount = pBufferCreateInfo->queueFamilyIndexCount;
+		buffer_create_info.pQueueFamilyIndices = (const uint32_t*)pBufferCreateInfo->pQueueFamilyIndices;
+
+		pBuffer = new VulkanBuffer();
+		VkResult result = vmaCreateBufferWithAlignment(allocator,
+			&buffer_create_info,
+			pAllocationCreateInfo,
+			minAlignment,
+			&vk_buffer,
+			pAllocation,
+			pAllocationInfo);
+
+		((VulkanBuffer*)pBuffer)->setResource(vk_buffer);
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vmaCreateBufferWithAlignment failed!");
+			return false;
+		}
 	}
 
 	void VulkanRendererAPI::Init()

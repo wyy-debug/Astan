@@ -64,7 +64,8 @@ namespace Astan {
 	void ImGuiLayer::OnDetach()
 	{
 		AS_PROFILE_FUNCTION();
-		ImGui_ImplVulkan_Shutdown();
+		//TODO
+		//ImGui_ImplVulkan_Shutdown();
 		//ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -83,8 +84,8 @@ namespace Astan {
 	void ImGuiLayer::Begin()
 	{
 		AS_PROFILE_FUNCTION();
-
-		ImGui_ImplVulkan_NewFrame();
+		// TODO
+		//ImGui_ImplVulkan_NewFrame();
 		//ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
