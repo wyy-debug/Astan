@@ -10,8 +10,8 @@ namespace Astan
 		switch (Renderer::GetAPI())
 		{
 			case RendererAPI::API::None: AS_CORE_ASSERT(false, "RendererAPI::Nnoe is currently not supported"); return nullptr;
-			case RendererAPI::API::OpenGL: return std::make_shared<OpenGLVertexArray>();
-			case RendererAPI::API::Vulkan: return std::make_shared<VulkanVertexArray>();
+			case RendererAPI::API::OpenGL: return CreateRef<OpenGLVertexArray>();
+			case RendererAPI::API::Vulkan: return CreateRef<VulkanVertexArray>();
 		}
 		AS_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
