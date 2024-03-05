@@ -9,8 +9,11 @@ namespace Astan
 
 	void RenderSystem::Initialize()
 	{
-		m_Vulkan = CreateRef<VulkanRendererAPI>();
-		m_Vulkan->Initialize();
+		m_RenderCommand = CreateRef<VulkanRendererAPI>();
+		m_RenderCommand->Initialize();
+		m_RenderPipeline = CreateRef<RenderPipeline>();
+		m_RenderPipeline->m_RenderCommand = m_RenderCommand;
+		m_RenderPipeline->Initialize();
 		// camera,scene is missing
 	}
 
