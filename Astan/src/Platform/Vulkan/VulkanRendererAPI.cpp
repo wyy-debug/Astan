@@ -802,9 +802,35 @@ namespace Astan
 	}
 	void VulkanRendererAPI::CreateImage(uint32_t image_width, uint32_t image_height, RHIFormat format, RHIImageTiling image_tiling, RHIImageUsageFlags image_usage_flags, RHIMemoryPropertyFlags memory_property_flags, RHIImage*& image, RHIDeviceMemory*& memory, RHIImageCreateFlags image_create_flags, uint32_t array_layers, uint32_t miplevels)
 	{
+		VkImage vk_image;
+		VkDeviceMemory vk_device_memory;
+		VulkanUtil::createImage(
+			m_physical_device,
+			m_device,
+			image_width,
+			image_height,
+			(VkFormat)format,
+			(VkImageTiling)image_tiling,
+			(VkImageUsageFlags)image_usage_flags,
+			(VkMemoryPropertyFlags)memory_property_flags,
+			vk_image,
+			vk_device_memory,
+			(VkImageCreateFlags)image_create_flags,
+			array_layers,
+			miplevels);
+
+		image = new VulkanImage();
+		memory = new VulkanDeviceMemory();
+		((VulkanImage*)image)->setResource(vk_image);
+		((VulkanDeviceMemory*)memory)->setResource(vk_device_memory);
 	}
 	void VulkanRendererAPI::CreateImageView(RHIImage* image, RHIFormat format, RHIImageAspectFlags image_aspect_flags, RHIImageViewType view_type, uint32_t layout_count, uint32_t miplevels, RHIImageView*& image_view)
 	{
+		image_view = new VulkanImageView();
+		VkImage vk_image = ((VulkanImage*)image)->getResource();
+		VkImageView vk_image_view;
+		vk_image_view = VulkanUtil::createImageView(m_device, vk_image, (VkFormat)format, image_aspect_flags, (VkImageViewType)view_type, layout_count, miplevels);
+		((VulkanImageView*)image_view)->setResource(vk_image_view);
 	}
 	void VulkanRendererAPI::CreateGlobalImage(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, void* texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels)
 	{

@@ -11,12 +11,12 @@ namespace Astan
 		RenderSystem() = default;
 		~RenderSystem();
 		void Initialize();
-		void Tick(Scene scene);
+		void Tick();
 	private:
 		Ref<VulkanRendererAPI> m_RenderCommand;
 		Ref<RenderPipeline> m_RenderPipeline;
-		Camera m_Camera;
-		Scene m_Scene;
+		Ref<EditorCamera> m_RenderCamera;
+		Ref<Scene> m_RenderScene;
 		
 	};
 }
