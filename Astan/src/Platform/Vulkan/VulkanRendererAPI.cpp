@@ -872,7 +872,155 @@ namespace Astan
 	}
 	bool VulkanRendererAPI::CreateRenderPass(const RHIRenderPassCreateInfo* pCreateInfo, RHIRenderPass*& pRenderPass)
 	{
-		return false;
+		// attachment convert
+		std::vector<VkAttachmentDescription> vk_attachments(pCreateInfo->attachmentCount);
+		for (int i = 0; i < pCreateInfo->attachmentCount; ++i)
+		{
+			const auto& rhi_desc = pCreateInfo->pAttachments[i];
+			auto& vk_desc = vk_attachments[i];
+
+			vk_desc.flags = (VkAttachmentDescriptionFlags)(rhi_desc).flags;
+			vk_desc.format = (VkFormat)(rhi_desc).format;
+			vk_desc.samples = (VkSampleCountFlagBits)(rhi_desc).samples;
+			vk_desc.loadOp = (VkAttachmentLoadOp)(rhi_desc).loadOp;
+			vk_desc.storeOp = (VkAttachmentStoreOp)(rhi_desc).storeOp;
+			vk_desc.stencilLoadOp = (VkAttachmentLoadOp)(rhi_desc).stencilLoadOp;
+			vk_desc.stencilStoreOp = (VkAttachmentStoreOp)(rhi_desc).stencilStoreOp;
+			vk_desc.initialLayout = (VkImageLayout)(rhi_desc).initialLayout;
+			vk_desc.finalLayout = (VkImageLayout)(rhi_desc).finalLayout;
+		};
+
+		// subpass convert
+		int totalAttachmentRefenrence = 0;
+		for (int i = 0; i < pCreateInfo->subpassCount; i++)
+		{
+			const auto& rhi_desc = pCreateInfo->pSubpasses[i];
+			totalAttachmentRefenrence += rhi_desc.inputAttachmentCount; // pInputAttachments
+			totalAttachmentRefenrence += rhi_desc.colorAttachmentCount; // pColorAttachments
+			if (rhi_desc.pDepthStencilAttachment != nullptr)
+			{
+				totalAttachmentRefenrence += rhi_desc.colorAttachmentCount; // pDepthStencilAttachment
+			}
+			if (rhi_desc.pResolveAttachments != nullptr)
+			{
+				totalAttachmentRefenrence += rhi_desc.colorAttachmentCount; // pResolveAttachments
+			}
+		}
+		std::vector<VkSubpassDescription> vk_subpass_description(pCreateInfo->subpassCount);
+		std::vector<VkAttachmentReference> vk_attachment_reference(totalAttachmentRefenrence);
+		int currentAttachmentRefence = 0;
+		for (int i = 0; i < pCreateInfo->subpassCount; ++i)
+		{
+			const auto& rhi_desc = pCreateInfo->pSubpasses[i];
+			auto& vk_desc = vk_subpass_description[i];
+
+			vk_desc.flags = (VkSubpassDescriptionFlags)(rhi_desc).flags;
+			vk_desc.pipelineBindPoint = (VkPipelineBindPoint)(rhi_desc).pipelineBindPoint;
+			vk_desc.preserveAttachmentCount = (rhi_desc).preserveAttachmentCount;
+			vk_desc.pPreserveAttachments = (const uint32_t*)(rhi_desc).pPreserveAttachments;
+
+			vk_desc.inputAttachmentCount = (rhi_desc).inputAttachmentCount;
+			vk_desc.pInputAttachments = &vk_attachment_reference[currentAttachmentRefence];
+			for (int i = 0; i < (rhi_desc).inputAttachmentCount; i++)
+			{
+				const auto& rhi_attachment_refence_input = (rhi_desc).pInputAttachments[i];
+				auto& vk_attachment_refence_input = vk_attachment_reference[currentAttachmentRefence];
+
+				vk_attachment_refence_input.attachment = rhi_attachment_refence_input.attachment;
+				vk_attachment_refence_input.layout = (VkImageLayout)(rhi_attachment_refence_input.layout);
+
+				currentAttachmentRefence += 1;
+			};
+
+			vk_desc.colorAttachmentCount = (rhi_desc).colorAttachmentCount;
+			vk_desc.pColorAttachments = &vk_attachment_reference[currentAttachmentRefence];
+			for (int i = 0; i < (rhi_desc).colorAttachmentCount; ++i)
+			{
+				const auto& rhi_attachment_refence_color = (rhi_desc).pColorAttachments[i];
+				auto& vk_attachment_refence_color = vk_attachment_reference[currentAttachmentRefence];
+
+				vk_attachment_refence_color.attachment = rhi_attachment_refence_color.attachment;
+				vk_attachment_refence_color.layout = (VkImageLayout)(rhi_attachment_refence_color.layout);
+
+				currentAttachmentRefence += 1;
+			};
+
+			if (rhi_desc.pResolveAttachments != nullptr)
+			{
+				vk_desc.pResolveAttachments = &vk_attachment_reference[currentAttachmentRefence];
+				for (int i = 0; i < (rhi_desc).colorAttachmentCount; ++i)
+				{
+					const auto& rhi_attachment_refence_resolve = (rhi_desc).pResolveAttachments[i];
+					auto& vk_attachment_refence_resolve = vk_attachment_reference[currentAttachmentRefence];
+
+					vk_attachment_refence_resolve.attachment = rhi_attachment_refence_resolve.attachment;
+					vk_attachment_refence_resolve.layout = (VkImageLayout)(rhi_attachment_refence_resolve.layout);
+
+					currentAttachmentRefence += 1;
+				};
+			}
+
+			if (rhi_desc.pDepthStencilAttachment != nullptr)
+			{
+				vk_desc.pDepthStencilAttachment = &vk_attachment_reference[currentAttachmentRefence];
+				for (int i = 0; i < (rhi_desc).colorAttachmentCount; ++i)
+				{
+					const auto& rhi_attachment_refence_depth = (rhi_desc).pDepthStencilAttachment[i];
+					auto& vk_attachment_refence_depth = vk_attachment_reference[currentAttachmentRefence];
+
+					vk_attachment_refence_depth.attachment = rhi_attachment_refence_depth.attachment;
+					vk_attachment_refence_depth.layout = (VkImageLayout)(rhi_attachment_refence_depth.layout);
+
+					currentAttachmentRefence += 1;
+				};
+			};
+		};
+		if (currentAttachmentRefence != totalAttachmentRefenrence)
+		{
+			AS_CORE_ERROR("currentAttachmentRefence != totalAttachmentRefenrence");
+			return false;
+		}
+
+		std::vector<VkSubpassDependency> vk_subpass_depandecy(pCreateInfo->dependencyCount);
+		for (int i = 0; i < pCreateInfo->dependencyCount; ++i)
+		{
+			const auto& rhi_desc = pCreateInfo->pDependencies[i];
+			auto& vk_desc = vk_subpass_depandecy[i];
+
+			vk_desc.srcSubpass = rhi_desc.srcSubpass;
+			vk_desc.dstSubpass = rhi_desc.dstSubpass;
+			vk_desc.srcStageMask = (VkPipelineStageFlags)(rhi_desc).srcStageMask;
+			vk_desc.dstStageMask = (VkPipelineStageFlags)(rhi_desc).dstStageMask;
+			vk_desc.srcAccessMask = (VkAccessFlags)(rhi_desc).srcAccessMask;
+			vk_desc.dstAccessMask = (VkAccessFlags)(rhi_desc).dstAccessMask;
+			vk_desc.dependencyFlags = (VkDependencyFlags)(rhi_desc).dependencyFlags;
+		};
+
+		VkRenderPassCreateInfo create_info{};
+		create_info.sType = (VkStructureType)pCreateInfo->sType;
+		create_info.pNext = (const void*)pCreateInfo->pNext;
+		create_info.flags = (VkRenderPassCreateFlags)pCreateInfo->flags;
+		create_info.attachmentCount = pCreateInfo->attachmentCount;
+		create_info.pAttachments = vk_attachments.data();
+		create_info.subpassCount = pCreateInfo->subpassCount;
+		create_info.pSubpasses = vk_subpass_description.data();
+		create_info.dependencyCount = pCreateInfo->dependencyCount;
+		create_info.pDependencies = vk_subpass_depandecy.data();
+
+		pRenderPass = new VulkanRenderPass();
+		VkRenderPass vk_render_pass;
+		VkResult result = vkCreateRenderPass(m_device, &create_info, nullptr, &vk_render_pass);
+		((VulkanRenderPass*)pRenderPass)->setResource(vk_render_pass);
+
+		if (result == VK_SUCCESS)
+		{
+			return RHI_SUCCESS;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkCreateRenderPass failed!");
+			return false;
+		}
 	}
 	bool VulkanRendererAPI::CreateSampler(const RHISamplerCreateInfo* pCreateInfo, RHISampler*& pSampler)
 	{
@@ -1022,11 +1170,21 @@ namespace Astan
 	}
 	RHISwapChainDesc VulkanRendererAPI::GetSwapchainInfo()
 	{
-		return RHISwapChainDesc();
+		RHISwapChainDesc desc;
+		desc.image_format = m_swapchain_image_format;
+		desc.extent = m_swapchain_extent;
+		desc.viewport = &m_viewport;
+		desc.scissor = &m_scissor;
+		desc.imageViews = m_swapchain_imageviews;
+		return desc;
 	}
 	RHIDepthImageDesc VulkanRendererAPI::GetDepthImageInfo() const
 	{
-		return RHIDepthImageDesc();
+		RHIDepthImageDesc desc;
+		desc.depth_image_format = m_depth_image_format;
+		desc.depth_image_view = m_depth_image_view;
+		desc.depth_image = m_depth_image;
+		return desc;
 	}
 	uint8_t VulkanRendererAPI::GetMaxFramesInFlight() const
 	{
