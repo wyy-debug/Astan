@@ -1,4 +1,6 @@
 #include "MainCameraPass.h"
+#include "shader/mesh_vert.h"
+#include "shader/mesh_gbuffer_frag.h"
 
 void Astan::MainCameraPass::Initialize()
 {
@@ -547,7 +549,7 @@ void Astan::MainCameraPass::SetupDescriptorSetLayout()
         }
     }
 
-    // Mesh Global Bind Layout = 1 bind 0-8
+    // Mesh Global Bind Layout = 1 bind 0-7
     {
         RHIDescriptorSetLayoutBinding meshGlobalLayoutBindings[8];
 
@@ -616,7 +618,155 @@ void Astan::MainCameraPass::SetupDescriptorSetLayout()
         }
     }
 
+    // Mesh Material Bind Layout = 2 bing 0-5
     {
+        RHIDescriptorSetLayoutBinding meshMaterialLayoutBindings[6];
+        
+        RHIDescriptorSetLayoutBinding& meshMaterialLayoutUniformBufferBinding = meshMaterialLayoutBindings[0];
+        meshMaterialLayoutUniformBufferBinding.binding = 0;
+        meshMaterialLayoutUniformBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        meshMaterialLayoutUniformBufferBinding.descriptorCount = 1;
+        meshMaterialLayoutUniformBufferBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        meshMaterialLayoutUniformBufferBinding.pImmutableSamplers = nullptr;
+
+        RHIDescriptorSetLayoutBinding& meshMaterialLayoutBaseColorTextureBinding = meshMaterialLayoutBindings[1];
+        meshMaterialLayoutBaseColorTextureBinding.binding = 1;
+        meshMaterialLayoutBaseColorTextureBinding.descriptorType = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        meshMaterialLayoutBaseColorTextureBinding.descriptorCount = 1;
+        meshMaterialLayoutBaseColorTextureBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        meshMaterialLayoutBaseColorTextureBinding.pImmutableSamplers = nullptr;
+
+        RHIDescriptorSetLayoutBinding& meshMaterialLayoutMetallicRoughessTextureBindings = meshMaterialLayoutBindings[2];
+        meshMaterialLayoutMetallicRoughessTextureBindings = meshMaterialLayoutBaseColorTextureBinding;
+        meshMaterialLayoutMetallicRoughessTextureBindings.binding = 2;
+
+        RHIDescriptorSetLayoutBinding& meshMaterialLayoutNoramlRoughessTextureBindings = meshMaterialLayoutBindings[3];
+        meshMaterialLayoutNoramlRoughessTextureBindings = meshMaterialLayoutBaseColorTextureBinding;
+        meshMaterialLayoutNoramlRoughessTextureBindings.binding = 3;
+
+        RHIDescriptorSetLayoutBinding& meshMaterialLayoutOcclusionTextureBinding = meshMaterialLayoutBindings[4];
+        meshMaterialLayoutOcclusionTextureBinding = meshMaterialLayoutBaseColorTextureBinding;
+        meshMaterialLayoutOcclusionTextureBinding.binding = 4;
+
+        RHIDescriptorSetLayoutBinding& meshMaterialLayoutEmissiveTextureBinding = meshMaterialLayoutBindings[5];
+        meshMaterialLayoutEmissiveTextureBinding = meshMaterialLayoutBaseColorTextureBinding;
+        meshMaterialLayoutEmissiveTextureBinding.binding = 5;
+
+        RHIDescriptorSetLayoutCreateInfo meshMaterialLayoutCreateInfo;
+        meshMaterialLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        meshMaterialLayoutCreateInfo.pNext = NULL;
+        meshMaterialLayoutCreateInfo.flags = 0;
+        meshMaterialLayoutCreateInfo.bindingCount = 6;
+        meshMaterialLayoutCreateInfo.pBindings = meshMaterialLayoutBindings;
+
+        if (m_RenderCommand->CreateDescriptorSetLayout(&meshMaterialLayoutCreateInfo, m_DescriptorInfos[_mesh_per_material].layout) != RHI_SUCCESS)
+        {
+            throw std::runtime_error("create mesh material layout");
+        }
+    }
+
+    // sky box
+    {
+        RHIDescriptorSetLayoutBinding skyboxLayoutBindings[2];
+
+        RHIDescriptorSetLayoutBinding& skyboxLayoutPerframeStorageBufferBinding = skyboxLayoutBindings[0];
+        skyboxLayoutPerframeStorageBufferBinding.binding = 0;
+        skyboxLayoutPerframeStorageBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+        skyboxLayoutPerframeStorageBufferBinding.descriptorCount = 1;
+        skyboxLayoutPerframeStorageBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
+        skyboxLayoutPerframeStorageBufferBinding.pImmutableSamplers = NULL;
+
+        RHIDescriptorSetLayoutBinding& skyboxLayoutSpecularTextureBinding = skyboxLayoutBindings[1];
+        skyboxLayoutSpecularTextureBinding.binding = 1;
+        skyboxLayoutSpecularTextureBinding.descriptorType = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        skyboxLayoutSpecularTextureBinding.descriptorCount = 1;
+        skyboxLayoutSpecularTextureBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        skyboxLayoutSpecularTextureBinding.pImmutableSamplers = NULL;
+        
+        RHIDescriptorSetLayoutCreateInfo skyboxLayoutCreateInfo{};
+        skyboxLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        skyboxLayoutCreateInfo.bindingCount = 2;
+        skyboxLayoutCreateInfo.pBindings = skyboxLayoutBindings;
+
+        if (RHI_SUCCESS != m_RenderCommand->CreateDescriptorSetLayout(&skyboxLayoutCreateInfo, m_DescriptorInfos[_skybox].layout))
+        {
+            throw std::runtime_error("create skybox layout");
+        }
+    }
+
+    // axis
+    {
+        RHIDescriptorSetLayoutBinding axisLayoutBindings[2];
+
+        RHIDescriptorSetLayoutBinding& axisLayoutPerframeStorageBufferBinding = axisLayoutBindings[0];
+        axisLayoutPerframeStorageBufferBinding.binding = 0;
+        axisLayoutPerframeStorageBufferBinding.descriptorCount = 1;
+        axisLayoutPerframeStorageBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+        axisLayoutPerframeStorageBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
+        axisLayoutPerframeStorageBufferBinding.pImmutableSamplers = NULL;
+
+        RHIDescriptorSetLayoutBinding& axisLayoutStorageBufferBinding = axisLayoutBindings[1];
+        axisLayoutStorageBufferBinding.binding = 1;
+        axisLayoutStorageBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        axisLayoutStorageBufferBinding.descriptorCount = 1;
+        axisLayoutStorageBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
+        axisLayoutStorageBufferBinding.pImmutableSamplers = NULL;
+
+        RHIDescriptorSetLayoutCreateInfo axisLayoutCreateInfo{};
+        axisLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        axisLayoutCreateInfo.bindingCount = 2;
+        axisLayoutCreateInfo.pBindings = axisLayoutBindings;
+        
+        if (RHI_SUCCESS != m_RenderCommand->CreateDescriptorSetLayout(&axisLayoutCreateInfo, m_DescriptorInfos[_axis].layout))
+        {
+            throw std::runtime_error("create axis layout");
+        }
+    }
+    
+    // gbuffer
+    {
+        RHIDescriptorSetLayoutBinding gbufferLightingGlobalLayoutBindings[4];
+
+        RHIDescriptorSetLayoutBinding& gbufferNormalGlobalLayoutInputAttachmentBinding = gbufferLightingGlobalLayoutBindings[0];
+        gbufferNormalGlobalLayoutInputAttachmentBinding.binding = 0;
+        gbufferNormalGlobalLayoutInputAttachmentBinding.descriptorType = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbufferNormalGlobalLayoutInputAttachmentBinding.descriptorCount = 1;
+        gbufferNormalGlobalLayoutInputAttachmentBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+
+        RHIDescriptorSetLayoutBinding&
+            gbufferMetallicRoughnessShadingmodeidGlobalLayoutInputAttachmentBinding =
+            gbufferLightingGlobalLayoutBindings[1];
+        gbufferMetallicRoughnessShadingmodeidGlobalLayoutInputAttachmentBinding.binding = 1;
+        gbufferMetallicRoughnessShadingmodeidGlobalLayoutInputAttachmentBinding.descriptorType = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbufferMetallicRoughnessShadingmodeidGlobalLayoutInputAttachmentBinding.descriptorCount = 1;
+        gbufferMetallicRoughnessShadingmodeidGlobalLayoutInputAttachmentBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        
+        RHIDescriptorSetLayoutBinding& gbufferAlbedoGlobalLayoutInputAttachmentBinding =
+            gbufferLightingGlobalLayoutBindings[2];
+        gbufferAlbedoGlobalLayoutInputAttachmentBinding.binding = 2;
+        gbufferAlbedoGlobalLayoutInputAttachmentBinding.descriptorType = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbufferAlbedoGlobalLayoutInputAttachmentBinding.descriptorCount = 1;
+        gbufferAlbedoGlobalLayoutInputAttachmentBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        
+        RHIDescriptorSetLayoutBinding& gbufferDepthGlobalLayoutInputAttachmentBinding =
+            gbufferLightingGlobalLayoutBindings[3];
+        gbufferDepthGlobalLayoutInputAttachmentBinding.binding = 3;
+        gbufferDepthGlobalLayoutInputAttachmentBinding.descriptorType = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        gbufferDepthGlobalLayoutInputAttachmentBinding.descriptorCount = 1;
+        gbufferDepthGlobalLayoutInputAttachmentBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+
+        RHIDescriptorSetLayoutCreateInfo gbufferLightingGlobalLayoutCreateInfo;
+        gbufferLightingGlobalLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        gbufferLightingGlobalLayoutCreateInfo.pNext = NULL;
+        gbufferLightingGlobalLayoutCreateInfo.flags = 0;
+        gbufferLightingGlobalLayoutCreateInfo.bindingCount =
+            sizeof(gbufferLightingGlobalLayoutBindings) / sizeof(gbufferLightingGlobalLayoutBindings[0]);
+        gbufferLightingGlobalLayoutCreateInfo.pBindings = gbufferLightingGlobalLayoutBindings;
+
+        if (RHI_SUCCESS != m_RenderCommand->CreateDescriptorSetLayout(&gbufferLightingGlobalLayoutCreateInfo, m_DescriptorInfos[_deferred_lighting].layout))
+        {
+            throw std::runtime_error("create deferred lighting global layout");
+        }
 
     }
 
@@ -624,6 +774,43 @@ void Astan::MainCameraPass::SetupDescriptorSetLayout()
 
 void Astan::MainCameraPass::SetupPipelines()
 {
+    m_RenderPipelines.resize(_render_pipeline_type_count);
+
+    // mesh gbuffer
+    {
+        RHIDescriptorSetLayout* descriptorLayouts[3] = { m_DescriptorInfos[_mesh_global].layout,
+                                                        m_DescriptorInfos[_per_mesh].layout,
+                                                        m_DescriptorInfos[_mesh_per_material].layout };
+
+        RHIPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+        pipelineLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.setLayoutCount = 3;
+        pipelineLayoutCreateInfo.pSetLayouts = descriptorLayouts;
+
+        if (RHI_SUCCESS != m_RenderCommand->CreatePipelineLayout(&pipelineLayoutCreateInfo, m_RenderPipelines[_render_pipeline_type_mesh_gbuffer].layout))
+        {
+            throw std::runtime_error("create mesh gbuffer pipeline layout");
+        }
+
+        RHIShader* vertShaderModule = m_RenderCommand->CreateShaderModule(MESH_VERT);
+        RHIShader* fragShaderModule = m_RenderCommand->CreateShaderModule(MESH_GBUFFER_FRAG);
+
+        RHIPipelineShaderStageCreateInfo vertPipelineShaderStageCreateInfo{};
+        vertPipelineShaderStageCreateInfo.sType = RHI_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        vertPipelineShaderStageCreateInfo.stage = RHI_SHADER_STAGE_VERTEX_BIT;
+        vertPipelineShaderStageCreateInfo.module = vertShaderModule;
+        vertPipelineShaderStageCreateInfo.pName = "main";
+
+        RHIPipelineShaderStageCreateInfo fragPipelineShaderStageCreateInfo{};
+        fragPipelineShaderStageCreateInfo.sType = RHI_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        fragPipelineShaderStageCreateInfo.stage = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        fragPipelineShaderStageCreateInfo.module = fragShaderModule;
+        fragPipelineShaderStageCreateInfo.pName = "main";
+
+        RHIPipelineShaderStageCreateInfo shaderStages[] = { vertPipelineShaderStageCreateInfo ,fragPipelineShaderStageCreateInfo };
+
+    }   auto vertexBindingDescriptions = MeshVertex::
+
 }
 
 void Astan::MainCameraPass::SetupDescriptorSet()

@@ -26,6 +26,22 @@ namespace Astan
             _layout_type_count
         };
 
+        // 渲染管线类型
+        // 1. model
+        // 2. sky box
+        // 3. axis
+        // 4. billboard type particle
+        enum RenderPipeLineType : uint8_t
+        {
+            _render_pipeline_type_mesh_gbuffer = 0,
+            _render_pipeline_type_deferred_lighting,
+            _render_pipeline_type_mesh_lighting,
+            _render_pipeline_type_skybox,
+            _render_pipeline_type_axis,
+            _render_pipeline_type_particle,
+            _render_pipeline_type_count
+        };
+
 	public:
 		void Initialize() override;
 		void Draw() override;

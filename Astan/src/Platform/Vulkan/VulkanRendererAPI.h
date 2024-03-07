@@ -47,7 +47,7 @@ namespace Astan
         void CreateFramebufferImageAndView() override;
         RHISampler* GetOrCreateDefaultSampler(RHIDefaultSamplerType type) override;
         RHISampler* GetOrCreateMipmapSampler(uint32_t width, uint32_t height) override;
-        RHISampler* CreateShaderModule(const std::vector<unsigned char>& shader_code) override;
+        RHIShader* CreateShaderModule(const std::vector<unsigned char>& shader_code) override;
         void CreateBuffer(RHIDeviceSize size, RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory) override;
         void CreateBufferAndInitialize(RHIBufferUsageFlags usage, RHIMemoryPropertyFlags properties, RHIBuffer*& buffer, RHIDeviceMemory*& buffer_memory, RHIDeviceSize size, void* data = nullptr, int datasize = 0) override;
         bool CreateBufferVMA(VmaAllocator allocator,

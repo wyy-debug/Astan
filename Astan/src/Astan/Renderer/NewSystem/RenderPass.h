@@ -58,6 +58,12 @@ namespace Astan
 			RHIDescriptorSetLayout* layout;
 			RHIDescriptorSet* descriptor_set;
 		};
+
+		struct RenderPipelineBase
+		{
+			RHIPipelineLayout* layout;
+			RHIPipeline* pipeline;
+		};
 		virtual void Initialize();
 		virtual void Draw();
 		virtual void SetCommonInfo(Ref<VulkanRendererAPI> renderCommand);
@@ -65,7 +71,7 @@ namespace Astan
 	public:
 		Framebuffer m_FrameBuffer;
 		std::vector<Descriptor>  m_DescriptorInfos;
-
+		std::vector<RenderPipelineBase> m_RenderPipelines;
 	
 	protected:
 		Ref<VulkanRendererAPI> m_RenderCommand;
