@@ -2,7 +2,12 @@
 
 void Astan::MainCameraPass::Initialize()
 {
+    // 设置附件
 	SetupAttachments();
+    // 设置渲染pass
+    SetupRenderPass();
+    // 设置描述符布局
+    SetupDescriptorSetLayout();
 }
 
 void Astan::MainCameraPass::Draw()
@@ -517,6 +522,104 @@ void Astan::MainCameraPass::SetupRenderPass()
 
 void Astan::MainCameraPass::SetupDescriptorSetLayout()
 {
+    m_DescriptorInfos.resize(_layout_type_count);
+
+    // MeshLayout Bind layout = 0 bind = 0
+    {
+        RHIDescriptorSetLayoutBinding meshMeshLayoutBindings[1];
+
+        // Vertex
+        RHIDescriptorSetLayoutBinding& meshMeshLayoutUniformBufferBinding = meshMeshLayoutBindings[0];
+        meshMeshLayoutUniformBufferBinding.binding = 0; 
+        meshMeshLayoutUniformBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        meshMeshLayoutUniformBufferBinding.descriptorCount = 1;
+        meshMeshLayoutUniformBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
+        meshMeshLayoutUniformBufferBinding.pImmutableSamplers = NULL;
+
+        RHIDescriptorSetLayoutCreateInfo meshMeshLayoutCreateInfo{};
+        meshMeshLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        meshMeshLayoutCreateInfo.bindingCount = 1;
+        meshMeshLayoutCreateInfo.pBindings = meshMeshLayoutBindings;
+
+        if (m_RenderCommand->CreateDescriptorSetLayout(&meshMeshLayoutCreateInfo, m_DescriptorInfos[_per_mesh].layout) != RHI_SUCCESS)
+        {
+            throw std::runtime_error("create mesh mesh layout");
+        }
+    }
+
+    // Mesh Global Bind Layout = 1 bind 0-8
+    {
+        RHIDescriptorSetLayoutBinding meshGlobalLayoutBindings[8];
+
+        // Vertex Fragment
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutPerframeStorageBufferBinding = meshGlobalLayoutBindings[0];
+        meshGlobalLayoutPerframeStorageBufferBinding.binding = 0;
+        meshGlobalLayoutPerframeStorageBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+        meshGlobalLayoutPerframeStorageBufferBinding.descriptorCount = 1;
+        meshGlobalLayoutPerframeStorageBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT | RHI_SHADER_STAGE_FRAGMENT_BIT;
+        meshGlobalLayoutPerframeStorageBufferBinding.pImmutableSamplers = NULL;
+
+        // Vertex 
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutPerdrawcallStorageBufferBinding = meshGlobalLayoutBindings[1];
+        meshGlobalLayoutPerdrawcallStorageBufferBinding.binding = 1;
+        meshGlobalLayoutPerdrawcallStorageBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+        meshGlobalLayoutPerdrawcallStorageBufferBinding.descriptorCount = 1;
+        meshGlobalLayoutPerdrawcallStorageBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
+        meshGlobalLayoutPerdrawcallStorageBufferBinding.pImmutableSamplers = NULL;
+
+        // Vertex
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutPerDrawcallVertexBlendingStorageBufferBinding = meshGlobalLayoutBindings[2];
+        meshGlobalLayoutPerDrawcallVertexBlendingStorageBufferBinding.binding = 2;
+        meshGlobalLayoutPerDrawcallVertexBlendingStorageBufferBinding.descriptorType = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+        meshGlobalLayoutPerDrawcallVertexBlendingStorageBufferBinding.descriptorCount = 1;
+        meshGlobalLayoutPerDrawcallVertexBlendingStorageBufferBinding.stageFlags = RHI_SHADER_STAGE_VERTEX_BIT;
+        meshGlobalLayoutPerDrawcallVertexBlendingStorageBufferBinding.pImmutableSamplers = NULL;
+
+        // Fragment
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutBrdfLUTTextureBinding = meshGlobalLayoutBindings[3];
+        meshGlobalLayoutBrdfLUTTextureBinding.binding = 3;
+        meshGlobalLayoutBrdfLUTTextureBinding.descriptorType = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        meshGlobalLayoutBrdfLUTTextureBinding.descriptorCount = 1;
+        meshGlobalLayoutBrdfLUTTextureBinding.stageFlags = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        meshGlobalLayoutBrdfLUTTextureBinding.pImmutableSamplers = NULL;
+        
+        // Fragment
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutIrradianceTextureBinding = meshGlobalLayoutBindings[4];
+        meshGlobalLayoutIrradianceTextureBinding = meshGlobalLayoutBrdfLUTTextureBinding;
+        meshGlobalLayoutIrradianceTextureBinding.binding = 4;
+
+        // Fragment
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutSpecularTextureBinding = meshGlobalLayoutBindings[5];
+        meshGlobalLayoutSpecularTextureBinding = meshGlobalLayoutBrdfLUTTextureBinding;
+        meshGlobalLayoutSpecularTextureBinding.binding = 5;
+
+        // Fragment
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutPointLightShadowTextureBinding = meshGlobalLayoutBindings[6];
+        meshGlobalLayoutPointLightShadowTextureBinding = meshGlobalLayoutBrdfLUTTextureBinding;
+        meshGlobalLayoutPointLightShadowTextureBinding.binding = 6;
+
+        // Fragment
+        RHIDescriptorSetLayoutBinding& meshGlobalLayoutDirectionalLightShadowTextureBinding = meshGlobalLayoutBindings[7];
+        meshGlobalLayoutDirectionalLightShadowTextureBinding = meshGlobalLayoutBrdfLUTTextureBinding;
+        meshGlobalLayoutDirectionalLightShadowTextureBinding.binding = 7;
+
+        RHIDescriptorSetLayoutCreateInfo meshGlobalLayoutCreateInfo;
+        meshGlobalLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        meshGlobalLayoutCreateInfo.pNext = NULL;
+        meshGlobalLayoutCreateInfo.flags = 0;
+        meshGlobalLayoutCreateInfo.bindingCount = (sizeof(meshGlobalLayoutBindings) / sizeof(meshGlobalLayoutBindings[0]));
+        meshGlobalLayoutCreateInfo.pBindings = meshGlobalLayoutBindings;
+
+        if (RHI_SUCCESS != m_RenderCommand->CreateDescriptorSetLayout(&meshGlobalLayoutCreateInfo, m_DescriptorInfos[_mesh_global].layout));
+        {
+            throw std::runtime_error("create mesh global layout");
+        }
+    }
+
+    {
+
+    }
+
 }
 
 void Astan::MainCameraPass::SetupPipelines()

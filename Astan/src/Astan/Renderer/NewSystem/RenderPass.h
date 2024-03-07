@@ -52,12 +52,20 @@ namespace Astan
 
 			std::vector<FrameBufferAttachment> attachments;
 		};
+
+		struct Descriptor
+		{
+			RHIDescriptorSetLayout* layout;
+			RHIDescriptorSet* descriptor_set;
+		};
 		virtual void Initialize();
 		virtual void Draw();
 		virtual void SetCommonInfo(Ref<VulkanRendererAPI> renderCommand);
 
 	public:
 		Framebuffer m_FrameBuffer;
+		std::vector<Descriptor>  m_DescriptorInfos;
+
 	
 	protected:
 		Ref<VulkanRendererAPI> m_RenderCommand;
