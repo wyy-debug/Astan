@@ -1,6 +1,7 @@
 #include "MainCameraPass.h"
 #include "shader/mesh_vert.h"
 #include "shader/mesh_gbuffer_frag.h"
+#include "RenderMesh.h"
 
 void Astan::MainCameraPass::Initialize()
 {
@@ -809,7 +810,130 @@ void Astan::MainCameraPass::SetupPipelines()
 
         RHIPipelineShaderStageCreateInfo shaderStages[] = { vertPipelineShaderStageCreateInfo ,fragPipelineShaderStageCreateInfo };
 
-    }   auto vertexBindingDescriptions = MeshVertex::
+        auto vertexBindingDescriptions = MeshVertex::GetBindingDescriptions();
+        auto vertexAttributeDescriptions = MeshVertex::GetAttributeDescriptions();
+
+        RHIPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+        vertexInputStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputStateCreateInfo.vertexBindingDescriptionCount = vertexBindingDescriptions.size();
+        vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexBindingDescriptions[0];
+        vertexInputStateCreateInfo.vertexAttributeDescriptionCount = vertexAttributeDescriptions.size();
+        vertexInputStateCreateInfo.pVertexAttributeDescriptions = &vertexAttributeDescriptions[0];
+
+        RHIPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
+        inputAssemblyCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssemblyCreateInfo.topology = RHI_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        inputAssemblyCreateInfo.primitiveRestartEnable = RHI_FALSE;
+
+        RHIPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+        viewportStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportStateCreateInfo.viewportCount = 1;
+        viewportStateCreateInfo.pViewports = m_RenderCommand->GetSwapchainInfo().viewport;
+        viewportStateCreateInfo.scissorCount = 1;
+        viewportStateCreateInfo.pScissors = m_RenderCommand->GetSwapchainInfo().scissor;
+
+        RHIPipelineRasterizationStateCreateInfo rasteriazationStateCreateInfo{};
+        rasteriazationStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasteriazationStateCreateInfo.depthClampEnable = RHI_FALSE;
+        rasteriazationStateCreateInfo.rasterizerDiscardEnable = RHI_FALSE;
+        rasteriazationStateCreateInfo.polygonMode = RHI_POLYGON_MODE_FILL;
+        rasteriazationStateCreateInfo.lineWidth = 1.0f;
+        rasteriazationStateCreateInfo.cullMode = RHI_CULL_MODE_BACK_BIT;
+        rasteriazationStateCreateInfo.frontFace = RHI_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasteriazationStateCreateInfo.depthBiasEnable = FALSE;
+        rasteriazationStateCreateInfo.depthBiasConstantFactor = 0.0f;
+        rasteriazationStateCreateInfo.depthBiasClamp = 0.0f;
+        rasteriazationStateCreateInfo.depthBiasSlopeFactor = 0.0f;
+
+        RHIPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+        multisampleStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampleStateCreateInfo.sampleShadingEnable = RHI_FALSE;
+        multisampleStateCreateInfo.rasterizationSamples = RHI_SAMPLE_COUNT_1_BIT;
+
+        RHIPipelineColorBlendAttachmentState colorBlendAttachments[3] = {};
+        colorBlendAttachments[0].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
+                                                  RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachments[0].blendEnable = RHI_FALSE;
+        colorBlendAttachments[0].srcColorBlendFactor = RHI_BLEND_FACTOR_ONE;
+        colorBlendAttachments[0].dstColorBlendFactor = RHI_BLEND_FACTOR_ZERO;
+        colorBlendAttachments[0].colorBlendOp = RHI_BLEND_OP_ADD;
+        colorBlendAttachments[0].srcAlphaBlendFactor = RHI_BLEND_FACTOR_ONE;
+        colorBlendAttachments[0].dstAlphaBlendFactor = RHI_BLEND_FACTOR_ZERO;
+        colorBlendAttachments[0].alphaBlendOp = RHI_BLEND_OP_ADD;
+
+        colorBlendAttachments[1].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
+                                                  RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachments[1].blendEnable = RHI_FALSE;
+        colorBlendAttachments[1].srcColorBlendFactor = RHI_BLEND_FACTOR_ONE;
+        colorBlendAttachments[1].dstColorBlendFactor = RHI_BLEND_FACTOR_ZERO;
+        colorBlendAttachments[1].colorBlendOp = RHI_BLEND_OP_ADD;
+        colorBlendAttachments[1].srcAlphaBlendFactor = RHI_BLEND_FACTOR_ONE;
+        colorBlendAttachments[1].dstAlphaBlendFactor = RHI_BLEND_FACTOR_ZERO;
+        colorBlendAttachments[1].alphaBlendOp = RHI_BLEND_OP_ADD;
+
+        colorBlendAttachments[2].colorWriteMask = RHI_COLOR_COMPONENT_R_BIT | RHI_COLOR_COMPONENT_G_BIT |
+            RHI_COLOR_COMPONENT_B_BIT | RHI_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachments[2].blendEnable = RHI_FALSE;
+        colorBlendAttachments[2].srcColorBlendFactor = RHI_BLEND_FACTOR_ONE;
+        colorBlendAttachments[2].dstColorBlendFactor = RHI_BLEND_FACTOR_ZERO;
+        colorBlendAttachments[2].colorBlendOp = RHI_BLEND_OP_ADD;
+        colorBlendAttachments[2].srcAlphaBlendFactor = RHI_BLEND_FACTOR_ONE;
+        colorBlendAttachments[2].dstAlphaBlendFactor = RHI_BLEND_FACTOR_ZERO;
+        colorBlendAttachments[2].alphaBlendOp = RHI_BLEND_OP_ADD;
+
+        RHIPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
+        colorBlendStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlendStateCreateInfo.logicOpEnable = RHI_FALSE;
+        colorBlendStateCreateInfo.logicOp = RHI_LOGIC_OP_COPY;
+        colorBlendStateCreateInfo.attachmentCount = sizeof(colorBlendAttachments) / sizeof(colorBlendAttachments[0]);
+        colorBlendStateCreateInfo.blendConstants[0] = 0.0f;
+        colorBlendStateCreateInfo.blendConstants[1] = 0.0f;
+        colorBlendStateCreateInfo.blendConstants[2] = 0.0f;
+        colorBlendStateCreateInfo.blendConstants[3] = 0.0f;
+
+        RHIPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
+        depthStencilCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilCreateInfo.depthTestEnable = RHI_TRUE;
+        depthStencilCreateInfo.depthWriteEnable = RHI_TRUE;
+        depthStencilCreateInfo.depthCompareOp = RHI_COMPARE_OP_LESS;
+        depthStencilCreateInfo.depthBoundsTestEnable = RHI_FALSE;
+        depthStencilCreateInfo.stencilTestEnable = RHI_FALSE;
+
+        RHIDynamicState     dynamicStates[] = { RHI_DYNAMIC_STATE_VIEWPORT,RHI_DYNAMIC_STATE_SCISSOR };
+        RHIPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+        dynamicStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicStateCreateInfo.dynamicStateCount = 2;
+        dynamicStateCreateInfo.pDynamicStates = dynamicStates;
+
+        RHIGraphicsPipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = RHI_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.stageCount = 2;
+        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.pVertexInputState = &vertexInputStateCreateInfo;
+        pipelineInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+        pipelineInfo.pViewportState = &viewportStateCreateInfo;
+        pipelineInfo.pRasterizationState = &rasteriazationStateCreateInfo;
+        pipelineInfo.pMultisampleState = &multisampleStateCreateInfo;
+        pipelineInfo.pColorBlendState = &colorBlendStateCreateInfo;
+        pipelineInfo.pDepthStencilState = &depthStencilCreateInfo;
+        pipelineInfo.layout = m_RenderPipelines[_render_pipeline_type_mesh_gbuffer].layout;
+        pipelineInfo.renderPass = m_FrameBuffer.render_pass;
+        pipelineInfo.subpass = _main_camera_subpass_basepass;
+        pipelineInfo.basePipelineHandle = RHI_NULL_HANDLE;
+        pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
+
+        if (RHI_SUCCESS != m_RenderCommand->CreateGraphicsPipelines(RHI_NULL_HANDLE,
+            1,
+            &pipelineInfo,
+            m_RenderPipelines[_render_pipeline_type_mesh_gbuffer].pipeline))
+        {
+            throw std::runtime_error("create mesh gbuffer graphics pipeline");
+        }
+
+        m_RenderCommand->DestroyShaderModule(vertShaderModule);
+        m_RenderCommand->DestroyShaderModule(fragShaderModule);
+
+    }
 
 }
 
