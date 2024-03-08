@@ -932,9 +932,46 @@ void Astan::MainCameraPass::SetupPipelines()
 
         m_RenderCommand->DestroyShaderModule(vertShaderModule);
         m_RenderCommand->DestroyShaderModule(fragShaderModule);
-
     }
 
+    // deferred lighting
+    {
+        RHIDescriptorSetLayout* descriptorsetLayouts[3] = { m_DescriptorInfos[_mesh_global].layout,m_DescriptorInfos[_deferred_lighting].layout,m_DescriptorInfos[_skybox].layout };
+
+        RHIPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+        pipelineLayoutCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.setLayoutCount = sizeof(descriptorsetLayouts) / sizeof(descriptorsetLayouts[0]);
+        pipelineLayoutCreateInfo.pSetLayouts = descriptorsetLayouts;
+        
+        if (RHI_SUCCESS != m_RenderCommand->CreatePipelineLayout(&pipelineLayoutCreateInfo, m_RenderPipelines[_render_pipeline_type_deferred_lighting].layout));
+        {
+            throw std::runtime_error("create deferred lighting pipeline layout");
+        }
+
+        RHIShader* vertShaderModule = m_RenderCommand->CreateShaderModule(DEFERRED_LIGHTING_VERT);
+        RHIShader* fragShaderModule = m_RenderCommand->CreateShaderModule(DEFERRED_LIGHTING_FRAG);
+
+        RHIPipelineShaderStageCreateInfo vertPipelineShaderStageCreateInfo{};
+        vertPipelineShaderStageCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vertPipelineShaderStageCreateInfo.stage = RHI_SHADER_STAGE_VERTEX_BIT;
+        vertPipelineShaderStageCreateInfo.module = vertShaderModule;
+        vertPipelineShaderStageCreateInfo.pName = "main";
+
+        RHIPipelineShaderStageCreateInfo fragPipelineShaderStageCreateInfo{};
+        fragPipelineShaderStageCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        fragPipelineShaderStageCreateInfo.stage = RHI_SHADER_STAGE_FRAGMENT_BIT;
+        fragPipelineShaderStageCreateInfo.module = fragShaderModule;
+        fragPipelineShaderStageCreateInfo.pName = "main";
+
+        RHIPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+        vertexInputStateCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputStateCreateInfo.vertexBindingDescriptionCount = 0;
+        vertexInputStateCreateInfo.pVertexBindingDescriptions = NULL;
+        vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 0;
+        vertexInputStateCreateInfo.pVertexAttributeDescriptions = NULL;
+
+        
+    }
 }
 
 void Astan::MainCameraPass::SetupDescriptorSet()
