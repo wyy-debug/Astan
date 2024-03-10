@@ -42,6 +42,15 @@ namespace Astan
             _render_pipeline_type_count
         };
 
+        RHIImageView* m_point_light_shadow_color_image_view;
+        RHIImageView* m_directional_light_shadow_color_image_view;
+
+        bool                                         m_is_show_axis{ false };
+        bool                                         m_enable_fxaa{ false };
+        size_t                                       m_selected_axis{ 3 };
+        MeshPerframeStorageBufferObject              m_mesh_perframe_storage_buffer_object;
+        AxisStorageBufferObject                      m_axis_storage_buffer_object;
+
 	public:
 		void Initialize() override;
 		void Draw() override;
@@ -59,7 +68,6 @@ namespace Astan
         void SetupModelGlobalDescriptorSet();
         void SetupSkyboxDescriptorSet();
         void SetupAxisDescriptorSet();
-        void SetupParticleDescriptorSet();
         void SetupGbufferLightingDescriptorSet();
 
         void DrawMeshGbuffer();
@@ -67,5 +75,8 @@ namespace Astan
         void DrawMeshLighting();
         void DrawSkybox();
         void DrawAxis();
+
+    private:
+        std::vector<RHIFramebuffer*> m_swapchain_framebuffers;
 	};
 }

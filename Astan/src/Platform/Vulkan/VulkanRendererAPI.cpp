@@ -67,7 +67,42 @@ namespace Astan
 
 	bool VulkanRendererAPI::AllocateDescriptorSets(const RHIDescriptorSetAllocateInfo* pAllocateInfo, RHIDescriptorSet*& pDescriptorSets)
 	{
-		return false;
+		//descriptor_set_layout
+		int descriptor_set_layout_size = pAllocateInfo->descriptorSetCount;
+		std::vector<VkDescriptorSetLayout> vk_descriptor_set_layout_list(descriptor_set_layout_size);
+		for (int i = 0; i < descriptor_set_layout_size; ++i)
+		{
+			const auto& rhi_descriptor_set_layout_element = pAllocateInfo->pSetLayouts[i];
+			auto& vk_descriptor_set_layout_element = vk_descriptor_set_layout_list[i];
+
+			vk_descriptor_set_layout_element = ((VulkanDescriptorSetLayout*)rhi_descriptor_set_layout_element)->getResource();
+
+			VulkanDescriptorSetLayout* test = ((VulkanDescriptorSetLayout*)rhi_descriptor_set_layout_element);
+
+			test = nullptr;
+		};
+
+		VkDescriptorSetAllocateInfo descriptorset_allocate_info{};
+		descriptorset_allocate_info.sType = (VkStructureType)pAllocateInfo->sType;
+		descriptorset_allocate_info.pNext = (const void*)pAllocateInfo->pNext;
+		descriptorset_allocate_info.descriptorPool = ((VulkanDescriptorPool*)(pAllocateInfo->descriptorPool))->getResource();
+		descriptorset_allocate_info.descriptorSetCount = pAllocateInfo->descriptorSetCount;
+		descriptorset_allocate_info.pSetLayouts = vk_descriptor_set_layout_list.data();
+
+		VkDescriptorSet vk_descriptor_set;
+		pDescriptorSets = new VulkanDescriptorSet;
+		VkResult result = vkAllocateDescriptorSets(m_device, &descriptorset_allocate_info, &vk_descriptor_set);
+		((VulkanDescriptorSet*)pDescriptorSets)->setResource(vk_descriptor_set);
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkAllocateDescriptorSets failed!");
+			return false;
+		}
 	}
 
 	void VulkanRendererAPI::CreateSwapchain()
@@ -216,7 +251,30 @@ namespace Astan
 
 	RHISampler* VulkanRendererAPI::GetOrCreateDefaultSampler(RHIDefaultSamplerType type)
 	{
-		return nullptr;
+		switch (type)
+		{
+		case Astan::Default_Sampler_Linear:
+			if (m_linear_sampler == nullptr)
+			{
+				m_linear_sampler = new VulkanSampler();
+				((VulkanSampler*)m_linear_sampler)->setResource(VulkanUtil::getOrCreateLinearSampler(m_physical_device, m_device));
+			}
+			return m_linear_sampler;
+			break;
+
+		case Astan::Default_Sampler_Nearest:
+			if (m_nearest_sampler == nullptr)
+			{
+				m_nearest_sampler = new VulkanSampler();
+				((VulkanSampler*)m_nearest_sampler)->setResource(VulkanUtil::getOrCreateNearestSampler(m_physical_device, m_device));
+			}
+			return m_nearest_sampler;
+			break;
+
+		default:
+			return nullptr;
+			break;
+		}
 	}
 
 	RHISampler* VulkanRendererAPI::GetOrCreateMipmapSampler(uint32_t width, uint32_t height)
@@ -660,7 +718,7 @@ namespace Astan
 	{
 		// default graphics command pool
 		{
-			m_rhi_command_pool = new VulkanCommandPool();
+			m_RenderCommand_command_pool = new VulkanCommandPool();
 			VkCommandPool vk_command_pool;
 			VkCommandPoolCreateInfo command_pool_create_info{};
 			command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -673,7 +731,7 @@ namespace Astan
 				AS_CORE_ERROR("vk create command pool");
 			}
 
-			((VulkanCommandPool*)m_rhi_command_pool)->setResource(vk_command_pool);
+			((VulkanCommandPool*)m_RenderCommand_command_pool)->setResource(vk_command_pool);
 		}
 
 		// other command pools
@@ -776,8 +834,8 @@ namespace Astan
 				AS_CORE_ERROR("vk create semaphore & fence");
 			}
 
-			m_rhi_is_frame_in_flight_fences[i] = new VulkanFence();
-			((VulkanFence*)m_rhi_is_frame_in_flight_fences[i])->setResource(m_is_frame_in_flight_fences[i]);
+			m_RenderCommand_is_frame_in_flight_fences[i] = new VulkanFence();
+			((VulkanFence*)m_RenderCommand_is_frame_in_flight_fences[i])->setResource(m_is_frame_in_flight_fences[i]);
 		}
 	}
 
@@ -865,7 +923,42 @@ namespace Astan
 	}
 	bool VulkanRendererAPI::CreateFramebuffer(const RHIFramebufferCreateInfo* pCreateInfo, RHIFramebuffer*& pFramebuffer)
 	{
-		return false;
+		//image_view
+		int image_view_size = pCreateInfo->attachmentCount;
+		std::vector<VkImageView> vk_image_view_list(image_view_size);
+		for (int i = 0; i < image_view_size; ++i)
+		{
+			const auto& rhi_image_view_element = pCreateInfo->pAttachments[i];
+			auto& vk_image_view_element = vk_image_view_list[i];
+
+			vk_image_view_element = ((VulkanImageView*)rhi_image_view_element)->getResource();
+		};
+
+		VkFramebufferCreateInfo create_info{};
+		create_info.sType = (VkStructureType)pCreateInfo->sType;
+		create_info.pNext = (const void*)pCreateInfo->pNext;
+		create_info.flags = (VkFramebufferCreateFlags)pCreateInfo->flags;
+		create_info.renderPass = ((VulkanRenderPass*)pCreateInfo->renderPass)->getResource();
+		create_info.attachmentCount = pCreateInfo->attachmentCount;
+		create_info.pAttachments = vk_image_view_list.data();
+		create_info.width = pCreateInfo->width;
+		create_info.height = pCreateInfo->height;
+		create_info.layers = pCreateInfo->layers;
+
+		pFramebuffer = new VulkanFramebuffer();
+		VkFramebuffer vk_framebuffer;
+		VkResult result = vkCreateFramebuffer(m_device, &create_info, nullptr, &vk_framebuffer);
+		((VulkanFramebuffer*)pFramebuffer)->setResource(vk_framebuffer);
+
+		if (result == VK_SUCCESS)
+		{
+			return RHI_SUCCESS;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkCreateFramebuffer failed!");
+			return false;
+		}
 	}
 	bool VulkanRendererAPI::CreateGraphicsPipelines(RHIPipelineCache* pipelineCache, uint32_t createInfoCount, const RHIGraphicsPipelineCreateInfo* pCreateInfo, RHIPipeline*& pPipelines)
 	{
@@ -965,14 +1058,14 @@ namespace Astan
 			vk_vertex_input_attribute_description_element.offset = rhi_vertex_input_attribute_description_element.offset;
 		};
 
-		VkPipelineVertexInputStateCreateInfo vk_pipeline_vertex_input_state_create_info{};
-		vk_pipeline_vertex_input_state_create_info.sType = (VkStructureType)pCreateInfo->pVertexInputState->sType;
-		vk_pipeline_vertex_input_state_create_info.pNext = (const void*)pCreateInfo->pVertexInputState->pNext;
-		vk_pipeline_vertex_input_state_create_info.flags = (VkPipelineVertexInputStateCreateFlags)pCreateInfo->pVertexInputState->flags;
-		vk_pipeline_vertex_input_state_create_info.vertexBindingDescriptionCount = pCreateInfo->pVertexInputState->vertexBindingDescriptionCount;
-		vk_pipeline_vertex_input_state_create_info.pVertexBindingDescriptions = vk_vertex_input_binding_description_list.data();
-		vk_pipeline_vertex_input_state_create_info.vertexAttributeDescriptionCount = pCreateInfo->pVertexInputState->vertexAttributeDescriptionCount;
-		vk_pipeline_vertex_input_state_create_info.pVertexAttributeDescriptions = vk_vertex_input_attribute_description_list.data();
+		VkPipelineVertexInputStateCreateInfo vk_pipeline_VertexInputStateCreateInfo{};
+		vk_pipeline_VertexInputStateCreateInfo.sType = (VkStructureType)pCreateInfo->pVertexInputState->sType;
+		vk_pipeline_VertexInputStateCreateInfo.pNext = (const void*)pCreateInfo->pVertexInputState->pNext;
+		vk_pipeline_VertexInputStateCreateInfo.flags = (VkPipelineVertexInputStateCreateFlags)pCreateInfo->pVertexInputState->flags;
+		vk_pipeline_VertexInputStateCreateInfo.vertexBindingDescriptionCount = pCreateInfo->pVertexInputState->vertexBindingDescriptionCount;
+		vk_pipeline_VertexInputStateCreateInfo.pVertexBindingDescriptions = vk_vertex_input_binding_description_list.data();
+		vk_pipeline_VertexInputStateCreateInfo.vertexAttributeDescriptionCount = pCreateInfo->pVertexInputState->vertexAttributeDescriptionCount;
+		vk_pipeline_VertexInputStateCreateInfo.pVertexAttributeDescriptions = vk_vertex_input_attribute_description_list.data();
 
 		VkPipelineInputAssemblyStateCreateInfo vk_pipeline_input_assembly_state_create_info{};
 		vk_pipeline_input_assembly_state_create_info.sType = (VkStructureType)pCreateInfo->pInputAssemblyState->sType;
@@ -1029,40 +1122,40 @@ namespace Astan
 			vk_rect_2d_element.extent = extend2d;
 		};
 
-		VkPipelineViewportStateCreateInfo vk_pipeline_viewport_state_create_info{};
-		vk_pipeline_viewport_state_create_info.sType = (VkStructureType)pCreateInfo->pViewportState->sType;
-		vk_pipeline_viewport_state_create_info.pNext = (const void*)pCreateInfo->pViewportState->pNext;
-		vk_pipeline_viewport_state_create_info.flags = (VkPipelineViewportStateCreateFlags)pCreateInfo->pViewportState->flags;
-		vk_pipeline_viewport_state_create_info.viewportCount = pCreateInfo->pViewportState->viewportCount;
-		vk_pipeline_viewport_state_create_info.pViewports = vk_viewport_list.data();
-		vk_pipeline_viewport_state_create_info.scissorCount = pCreateInfo->pViewportState->scissorCount;
-		vk_pipeline_viewport_state_create_info.pScissors = vk_rect_2d_list.data();
+		VkPipelineViewportStateCreateInfo vk_pipeline_viewportStateCreateInfo{};
+		vk_pipeline_viewportStateCreateInfo.sType = (VkStructureType)pCreateInfo->pViewportState->sType;
+		vk_pipeline_viewportStateCreateInfo.pNext = (const void*)pCreateInfo->pViewportState->pNext;
+		vk_pipeline_viewportStateCreateInfo.flags = (VkPipelineViewportStateCreateFlags)pCreateInfo->pViewportState->flags;
+		vk_pipeline_viewportStateCreateInfo.viewportCount = pCreateInfo->pViewportState->viewportCount;
+		vk_pipeline_viewportStateCreateInfo.pViewports = vk_viewport_list.data();
+		vk_pipeline_viewportStateCreateInfo.scissorCount = pCreateInfo->pViewportState->scissorCount;
+		vk_pipeline_viewportStateCreateInfo.pScissors = vk_rect_2d_list.data();
 
-		VkPipelineRasterizationStateCreateInfo vk_pipeline_rasterization_state_create_info{};
-		vk_pipeline_rasterization_state_create_info.sType = (VkStructureType)pCreateInfo->pRasterizationState->sType;
-		vk_pipeline_rasterization_state_create_info.pNext = (const void*)pCreateInfo->pRasterizationState->pNext;
-		vk_pipeline_rasterization_state_create_info.flags = (VkPipelineRasterizationStateCreateFlags)pCreateInfo->pRasterizationState->flags;
-		vk_pipeline_rasterization_state_create_info.depthClampEnable = (VkBool32)pCreateInfo->pRasterizationState->depthClampEnable;
-		vk_pipeline_rasterization_state_create_info.rasterizerDiscardEnable = (VkBool32)pCreateInfo->pRasterizationState->rasterizerDiscardEnable;
-		vk_pipeline_rasterization_state_create_info.polygonMode = (VkPolygonMode)pCreateInfo->pRasterizationState->polygonMode;
-		vk_pipeline_rasterization_state_create_info.cullMode = (VkCullModeFlags)pCreateInfo->pRasterizationState->cullMode;
-		vk_pipeline_rasterization_state_create_info.frontFace = (VkFrontFace)pCreateInfo->pRasterizationState->frontFace;
-		vk_pipeline_rasterization_state_create_info.depthBiasEnable = (VkBool32)pCreateInfo->pRasterizationState->depthBiasEnable;
-		vk_pipeline_rasterization_state_create_info.depthBiasConstantFactor = pCreateInfo->pRasterizationState->depthBiasConstantFactor;
-		vk_pipeline_rasterization_state_create_info.depthBiasClamp = pCreateInfo->pRasterizationState->depthBiasClamp;
-		vk_pipeline_rasterization_state_create_info.depthBiasSlopeFactor = pCreateInfo->pRasterizationState->depthBiasSlopeFactor;
-		vk_pipeline_rasterization_state_create_info.lineWidth = pCreateInfo->pRasterizationState->lineWidth;
+		VkPipelineRasterizationStateCreateInfo vk_pipeline_rasterizationStateCreateInfo{};
+		vk_pipeline_rasterizationStateCreateInfo.sType = (VkStructureType)pCreateInfo->pRasterizationState->sType;
+		vk_pipeline_rasterizationStateCreateInfo.pNext = (const void*)pCreateInfo->pRasterizationState->pNext;
+		vk_pipeline_rasterizationStateCreateInfo.flags = (VkPipelineRasterizationStateCreateFlags)pCreateInfo->pRasterizationState->flags;
+		vk_pipeline_rasterizationStateCreateInfo.depthClampEnable = (VkBool32)pCreateInfo->pRasterizationState->depthClampEnable;
+		vk_pipeline_rasterizationStateCreateInfo.rasterizerDiscardEnable = (VkBool32)pCreateInfo->pRasterizationState->rasterizerDiscardEnable;
+		vk_pipeline_rasterizationStateCreateInfo.polygonMode = (VkPolygonMode)pCreateInfo->pRasterizationState->polygonMode;
+		vk_pipeline_rasterizationStateCreateInfo.cullMode = (VkCullModeFlags)pCreateInfo->pRasterizationState->cullMode;
+		vk_pipeline_rasterizationStateCreateInfo.frontFace = (VkFrontFace)pCreateInfo->pRasterizationState->frontFace;
+		vk_pipeline_rasterizationStateCreateInfo.depthBiasEnable = (VkBool32)pCreateInfo->pRasterizationState->depthBiasEnable;
+		vk_pipeline_rasterizationStateCreateInfo.depthBiasConstantFactor = pCreateInfo->pRasterizationState->depthBiasConstantFactor;
+		vk_pipeline_rasterizationStateCreateInfo.depthBiasClamp = pCreateInfo->pRasterizationState->depthBiasClamp;
+		vk_pipeline_rasterizationStateCreateInfo.depthBiasSlopeFactor = pCreateInfo->pRasterizationState->depthBiasSlopeFactor;
+		vk_pipeline_rasterizationStateCreateInfo.lineWidth = pCreateInfo->pRasterizationState->lineWidth;
 
-		VkPipelineMultisampleStateCreateInfo vk_pipeline_multisample_state_create_info{};
-		vk_pipeline_multisample_state_create_info.sType = (VkStructureType)pCreateInfo->pMultisampleState->sType;
-		vk_pipeline_multisample_state_create_info.pNext = (const void*)pCreateInfo->pMultisampleState->pNext;
-		vk_pipeline_multisample_state_create_info.flags = (VkPipelineMultisampleStateCreateFlags)pCreateInfo->pMultisampleState->flags;
-		vk_pipeline_multisample_state_create_info.rasterizationSamples = (VkSampleCountFlagBits)pCreateInfo->pMultisampleState->rasterizationSamples;
-		vk_pipeline_multisample_state_create_info.sampleShadingEnable = (VkBool32)pCreateInfo->pMultisampleState->sampleShadingEnable;
-		vk_pipeline_multisample_state_create_info.minSampleShading = pCreateInfo->pMultisampleState->minSampleShading;
-		vk_pipeline_multisample_state_create_info.pSampleMask = (const RHISampleMask*)pCreateInfo->pMultisampleState->pSampleMask;
-		vk_pipeline_multisample_state_create_info.alphaToCoverageEnable = (VkBool32)pCreateInfo->pMultisampleState->alphaToCoverageEnable;
-		vk_pipeline_multisample_state_create_info.alphaToOneEnable = (VkBool32)pCreateInfo->pMultisampleState->alphaToOneEnable;
+		VkPipelineMultisampleStateCreateInfo vk_pipeline_multisampleStateCreateInfo{};
+		vk_pipeline_multisampleStateCreateInfo.sType = (VkStructureType)pCreateInfo->pMultisampleState->sType;
+		vk_pipeline_multisampleStateCreateInfo.pNext = (const void*)pCreateInfo->pMultisampleState->pNext;
+		vk_pipeline_multisampleStateCreateInfo.flags = (VkPipelineMultisampleStateCreateFlags)pCreateInfo->pMultisampleState->flags;
+		vk_pipeline_multisampleStateCreateInfo.rasterizationSamples = (VkSampleCountFlagBits)pCreateInfo->pMultisampleState->rasterizationSamples;
+		vk_pipeline_multisampleStateCreateInfo.sampleShadingEnable = (VkBool32)pCreateInfo->pMultisampleState->sampleShadingEnable;
+		vk_pipeline_multisampleStateCreateInfo.minSampleShading = pCreateInfo->pMultisampleState->minSampleShading;
+		vk_pipeline_multisampleStateCreateInfo.pSampleMask = (const RHISampleMask*)pCreateInfo->pMultisampleState->pSampleMask;
+		vk_pipeline_multisampleStateCreateInfo.alphaToCoverageEnable = (VkBool32)pCreateInfo->pMultisampleState->alphaToCoverageEnable;
+		vk_pipeline_multisampleStateCreateInfo.alphaToOneEnable = (VkBool32)pCreateInfo->pMultisampleState->alphaToOneEnable;
 
 		VkStencilOpState stencil_op_state_front{};
 		stencil_op_state_front.failOp = (VkStencilOp)pCreateInfo->pDepthStencilState->front.failOp;
@@ -1115,17 +1208,17 @@ namespace Astan
 			vk_pipeline_color_blend_attachment_state_element.colorWriteMask = (VkColorComponentFlags)rhi_pipeline_color_blend_attachment_state_element.colorWriteMask;
 		};
 
-		VkPipelineColorBlendStateCreateInfo vk_pipeline_color_blend_state_create_info{};
-		vk_pipeline_color_blend_state_create_info.sType = (VkStructureType)pCreateInfo->pColorBlendState->sType;
-		vk_pipeline_color_blend_state_create_info.pNext = pCreateInfo->pColorBlendState->pNext;
-		vk_pipeline_color_blend_state_create_info.flags = pCreateInfo->pColorBlendState->flags;
-		vk_pipeline_color_blend_state_create_info.logicOpEnable = pCreateInfo->pColorBlendState->logicOpEnable;
-		vk_pipeline_color_blend_state_create_info.logicOp = (VkLogicOp)pCreateInfo->pColorBlendState->logicOp;
-		vk_pipeline_color_blend_state_create_info.attachmentCount = pCreateInfo->pColorBlendState->attachmentCount;
-		vk_pipeline_color_blend_state_create_info.pAttachments = vk_pipeline_color_blend_attachment_state_list.data();
+		VkPipelineColorBlendStateCreateInfo vk_pipeline_colorBlendStateCreateInfo{};
+		vk_pipeline_colorBlendStateCreateInfo.sType = (VkStructureType)pCreateInfo->pColorBlendState->sType;
+		vk_pipeline_colorBlendStateCreateInfo.pNext = pCreateInfo->pColorBlendState->pNext;
+		vk_pipeline_colorBlendStateCreateInfo.flags = pCreateInfo->pColorBlendState->flags;
+		vk_pipeline_colorBlendStateCreateInfo.logicOpEnable = pCreateInfo->pColorBlendState->logicOpEnable;
+		vk_pipeline_colorBlendStateCreateInfo.logicOp = (VkLogicOp)pCreateInfo->pColorBlendState->logicOp;
+		vk_pipeline_colorBlendStateCreateInfo.attachmentCount = pCreateInfo->pColorBlendState->attachmentCount;
+		vk_pipeline_colorBlendStateCreateInfo.pAttachments = vk_pipeline_color_blend_attachment_state_list.data();
 		for (int i = 0; i < 4; ++i)
 		{
-			vk_pipeline_color_blend_state_create_info.blendConstants[i] = pCreateInfo->pColorBlendState->blendConstants[i];
+			vk_pipeline_colorBlendStateCreateInfo.blendConstants[i] = pCreateInfo->pColorBlendState->blendConstants[i];
 		};
 
 		//dynamic_state
@@ -1139,12 +1232,12 @@ namespace Astan
 			vk_dynamic_state_element = (VkDynamicState)rhi_dynamic_state_element;
 		};
 
-		VkPipelineDynamicStateCreateInfo vk_pipeline_dynamic_state_create_info{};
-		vk_pipeline_dynamic_state_create_info.sType = (VkStructureType)pCreateInfo->pDynamicState->sType;
-		vk_pipeline_dynamic_state_create_info.pNext = pCreateInfo->pDynamicState->pNext;
-		vk_pipeline_dynamic_state_create_info.flags = (VkPipelineDynamicStateCreateFlags)pCreateInfo->pDynamicState->flags;
-		vk_pipeline_dynamic_state_create_info.dynamicStateCount = pCreateInfo->pDynamicState->dynamicStateCount;
-		vk_pipeline_dynamic_state_create_info.pDynamicStates = vk_dynamic_state_list.data();
+		VkPipelineDynamicStateCreateInfo vk_pipeline_dynamicStateCreateInfo{};
+		vk_pipeline_dynamicStateCreateInfo.sType = (VkStructureType)pCreateInfo->pDynamicState->sType;
+		vk_pipeline_dynamicStateCreateInfo.pNext = pCreateInfo->pDynamicState->pNext;
+		vk_pipeline_dynamicStateCreateInfo.flags = (VkPipelineDynamicStateCreateFlags)pCreateInfo->pDynamicState->flags;
+		vk_pipeline_dynamicStateCreateInfo.dynamicStateCount = pCreateInfo->pDynamicState->dynamicStateCount;
+		vk_pipeline_dynamicStateCreateInfo.pDynamicStates = vk_dynamic_state_list.data();
 
 		VkGraphicsPipelineCreateInfo create_info{};
 		create_info.sType = (VkStructureType)pCreateInfo->sType;
@@ -1152,15 +1245,15 @@ namespace Astan
 		create_info.flags = (VkPipelineCreateFlags)pCreateInfo->flags;
 		create_info.stageCount = pCreateInfo->stageCount;
 		create_info.pStages = vk_pipeline_shader_stage_create_info_list.data();
-		create_info.pVertexInputState = &vk_pipeline_vertex_input_state_create_info;
+		create_info.pVertexInputState = &vk_pipeline_VertexInputStateCreateInfo;
 		create_info.pInputAssemblyState = &vk_pipeline_input_assembly_state_create_info;
 		create_info.pTessellationState = vk_pipeline_tessellation_state_create_info_ptr;
-		create_info.pViewportState = &vk_pipeline_viewport_state_create_info;
-		create_info.pRasterizationState = &vk_pipeline_rasterization_state_create_info;
-		create_info.pMultisampleState = &vk_pipeline_multisample_state_create_info;
+		create_info.pViewportState = &vk_pipeline_viewportStateCreateInfo;
+		create_info.pRasterizationState = &vk_pipeline_rasterizationStateCreateInfo;
+		create_info.pMultisampleState = &vk_pipeline_multisampleStateCreateInfo;
 		create_info.pDepthStencilState = &vk_pipeline_depth_stencil_state_create_info;
-		create_info.pColorBlendState = &vk_pipeline_color_blend_state_create_info;
-		create_info.pDynamicState = &vk_pipeline_dynamic_state_create_info;
+		create_info.pColorBlendState = &vk_pipeline_colorBlendStateCreateInfo;
+		create_info.pDynamicState = &vk_pipeline_dynamicStateCreateInfo;
 		create_info.layout = ((VulkanPipelineLayout*)pCreateInfo->layout)->getResource();
 		create_info.renderPass = ((VulkanRenderPass*)pCreateInfo->renderPass)->getResource();
 		create_info.subpass = pCreateInfo->subpass;
@@ -1477,6 +1570,104 @@ namespace Astan
 	}
 	void VulkanRendererAPI::UpdateDescriptorSets(uint32_t descriptorWriteCount, const RHIWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const RHICopyDescriptorSet* pDescriptorCopies)
 	{
+		//write_descriptor_set
+		int write_descriptor_set_size = descriptorWriteCount;
+		std::vector<VkWriteDescriptorSet> vk_write_descriptor_set_list(write_descriptor_set_size);
+		int image_info_count = 0;
+		int buffer_info_count = 0;
+		for (int i = 0; i < write_descriptor_set_size; ++i)
+		{
+			const auto& rhi_write_descriptor_set_element = pDescriptorWrites[i];
+			if (rhi_write_descriptor_set_element.pImageInfo != nullptr)
+			{
+				image_info_count++;
+			}
+			if (rhi_write_descriptor_set_element.pBufferInfo != nullptr)
+			{
+				buffer_info_count++;
+			}
+		}
+		std::vector<VkDescriptorImageInfo> vk_descriptor_image_info_list(image_info_count);
+		std::vector<VkDescriptorBufferInfo> vk_descriptor_buffer_info_list(buffer_info_count);
+		int image_info_current = 0;
+		int buffer_info_current = 0;
+
+		for (int i = 0; i < write_descriptor_set_size; ++i)
+		{
+			const auto& rhi_write_descriptor_set_element = pDescriptorWrites[i];
+			auto& vk_write_descriptor_set_element = vk_write_descriptor_set_list[i];
+
+			const VkDescriptorImageInfo* vk_descriptor_image_info_ptr = nullptr;
+			if (rhi_write_descriptor_set_element.pImageInfo != nullptr)
+			{
+				auto& vk_descriptor_image_info = vk_descriptor_image_info_list[image_info_current];
+				if (rhi_write_descriptor_set_element.pImageInfo->sampler == nullptr)
+				{
+					vk_descriptor_image_info.sampler = nullptr;
+				}
+				else
+				{
+					vk_descriptor_image_info.sampler = ((VulkanSampler*)rhi_write_descriptor_set_element.pImageInfo->sampler)->getResource();
+				}
+				vk_descriptor_image_info.imageView = ((VulkanImageView*)rhi_write_descriptor_set_element.pImageInfo->imageView)->getResource();
+				vk_descriptor_image_info.imageLayout = (VkImageLayout)rhi_write_descriptor_set_element.pImageInfo->imageLayout;
+
+				vk_descriptor_image_info_ptr = &vk_descriptor_image_info;
+				image_info_current++;
+			}
+
+			const VkDescriptorBufferInfo* vk_descriptor_buffer_info_ptr = nullptr;
+			if (rhi_write_descriptor_set_element.pBufferInfo != nullptr)
+			{
+				auto& vk_descriptor_buffer_info = vk_descriptor_buffer_info_list[buffer_info_current];
+				vk_descriptor_buffer_info.buffer = ((VulkanBuffer*)rhi_write_descriptor_set_element.pBufferInfo->buffer)->getResource();
+				vk_descriptor_buffer_info.offset = (VkDeviceSize)rhi_write_descriptor_set_element.pBufferInfo->offset;
+				vk_descriptor_buffer_info.range = (VkDeviceSize)rhi_write_descriptor_set_element.pBufferInfo->range;
+
+				vk_descriptor_buffer_info_ptr = &vk_descriptor_buffer_info;
+				buffer_info_current++;
+			}
+
+			vk_write_descriptor_set_element.sType = (VkStructureType)rhi_write_descriptor_set_element.sType;
+			vk_write_descriptor_set_element.pNext = (const void*)rhi_write_descriptor_set_element.pNext;
+			vk_write_descriptor_set_element.dstSet = ((VulkanDescriptorSet*)rhi_write_descriptor_set_element.dstSet)->getResource();
+			vk_write_descriptor_set_element.dstBinding = rhi_write_descriptor_set_element.dstBinding;
+			vk_write_descriptor_set_element.dstArrayElement = rhi_write_descriptor_set_element.dstArrayElement;
+			vk_write_descriptor_set_element.descriptorCount = rhi_write_descriptor_set_element.descriptorCount;
+			vk_write_descriptor_set_element.descriptorType = (VkDescriptorType)rhi_write_descriptor_set_element.descriptorType;
+			vk_write_descriptor_set_element.pImageInfo = vk_descriptor_image_info_ptr;
+			vk_write_descriptor_set_element.pBufferInfo = vk_descriptor_buffer_info_ptr;
+			//vk_write_descriptor_set_element.pTexelBufferView = &((VulkanBufferView*)rhi_write_descriptor_set_element.pTexelBufferView)->getResource();
+		};
+
+		if (image_info_current != image_info_count
+			|| buffer_info_current != buffer_info_count)
+		{
+			AS_CORE_ERROR("image_info_current != image_info_count || buffer_info_current != buffer_info_count");
+			return;
+		}
+
+		//copy_descriptor_set
+		int copy_descriptor_set_size = descriptorCopyCount;
+		std::vector<VkCopyDescriptorSet> vk_copy_descriptor_set_list(copy_descriptor_set_size);
+		for (int i = 0; i < copy_descriptor_set_size; ++i)
+		{
+			const auto& rhi_copy_descriptor_set_element = pDescriptorCopies[i];
+			auto& vk_copy_descriptor_set_element = vk_copy_descriptor_set_list[i];
+
+			vk_copy_descriptor_set_element.sType = (VkStructureType)rhi_copy_descriptor_set_element.sType;
+			vk_copy_descriptor_set_element.pNext = (const void*)rhi_copy_descriptor_set_element.pNext;
+			vk_copy_descriptor_set_element.srcSet = ((VulkanDescriptorSet*)rhi_copy_descriptor_set_element.srcSet)->getResource();
+			vk_copy_descriptor_set_element.srcBinding = rhi_copy_descriptor_set_element.srcBinding;
+			vk_copy_descriptor_set_element.srcArrayElement = rhi_copy_descriptor_set_element.srcArrayElement;
+			vk_copy_descriptor_set_element.dstSet = ((VulkanDescriptorSet*)rhi_copy_descriptor_set_element.dstSet)->getResource();
+			vk_copy_descriptor_set_element.dstBinding = rhi_copy_descriptor_set_element.dstBinding;
+			vk_copy_descriptor_set_element.dstArrayElement = rhi_copy_descriptor_set_element.dstArrayElement;
+			vk_copy_descriptor_set_element.descriptorCount = rhi_copy_descriptor_set_element.descriptorCount;
+		};
+
+		vkUpdateDescriptorSets(m_device, descriptorWriteCount, vk_write_descriptor_set_list.data(), descriptorCopyCount, vk_copy_descriptor_set_list.data());
+
 	}
 	bool VulkanRendererAPI::QueueSubmit(RHIQueue* queue, uint32_t submitCount, const RHISubmitInfo* pSubmits, RHIFence* fence)
 	{
@@ -1513,7 +1704,7 @@ namespace Astan
 	}
 	RHIDescriptorPool* VulkanRendererAPI::GetDescriptorPoor() const
 	{
-		return nullptr;
+		return m_descriptor_pool;
 	}
 	RHIFence* const* VulkanRendererAPI::GetFenceList() const
 	{
@@ -1565,7 +1756,7 @@ namespace Astan
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = ((VulkanCommandPool*)m_rhi_command_pool)->getResource();
+		allocInfo.commandPool = ((VulkanCommandPool*)m_RenderCommand_command_pool)->getResource();
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer command_buffer;
@@ -1594,7 +1785,7 @@ namespace Astan
 		vkQueueSubmit(((VulkanQueue*)m_graphics_queue)->getResource(), 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(((VulkanQueue*)m_graphics_queue)->getResource());
 
-		vkFreeCommandBuffers(m_device, ((VulkanCommandPool*)m_rhi_command_pool)->getResource(), 1, &vk_command_buffer);
+		vkFreeCommandBuffers(m_device, ((VulkanCommandPool*)m_RenderCommand_command_pool)->getResource(), 1, &vk_command_buffer);
 		delete(command_buffer);
 	}
 	bool VulkanRendererAPI::PrepareBeforePass(std::function<void()> passUpdateAfterRecreateSwapchain)

@@ -212,11 +212,11 @@ namespace Astan
         RHIFormat m_depth_image_format{ RHI_FORMAT_UNDEFINED };
         RHIImageView* m_depth_image_view = new VulkanImageView();
 
-        RHIFence* m_rhi_is_frame_in_flight_fences[k_max_frames_in_flight];
+        RHIFence* m_RenderCommand_is_frame_in_flight_fences[k_max_frames_in_flight];
 
         RHIDescriptorPool* m_descriptor_pool = new VulkanDescriptorPool();
 
-        RHICommandPool* m_rhi_command_pool;
+        RHICommandPool* m_RenderCommand_command_pool;
 
         RHICommandBuffer* m_command_buffers[k_max_frames_in_flight];
         RHICommandBuffer* m_current_command_buffer = new VulkanCommandBuffer();

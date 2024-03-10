@@ -69,6 +69,7 @@ namespace Astan
 		virtual void SetCommonInfo(Ref<VulkanRendererAPI> renderCommand);
 
 	public:
+		GlobalRenderResource* m_global_render_resource{ nullptr };
 		Framebuffer m_FrameBuffer;
 		std::vector<Descriptor>  m_DescriptorInfos;
 		std::vector<RenderPipelineBase> m_RenderPipelines;
