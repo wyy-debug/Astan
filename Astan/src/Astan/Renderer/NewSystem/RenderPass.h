@@ -35,6 +35,10 @@ namespace Astan
 	{
 
 	public:
+		struct RenderPassInitInfo
+		{};
+
+
 		struct FrameBufferAttachment
 		{
 			RHIImage* image;
@@ -64,7 +68,7 @@ namespace Astan
 			RHIPipelineLayout* layout;
 			RHIPipeline* pipeline;
 		};
-		virtual void Initialize();
+		virtual void Initialize(const RenderPassInitInfo* init_info);
 		virtual void Draw();
 		virtual void SetCommonInfo(Ref<VulkanRendererAPI> renderCommand);
 

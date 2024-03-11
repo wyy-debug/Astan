@@ -34,8 +34,39 @@ namespace Astan
 
 		m_RenderCommand->PrepareContext();
 
+
+        // 移到scene中处理
         m_RenderResource->UpdatePerFrameBuffer(m_RenderScene, m_RenderCamera);
 
+        // update per-frame visible objects
+        m_RenderScene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
+            m_render_camera);
+
+        // prepare pipeline's render passes data
+        // 准备管线渲染passes数据
+        m_RenderPipeline->PreparePassData(m_render_resource);
+
+        g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
+
+        // render one frame
+        // 渲染一帧
+
+        m_RenderPipeline->ForwardRender(m_RenderCommand, m_render_resource);
+#if 0
+        if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::FORWARD_PIPELINE)
+        {
+            m_RenderPipeline->ForwardRender(m_RenderCommand, m_render_resource);
+        }
+        else if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE)
+        {
+            m_RenderPipeline->DeferredRender(m_RenderCommand, m_render_resource);
+        }
+        else
+        {
+            AS_CORE_ERROR(__FUNCTION__, "unsupported render pipeline type");
+        }
+
+#endif
 	}
 
     /***
@@ -45,10 +76,11 @@ namespace Astan
     4. 处理摄像机数据交换：如果有关摄像机的数据（如视角、视图矩阵等）需要更新，该函数会更新渲染系统中的摄像机对象。
     5. 处理粒子系统请求：如果有粒子系统的更新请求，如创建新的粒子发射器、更新粒子发射器的状态等，该函数会处理这些请求。
     6. 处理其他渲染数据交换：此外，该函数还负责处理其他类型的数据交换，如更新渲染场景中的可见对象、准备渲染管线的数据等。
+    移到scene中处理
     ***/
 	void RenderSystem::ProcessSwapData()
 	{
-        RenderSwapData& swap_data = m_swap_context.getRenderSwapData();
+        RenderSwapData& swap_data = m_SwapContext.getRenderSwapData();
 
         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
         AS_CORE_ASSERT(asset_manager);
@@ -57,10 +89,10 @@ namespace Astan
         // TOD0: 更新全局资源
         if (swap_data.m_level_resource_desc.has_value())
         {
-            m_render_resource->uploadGlobalRenderResource(m_rhi, *swap_data.m_level_resource_desc);
+            m_render_resource->uploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
 
             // reset level resource swap data to a clean state
-            m_swap_context.resetLevelRsourceSwapData();
+            m_SwapContext.resetLevelRsourceSwapData();
         }
 
         // update game object if needed
@@ -145,12 +177,12 @@ namespace Astan
                     // create game object on the graphics api side
                     if (!is_mesh_loaded)
                     {
-                        m_render_resource->uploadGameObjectRenderResource(m_rhi, render_entity, mesh_data);
+                        m_render_resource->uploadGameObjectRenderResource(m_RenderCommand, render_entity, mesh_data);
                     }
 
                     if (!is_material_loaded)
                     {
-                        m_render_resource->uploadGameObjectRenderResource(m_rhi, render_entity, material_data);
+                        m_render_resource->uploadGameObjectRenderResource(m_RenderCommand, render_entity, material_data);
                     }
 
                     // add object to render scene if needed
@@ -175,7 +207,7 @@ namespace Astan
             }
 
             // reset game object swap data to a clean state
-            m_swap_context.resetGameObjectResourceSwapData();
+            m_SwapContext.resetGameObjectResourceSwapData();
         }
 
         // remove deleted objects
@@ -188,7 +220,7 @@ namespace Astan
                 swap_data.m_game_object_to_delete->pop();
             }
 
-            m_swap_context.resetGameObjectToDelete();
+            m_SwapContext.resetGameObjectToDelete();
         }
 
         // process camera swap data
@@ -209,7 +241,7 @@ namespace Astan
                 m_render_camera->setCurrentCameraType(*swap_data.m_camera_swap_data->m_camera_type);
             }
 
-            m_swap_context.resetCameraSwapData();
+            m_SwapContext.resetCameraSwapData();
         }
 #if 0
         if (swap_data.m_particle_submit_request.has_value())
@@ -228,20 +260,20 @@ namespace Astan
 
             particle_pass->initializeEmitters();
 
-            m_swap_context.resetPartilceBatchSwapData();
+            m_SwapContext.resetPartilceBatchSwapData();
         }
         if (swap_data.m_emitter_tick_request.has_value())
         {
             std::static_pointer_cast<ParticlePass>(m_render_pipeline->m_particle_pass)
                 ->setTickIndices(swap_data.m_emitter_tick_request->m_emitter_indices);
-            m_swap_context.resetEmitterTickSwapData();
+            m_SwapContext.resetEmitterTickSwapData();
         }
 
         if (swap_data.m_emitter_transform_request.has_value())
         {
             std::static_pointer_cast<ParticlePass>(m_render_pipeline->m_particle_pass)
                 ->setTransformIndices(swap_data.m_emitter_transform_request->m_transform_descs);
-            m_swap_context.resetEmitterTransformSwapData();
+            m_SwapContext.resetEmitterTransformSwapData();
         }
 #endif
 	}

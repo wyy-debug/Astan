@@ -460,22 +460,27 @@ namespace Astan
 
 	void VulkanRendererAPI::DestroyImageView(RHIImageView* imageView)
 	{
+		vkDestroyImageView(m_device, ((VulkanImageView*)imageView)->getResource(), nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyImage(RHIImage* image)
 	{
+		vkDestroyImage(m_device, ((VulkanImage*)image)->getResource(), nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyFramebuffer(RHIFramebuffer* framebuffer)
 	{
+		vkDestroyFramebuffer(m_device, ((VulkanFramebuffer*)framebuffer)->getResource(), nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyFence(RHIFence* fence)
 	{
+		vkDestroyFence(m_device, ((VulkanFence*)fence)->getResource(), nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyDevice()
 	{
+		vkDestroyDevice(m_device, nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyCommandPool(RHICommandPool* commandPool)
@@ -1606,30 +1611,177 @@ namespace Astan
 	}
 	void VulkanRendererAPI::CmdBeginRenderPassPFN(RHICommandBuffer* commandBuffer, const RHIRenderPassBeginInfo* pRenderPassBegin, RHISubpassContents contents)
 	{
+		VkOffset2D offset_2d{};
+		offset_2d.x = pRenderPassBegin->renderArea.offset.x;
+		offset_2d.y = pRenderPassBegin->renderArea.offset.y;
+
+		VkExtent2D extent_2d{};
+		extent_2d.width = pRenderPassBegin->renderArea.extent.width;
+		extent_2d.height = pRenderPassBegin->renderArea.extent.height;
+
+		VkRect2D rect_2d{};
+		rect_2d.offset = offset_2d;
+		rect_2d.extent = extent_2d;
+
+		//clear_values
+		int clear_value_size = pRenderPassBegin->clearValueCount;
+		std::vector<VkClearValue> vk_clear_value_list(clear_value_size);
+		for (int i = 0; i < clear_value_size; ++i)
+		{
+			const auto& rhi_clear_value_element = pRenderPassBegin->pClearValues[i];
+			auto& vk_clear_value_element = vk_clear_value_list[i];
+
+			VkClearColorValue vk_clear_color_value;
+			vk_clear_color_value.float32[0] = rhi_clear_value_element.color.float32[0];
+			vk_clear_color_value.float32[1] = rhi_clear_value_element.color.float32[1];
+			vk_clear_color_value.float32[2] = rhi_clear_value_element.color.float32[2];
+			vk_clear_color_value.float32[3] = rhi_clear_value_element.color.float32[3];
+			vk_clear_color_value.int32[0] = rhi_clear_value_element.color.int32[0];
+			vk_clear_color_value.int32[1] = rhi_clear_value_element.color.int32[1];
+			vk_clear_color_value.int32[2] = rhi_clear_value_element.color.int32[2];
+			vk_clear_color_value.int32[3] = rhi_clear_value_element.color.int32[3];
+			vk_clear_color_value.uint32[0] = rhi_clear_value_element.color.uint32[0];
+			vk_clear_color_value.uint32[1] = rhi_clear_value_element.color.uint32[1];
+			vk_clear_color_value.uint32[2] = rhi_clear_value_element.color.uint32[2];
+			vk_clear_color_value.uint32[3] = rhi_clear_value_element.color.uint32[3];
+
+			VkClearDepthStencilValue vk_clear_depth_stencil_value;
+			vk_clear_depth_stencil_value.depth = rhi_clear_value_element.depthStencil.depth;
+			vk_clear_depth_stencil_value.stencil = rhi_clear_value_element.depthStencil.stencil;
+
+			vk_clear_value_element.color = vk_clear_color_value;
+			vk_clear_value_element.depthStencil = vk_clear_depth_stencil_value;
+
+		};
+
+		VkRenderPassBeginInfo vk_render_pass_begin_info{};
+		vk_render_pass_begin_info.sType = (VkStructureType)pRenderPassBegin->sType;
+		vk_render_pass_begin_info.pNext = pRenderPassBegin->pNext;
+		vk_render_pass_begin_info.renderPass = ((VulkanRenderPass*)pRenderPassBegin->renderPass)->getResource();
+		vk_render_pass_begin_info.framebuffer = ((VulkanFramebuffer*)pRenderPassBegin->framebuffer)->getResource();
+		vk_render_pass_begin_info.renderArea = rect_2d;
+		vk_render_pass_begin_info.clearValueCount = pRenderPassBegin->clearValueCount;
+		vk_render_pass_begin_info.pClearValues = vk_clear_value_list.data();
+
+		return _vkCmdBeginRenderPass(((VulkanCommandBuffer*)commandBuffer)->getResource(), &vk_render_pass_begin_info, (VkSubpassContents)contents);
 	}
 	void VulkanRendererAPI::CmdNextSubpassPFN(RHICommandBuffer* commandBuffer, RHISubpassContents contents)
 	{
+		return _vkCmdNextSubpass(((VulkanCommandBuffer*)commandBuffer)->getResource(), ((VkSubpassContents)contents));
 	}
 	void VulkanRendererAPI::CmdEndRenderPassPFN(RHICommandBuffer* commandBuffer)
 	{
+		return _vkCmdEndRenderPass(((VulkanCommandBuffer*)commandBuffer)->getResource());
 	}
 	void VulkanRendererAPI::CmdBindPipelinePFN(RHICommandBuffer* commandBuffer, RHIPipelineBindPoint pipelineBindPoint, RHIPipeline* pipeline)
 	{
+		return _vkCmdBindPipeline(((VulkanCommandBuffer*)commandBuffer)->getResource(), (VkPipelineBindPoint)pipelineBindPoint, ((VulkanPipeline*)pipeline)->getResource());
 	}
 	void VulkanRendererAPI::CmdSetViewportPFN(RHICommandBuffer* commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const RHIViewport* pViewports)
 	{
+		int viewport_size = viewportCount;
+		std::vector<VkViewport> vk_viewport_list(viewport_size);
+		for (int i = 0; i < viewport_size; ++i)
+		{
+			const auto& rhi_viewport_element = pViewports[i];
+			auto& vk_viewport_element = vk_viewport_list[i];
+
+			vk_viewport_element.x = rhi_viewport_element.x;
+			vk_viewport_element.y = rhi_viewport_element.y;
+			vk_viewport_element.width = rhi_viewport_element.width;
+			vk_viewport_element.height = rhi_viewport_element.height;
+			vk_viewport_element.minDepth = rhi_viewport_element.minDepth;
+			vk_viewport_element.maxDepth = rhi_viewport_element.maxDepth;
+		};
+
+		return _vkCmdSetViewport(((VulkanCommandBuffer*)commandBuffer)->getResource(), firstViewport, viewportCount, vk_viewport_list.data());
 	}
 	void VulkanRendererAPI::CmdSetScissorPFN(RHICommandBuffer* commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const RHIRect2D* pScissors)
 	{
+		//rect_2d
+		int rect_2d_size = scissorCount;
+		std::vector<VkRect2D> vk_rect_2d_list(rect_2d_size);
+		for (int i = 0; i < rect_2d_size; ++i)
+		{
+			const auto& rhi_rect_2d_element = pScissors[i];
+			auto& vk_rect_2d_element = vk_rect_2d_list[i];
+
+			VkOffset2D offset_2d{};
+			offset_2d.x = rhi_rect_2d_element.offset.x;
+			offset_2d.y = rhi_rect_2d_element.offset.y;
+
+			VkExtent2D extent_2d{};
+			extent_2d.width = rhi_rect_2d_element.extent.width;
+			extent_2d.height = rhi_rect_2d_element.extent.height;
+
+			vk_rect_2d_element.offset = (VkOffset2D)offset_2d;
+			vk_rect_2d_element.extent = (VkExtent2D)extent_2d;
+
+		};
+
+		return _vkCmdSetScissor(((VulkanCommandBuffer*)commandBuffer)->getResource(), firstScissor, scissorCount, vk_rect_2d_list.data());
 	}
 	void VulkanRendererAPI::CmdBindVertexBuffersPFN(RHICommandBuffer* commandBuffer, uint32_t firstBinding, uint32_t bindingCount, RHIBuffer* const* pBuffers, const RHIDeviceSize* pOffsets)
 	{
+		//buffer
+		int buffer_size = bindingCount;
+		std::vector<VkBuffer> vk_buffer_list(buffer_size);
+		for (int i = 0; i < buffer_size; ++i)
+		{
+			const auto& rhi_buffer_element = pBuffers[i];
+			auto& vk_buffer_element = vk_buffer_list[i];
+
+			vk_buffer_element = ((VulkanBuffer*)rhi_buffer_element)->getResource();
+		};
+
+		//offset
+		int offset_size = bindingCount;
+		std::vector<VkDeviceSize> vk_device_size_list(offset_size);
+		for (int i = 0; i < offset_size; ++i)
+		{
+			const auto& rhi_offset_element = pOffsets[i];
+			auto& vk_offset_element = vk_device_size_list[i];
+
+			vk_offset_element = rhi_offset_element;
+		};
+
+		return _vkCmdBindVertexBuffers(((VulkanCommandBuffer*)commandBuffer)->getResource(), firstBinding, bindingCount, vk_buffer_list.data(), vk_device_size_list.data());
 	}
 	void VulkanRendererAPI::CmdBindIndexBufferPFN(RHICommandBuffer* commandBuffer, RHIBuffer* buffer, RHIDeviceSize offset, RHIIndexType indexType)
 	{
 	}
 	void VulkanRendererAPI::CmdBindDescriptorSetsPFN(RHICommandBuffer* commandBuffer, RHIPipelineBindPoint pipelineBindPoint, RHIPipelineLayout* layout, uint32_t firstSet, uint32_t descriptorSetCount, const RHIDescriptorSet* const* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets)
 	{
+		//descriptor_set
+		int descriptor_set_size = descriptorSetCount;
+		std::vector<VkDescriptorSet> vk_descriptor_set_list(descriptor_set_size);
+		for (int i = 0; i < descriptor_set_size; ++i)
+		{
+			const auto& rhi_descriptor_set_element = pDescriptorSets[i];
+			auto& vk_descriptor_set_element = vk_descriptor_set_list[i];
+
+			vk_descriptor_set_element = ((VulkanDescriptorSet*)rhi_descriptor_set_element)->getResource();
+		};
+
+		//offset
+		int offset_size = dynamicOffsetCount;
+		std::vector<uint32_t> vk_offset_list(offset_size);
+		for (int i = 0; i < offset_size; ++i)
+		{
+			const auto& rhi_offset_element = pDynamicOffsets[i];
+			auto& vk_offset_element = vk_offset_list[i];
+
+			vk_offset_element = rhi_offset_element;
+		};
+
+		return _vkCmdBindDescriptorSets(
+			((VulkanCommandBuffer*)commandBuffer)->getResource(),
+			(VkPipelineBindPoint)pipelineBindPoint,
+			((VulkanPipelineLayout*)layout)->getResource(),
+			firstSet, descriptorSetCount,
+			vk_descriptor_set_list.data(),
+			dynamicOffsetCount,
+			vk_offset_list.data());
 	}
 	void VulkanRendererAPI::CmdDrawIndexedPFN(RHICommandBuffer* commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
 	{
@@ -1652,6 +1804,7 @@ namespace Astan
 	}
 	void VulkanRendererAPI::CmdDraw(RHICommandBuffer* commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 	{
+		vkCmdDraw(((VulkanCommandBuffer*)commandBuffer)->getResource(), vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 	void VulkanRendererAPI::CmdDispatch(RHICommandBuffer* commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 	{
@@ -1780,10 +1933,37 @@ namespace Astan
 	}
 	void VulkanRendererAPI::WaitForFences()
 	{
+		VkResult res_wait_for_fences =
+			_vkWaitForFences(m_device, 1, &m_is_frame_in_flight_fences[m_current_frame_index], VK_TRUE, UINT64_MAX);
+		if (VK_SUCCESS != res_wait_for_fences)
+		{
+			AS_CORE_ERROR("failed to synchronize!");
+		}
 	}
 	bool VulkanRendererAPI::WaitForFences(uint32_t fenceCount, const RHIFence* const* pFences, RHIBool32 waitAll, uint64_t timeout)
 	{
-		return false;
+		//fence
+		int fence_size = fenceCount;
+		std::vector<VkFence> vk_fence_list(fence_size);
+		for (int i = 0; i < fence_size; ++i)
+		{
+			const auto& rhi_fence_element = pFences[i];
+			auto& vk_fence_element = vk_fence_list[i];
+
+			vk_fence_element = ((VulkanFence*)rhi_fence_element)->getResource();
+		};
+
+		VkResult result = vkWaitForFences(m_device, fenceCount, vk_fence_list.data(), waitAll, timeout);
+
+		if (result == VK_SUCCESS)
+		{
+			return RHI_SUCCESS;
+		}
+		else
+		{
+			AS_CORE_ERROR("waitForFences failed");
+			return false;
+		}
 	}
 	void VulkanRendererAPI::GetPhysicalDeviceProperties(RHIPhysicalDeviceProperties* pProperties)
 	{
@@ -1937,7 +2117,7 @@ namespace Astan
 	}
 	RHICommandBuffer* VulkanRendererAPI::GetCurrentCommandBuffer() const
 	{
-		return nullptr;
+		return m_current_command_buffer;
 	}
 	RHICommandBuffer* const* VulkanRendererAPI::GetCommandBufferList() const
 	{
@@ -2039,12 +2219,89 @@ namespace Astan
 	}
 	void VulkanRendererAPI::SubmitRendering(std::function<void()> passUpdateAfterRecreateSwapchain)
 	{
+		VkResult res_end_command_buffer = _vkEndCommandBuffer(m_vk_command_buffers[m_current_frame_index]);
+		if (VK_SUCCESS != res_end_command_buffer)
+		{
+			AS_CORE_ERROR("_vkEndCommandBuffer failed!");
+			return;
+		}
+
+		VkSemaphore semaphores[2] = { ((VulkanSemaphore*)m_image_available_for_texturescopy_semaphores[m_current_frame_index])->getResource(),
+									 m_image_finished_for_presentation_semaphores[m_current_frame_index] };
+
+		// submit command buffer
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSubmitInfo         submit_info = {};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.waitSemaphoreCount = 1;
+		submit_info.pWaitSemaphores = &m_image_available_for_render_semaphores[m_current_frame_index];
+		submit_info.pWaitDstStageMask = wait_stages;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &m_vk_command_buffers[m_current_frame_index];
+		submit_info.signalSemaphoreCount = 2;
+		submit_info.pSignalSemaphores = semaphores;
+
+		VkResult res_reset_fences = _vkResetFences(m_device, 1, &m_is_frame_in_flight_fences[m_current_frame_index]);
+
+		if (VK_SUCCESS != res_reset_fences)
+		{
+			AS_CORE_ERROR("_vkResetFences failed!");
+			return;
+		}
+		VkResult res_queue_submit =
+			vkQueueSubmit(((VulkanQueue*)m_graphics_queue)->getResource(), 1, &submit_info, m_is_frame_in_flight_fences[m_current_frame_index]);
+
+		if (VK_SUCCESS != res_queue_submit)
+		{
+			AS_CORE_ERROR("vkQueueSubmit failed!");
+			return;
+		}
+
+		// present swapchain
+		VkPresentInfoKHR present_info = {};
+		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores = &m_image_finished_for_presentation_semaphores[m_current_frame_index];
+		present_info.swapchainCount = 1;
+		present_info.pSwapchains = &m_swapchain;
+		present_info.pImageIndices = &m_current_swapchain_image_index;
+
+		VkResult present_result = vkQueuePresentKHR(m_present_queue, &present_info);
+		if (VK_ERROR_OUT_OF_DATE_KHR == present_result || VK_SUBOPTIMAL_KHR == present_result)
+		{
+			RecreateSwapchain();
+			passUpdateAfterRecreateSwapchain();
+		}
+		else
+		{
+			if (VK_SUCCESS != present_result)
+			{
+				AS_CORE_ERROR("vkQueuePresentKHR failed!");
+				return;
+			}
+		}
+
+		m_current_frame_index = (m_current_frame_index + 1) % k_max_frames_in_flight;
 	}
 	void VulkanRendererAPI::PushEvent(RHICommandBuffer* commond_buffer, const char* name, const float* color)
 	{
+		if (m_enable_debug_utils_label)
+		{
+			VkDebugUtilsLabelEXT label_info;
+			label_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+			label_info.pNext = nullptr;
+			label_info.pLabelName = name;
+			for (int i = 0; i < 4; ++i)
+				label_info.color[i] = color[i];
+			_vkCmdBeginDebugUtilsLabelEXT(((VulkanCommandBuffer*)commond_buffer)->getResource(), &label_info);
+		}
 	}
 	void VulkanRendererAPI::PopEvent(RHICommandBuffer* commond_buffer)
 	{
+		if (m_enable_debug_utils_label)
+		{
+			_vkCmdEndDebugUtilsLabelEXT(((VulkanCommandBuffer*)commond_buffer)->getResource());
+		}
 	}
 	bool VulkanRendererAPI::checkValidationLayerSupport()
 	{
