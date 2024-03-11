@@ -1,8 +1,16 @@
+#include "aspch.h"
 #include "MainCameraPass.h"
 #include "shader/mesh_vert.h"
 #include "shader/mesh_gbuffer_frag.h"
 #include "RenderMesh.h"
 #include "RenderConfig.h"
+#include "shader/deferred_lighting_frag.h"
+#include "shader/deferred_lighting_vert.h"
+#include "shader/mesh_frag.h"
+#include "shader/skybox_vert.h"
+#include "shader/skybox_frag.h"
+#include "shader/axis_vert.h"
+#include "shader/axis_frag.h"
 
 void Astan::MainCameraPass::Initialize()
 {
@@ -12,10 +20,13 @@ void Astan::MainCameraPass::Initialize()
     SetupRenderPass();
     // 设置描述符布局
     SetupDescriptorSetLayout();
-
+    // 设置渲染管线
     SetupPipelines();
+    // 设置描述符
     SetupDescriptorSet();
+    // Framebuffer 描述符
     SetupFramebufferDescriptorSet();
+    // 交换设置
     SetupSwapchainFramebuffers();
 }
 

@@ -438,6 +438,21 @@ namespace Astan
 		m_PhysicsWorld = nullptr;
 	}
 
+	void Scene::GetPointLight()
+	{
+		auto view = m_Registry.view<PointLight>();
+		for (auto e : view)
+		{
+			Entity entity = { e,this };
+
+			if (entity.HasComponent<PointLight>())
+			{
+				auto& light = entity.GetComponent<PointLight>();
+			}
+		}
+	}
+
+
 	void Scene::RenderScene(EditorCamera& camera)
 	{
 		Renderer2D::BeginScene(camera);
@@ -540,6 +555,21 @@ namespace Astan
 	
 	template<>
 	void Scene::OnComponentAdded<TextComponent>(Entity entity, TextComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<PointLight>(Entity entity, PointLight& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<AmbientLight>(Entity entity, AmbientLight& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<PDirectionalLight>(Entity entity, PDirectionalLight& component)
 	{
 	}
 }

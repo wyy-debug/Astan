@@ -58,6 +58,8 @@ namespace Astan
 
 	void VulkanRendererAPI::PrepareContext()
 	{
+		m_vk_current_command_buffer = m_vk_command_buffers[m_current_frame_index];
+		((VulkanCommandBuffer*)m_current_command_buffer)->setResource(m_vk_current_command_buffer);
 	}
 
 	bool VulkanRendererAPI::AllocateCommandBuffers(const RHICommandBufferAllocateInfo* pAllocateInfo, RHICommandBuffer*& pCommandBuffers)
@@ -279,7 +281,30 @@ namespace Astan
 
 	RHISampler* VulkanRendererAPI::GetOrCreateMipmapSampler(uint32_t width, uint32_t height)
 	{
-		return nullptr;
+		if (width == 0 || height == 0)
+		{
+			AS_CORE_ERROR("width == 0 || height == 0");
+			return nullptr;
+		}
+		RHISampler* sampler;
+		uint32_t  mip_levels = floor(log2(std::max(width, height))) + 1;
+		auto      find_sampler = m_mipmap_sampler_map.find(mip_levels);
+		if (find_sampler != m_mipmap_sampler_map.end())
+		{
+			return find_sampler->second;
+		}
+		else
+		{
+			sampler = new VulkanSampler();
+
+			VkSampler vk_sampler = VulkanUtil::getOrCreateMipmapSampler(m_physical_device, m_device, width, height);
+
+			((VulkanSampler*)sampler)->setResource(vk_sampler);
+
+			m_mipmap_sampler_map.insert(std::make_pair(mip_levels, sampler));
+
+			return sampler;
+		}
 	}
 
 	RHIShader* VulkanRendererAPI::CreateShaderModule(const std::vector<unsigned char>& shader_code)
@@ -426,6 +451,7 @@ namespace Astan
 
 	void VulkanRendererAPI::DestroySampler(RHISampler* sampler)
 	{
+		vkDestroySampler(m_device, ((VulkanSampler*)sampler)->getResource(), nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyInstance(RHIInstance* instance)
@@ -454,27 +480,45 @@ namespace Astan
 
 	void VulkanRendererAPI::DestroyCommandPool(RHICommandPool* commandPool)
 	{
+		vkDestroyCommandPool(m_device, ((VulkanCommandPool*)commandPool)->getResource(), nullptr);
 	}
 
 	void VulkanRendererAPI::DestroyBuffer(RHIBuffer*& buffer)
 	{
+		vkDestroyBuffer(m_device, ((VulkanBuffer*)buffer)->getResource(), nullptr);
+		RHI_DELETE_PTR(buffer);
 	}
 
 	void VulkanRendererAPI::FreeCommandBuffers(RHICommandPool* commandPool, uint32_t commandBufferCount, RHICommandBuffer* pCommandBuffers)
 	{
+		VkCommandBuffer vk_command_buffer = ((VulkanCommandBuffer*)pCommandBuffers)->getResource();
+		vkFreeCommandBuffers(m_device, ((VulkanCommandPool*)commandPool)->getResource(), commandBufferCount, &vk_command_buffer);
 	}
 
 	void VulkanRendererAPI::FreeMemory(RHIDeviceMemory*& memory)
 	{
+		vkFreeMemory(m_device, ((VulkanDeviceMemory*)memory)->getResource(), nullptr);
+		RHI_DELETE_PTR(memory);
 	}
 
 	bool VulkanRendererAPI::MapMemory(RHIDeviceMemory* memory, RHIDeviceSize offset, RHIDeviceSize size, RHIMemoryMapFlags flags, void** ppData)
 	{
-		return false;
+		VkResult result = vkMapMemory(m_device, ((VulkanDeviceMemory*)memory)->getResource(), offset, size, (VkMemoryMapFlags)flags, ppData);
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkMapMemory failed!");
+			return false;
+		}
 	}
 
 	void VulkanRendererAPI::UnmapMemory(RHIDeviceMemory* memory)
 	{
+		vkUnmapMemory(m_device, ((VulkanDeviceMemory*)memory)->getResource());
 	}
 
 	void VulkanRendererAPI::InvalidateMappedMemoryRanges(void* pNext, RHIDeviceMemory* memory, RHIDeviceSize offset, RHIDeviceSize size)
@@ -866,6 +910,9 @@ namespace Astan
 	void VulkanRendererAPI::SetLineWidth(float thickness) {}
 	void VulkanRendererAPI::CopyBuffer(RHIBuffer* srcBuffer, RHIBuffer* dstBuffer, RHIDeviceSize srcOffset, RHIDeviceSize dstOffset, RHIDeviceSize size)
 	{
+		VkBuffer vk_src_buffer = ((VulkanBuffer*)srcBuffer)->getResource();
+		VkBuffer vk_dst_buffer = ((VulkanBuffer*)dstBuffer)->getResource();
+		VulkanUtil::copyBuffer(this, vk_src_buffer, vk_dst_buffer, srcOffset, dstOffset, size);
 	}
 	void VulkanRendererAPI::CreateImage(uint32_t image_width, uint32_t image_height, RHIFormat format, RHIImageTiling image_tiling, RHIImageUsageFlags image_usage_flags, RHIMemoryPropertyFlags memory_property_flags, RHIImage*& image, RHIDeviceMemory*& memory, RHIImageCreateFlags image_create_flags, uint32_t array_layers, uint32_t miplevels)
 	{
@@ -901,9 +948,27 @@ namespace Astan
 	}
 	void VulkanRendererAPI::CreateGlobalImage(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, void* texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels)
 	{
+		VkImage vk_image;
+		VkImageView vk_image_view;
+
+		VulkanUtil::createGlobalImage(this, vk_image, vk_image_view, image_allocation, texture_image_width, texture_image_height, texture_image_pixels, texture_image_format, miplevels);
+
+		image = new VulkanImage();
+		image_view = new VulkanImageView();
+		((VulkanImage*)image)->setResource(vk_image);
+		((VulkanImageView*)image_view)->setResource(vk_image_view);
 	}
 	void VulkanRendererAPI::CreateCubeMap(RHIImage*& image, RHIImageView*& image_view, VmaAllocation& image_allocation, uint32_t texture_image_width, uint32_t texture_image_height, std::array<void*, 6> texture_image_pixels, RHIFormat texture_image_format, uint32_t miplevels)
 	{
+		VkImage vk_image;
+		VkImageView vk_image_view;
+
+		VulkanUtil::createCubeMap(this, vk_image, vk_image_view, image_allocation, texture_image_width, texture_image_height, texture_image_pixels, texture_image_format, miplevels);
+
+		image = new VulkanImage();
+		image_view = new VulkanImageView();
+		((VulkanImage*)image)->setResource(vk_image);
+		((VulkanImageView*)image_view)->setResource(vk_image_view);
 	}
 	bool VulkanRendererAPI::CreateCommandPool(const RHICommandPoolCreateInfo* pCreateInfo, RHICommandPool*& pCommandPool)
 	{
@@ -1480,7 +1545,40 @@ namespace Astan
 	}
 	bool VulkanRendererAPI::CreateSampler(const RHISamplerCreateInfo* pCreateInfo, RHISampler*& pSampler)
 	{
-		return false;
+		VkSamplerCreateInfo create_info{};
+		create_info.sType = (VkStructureType)pCreateInfo->sType;
+		create_info.pNext = (const void*)pCreateInfo->pNext;
+		create_info.flags = (VkSamplerCreateFlags)pCreateInfo->flags;
+		create_info.magFilter = (VkFilter)pCreateInfo->magFilter;
+		create_info.minFilter = (VkFilter)pCreateInfo->minFilter;
+		create_info.mipmapMode = (VkSamplerMipmapMode)pCreateInfo->mipmapMode;
+		create_info.addressModeU = (VkSamplerAddressMode)pCreateInfo->addressModeU;
+		create_info.addressModeV = (VkSamplerAddressMode)pCreateInfo->addressModeV;
+		create_info.addressModeW = (VkSamplerAddressMode)pCreateInfo->addressModeW;
+		create_info.mipLodBias = pCreateInfo->mipLodBias;
+		create_info.anisotropyEnable = (VkBool32)pCreateInfo->anisotropyEnable;
+		create_info.maxAnisotropy = pCreateInfo->maxAnisotropy;
+		create_info.compareEnable = (VkBool32)pCreateInfo->compareEnable;
+		create_info.compareOp = (VkCompareOp)pCreateInfo->compareOp;
+		create_info.minLod = pCreateInfo->minLod;
+		create_info.maxLod = pCreateInfo->maxLod;
+		create_info.borderColor = (VkBorderColor)pCreateInfo->borderColor;
+		create_info.unnormalizedCoordinates = (VkBool32)pCreateInfo->unnormalizedCoordinates;
+
+		pSampler = new VulkanSampler();
+		VkSampler vk_sampler;
+		VkResult result = vkCreateSampler(m_device, &create_info, nullptr, &vk_sampler);
+		((VulkanSampler*)pSampler)->setResource(vk_sampler);
+
+		if (result == VK_SUCCESS)
+		{
+			return RHI_SUCCESS;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkCreateSampler failed!");
+			return false;
+		}
 	}
 	bool VulkanRendererAPI::createSemaphore(const RHISemaphoreCreateInfo* pCreateInfo, RHISemaphore*& pSemaphore)
 	{
@@ -1689,6 +1787,153 @@ namespace Astan
 	}
 	void VulkanRendererAPI::GetPhysicalDeviceProperties(RHIPhysicalDeviceProperties* pProperties)
 	{
+		VkPhysicalDeviceProperties vk_physical_device_properties;
+		vkGetPhysicalDeviceProperties(m_physical_device, &vk_physical_device_properties);
+
+		pProperties->apiVersion = vk_physical_device_properties.apiVersion;
+		pProperties->driverVersion = vk_physical_device_properties.driverVersion;
+		pProperties->vendorID = vk_physical_device_properties.vendorID;
+		pProperties->deviceID = vk_physical_device_properties.deviceID;
+		pProperties->deviceType = (RHIPhysicalDeviceType)vk_physical_device_properties.deviceType;
+		for (uint32_t i = 0; i < RHI_MAX_PHYSICAL_DEVICE_NAME_SIZE; i++)
+		{
+			pProperties->deviceName[i] = vk_physical_device_properties.deviceName[i];
+		}
+		for (uint32_t i = 0; i < RHI_UUID_SIZE; i++)
+		{
+			pProperties->pipelineCacheUUID[i] = vk_physical_device_properties.pipelineCacheUUID[i];
+		}
+		pProperties->sparseProperties.residencyStandard2DBlockShape = (VkBool32)vk_physical_device_properties.sparseProperties.residencyStandard2DBlockShape;
+		pProperties->sparseProperties.residencyStandard2DMultisampleBlockShape = (VkBool32)vk_physical_device_properties.sparseProperties.residencyStandard2DMultisampleBlockShape;
+		pProperties->sparseProperties.residencyStandard3DBlockShape = (VkBool32)vk_physical_device_properties.sparseProperties.residencyStandard3DBlockShape;
+		pProperties->sparseProperties.residencyAlignedMipSize = (VkBool32)vk_physical_device_properties.sparseProperties.residencyAlignedMipSize;
+		pProperties->sparseProperties.residencyNonResidentStrict = (VkBool32)vk_physical_device_properties.sparseProperties.residencyNonResidentStrict;
+
+		pProperties->limits.maxImageDimension1D = vk_physical_device_properties.limits.maxImageDimension1D;
+		pProperties->limits.maxImageDimension2D = vk_physical_device_properties.limits.maxImageDimension2D;
+		pProperties->limits.maxImageDimension3D = vk_physical_device_properties.limits.maxImageDimension3D;
+		pProperties->limits.maxImageDimensionCube = vk_physical_device_properties.limits.maxImageDimensionCube;
+		pProperties->limits.maxImageArrayLayers = vk_physical_device_properties.limits.maxImageArrayLayers;
+		pProperties->limits.maxTexelBufferElements = vk_physical_device_properties.limits.maxTexelBufferElements;
+		pProperties->limits.maxUniformBufferRange = vk_physical_device_properties.limits.maxUniformBufferRange;
+		pProperties->limits.maxStorageBufferRange = vk_physical_device_properties.limits.maxStorageBufferRange;
+		pProperties->limits.maxPushConstantsSize = vk_physical_device_properties.limits.maxPushConstantsSize;
+		pProperties->limits.maxMemoryAllocationCount = vk_physical_device_properties.limits.maxMemoryAllocationCount;
+		pProperties->limits.maxSamplerAllocationCount = vk_physical_device_properties.limits.maxSamplerAllocationCount;
+		pProperties->limits.bufferImageGranularity = (VkDeviceSize)vk_physical_device_properties.limits.bufferImageGranularity;
+		pProperties->limits.sparseAddressSpaceSize = (VkDeviceSize)vk_physical_device_properties.limits.sparseAddressSpaceSize;
+		pProperties->limits.maxBoundDescriptorSets = vk_physical_device_properties.limits.maxBoundDescriptorSets;
+		pProperties->limits.maxPerStageDescriptorSamplers = vk_physical_device_properties.limits.maxPerStageDescriptorSamplers;
+		pProperties->limits.maxPerStageDescriptorUniformBuffers = vk_physical_device_properties.limits.maxPerStageDescriptorUniformBuffers;
+		pProperties->limits.maxPerStageDescriptorStorageBuffers = vk_physical_device_properties.limits.maxPerStageDescriptorStorageBuffers;
+		pProperties->limits.maxPerStageDescriptorSampledImages = vk_physical_device_properties.limits.maxPerStageDescriptorSampledImages;
+		pProperties->limits.maxPerStageDescriptorStorageImages = vk_physical_device_properties.limits.maxPerStageDescriptorStorageImages;
+		pProperties->limits.maxPerStageDescriptorInputAttachments = vk_physical_device_properties.limits.maxPerStageDescriptorInputAttachments;
+		pProperties->limits.maxPerStageResources = vk_physical_device_properties.limits.maxPerStageResources;
+		pProperties->limits.maxDescriptorSetSamplers = vk_physical_device_properties.limits.maxDescriptorSetSamplers;
+		pProperties->limits.maxDescriptorSetUniformBuffers = vk_physical_device_properties.limits.maxDescriptorSetUniformBuffers;
+		pProperties->limits.maxDescriptorSetUniformBuffersDynamic = vk_physical_device_properties.limits.maxDescriptorSetUniformBuffersDynamic;
+		pProperties->limits.maxDescriptorSetStorageBuffers = vk_physical_device_properties.limits.maxDescriptorSetStorageBuffers;
+		pProperties->limits.maxDescriptorSetStorageBuffersDynamic = vk_physical_device_properties.limits.maxDescriptorSetStorageBuffersDynamic;
+		pProperties->limits.maxDescriptorSetSampledImages = vk_physical_device_properties.limits.maxDescriptorSetSampledImages;
+		pProperties->limits.maxDescriptorSetStorageImages = vk_physical_device_properties.limits.maxDescriptorSetStorageImages;
+		pProperties->limits.maxDescriptorSetInputAttachments = vk_physical_device_properties.limits.maxDescriptorSetInputAttachments;
+		pProperties->limits.maxVertexInputAttributes = vk_physical_device_properties.limits.maxVertexInputAttributes;
+		pProperties->limits.maxVertexInputBindings = vk_physical_device_properties.limits.maxVertexInputBindings;
+		pProperties->limits.maxVertexInputAttributeOffset = vk_physical_device_properties.limits.maxVertexInputAttributeOffset;
+		pProperties->limits.maxVertexInputBindingStride = vk_physical_device_properties.limits.maxVertexInputBindingStride;
+		pProperties->limits.maxVertexOutputComponents = vk_physical_device_properties.limits.maxVertexOutputComponents;
+		pProperties->limits.maxTessellationGenerationLevel = vk_physical_device_properties.limits.maxTessellationGenerationLevel;
+		pProperties->limits.maxTessellationPatchSize = vk_physical_device_properties.limits.maxTessellationPatchSize;
+		pProperties->limits.maxTessellationControlPerVertexInputComponents = vk_physical_device_properties.limits.maxTessellationControlPerVertexInputComponents;
+		pProperties->limits.maxTessellationControlPerVertexOutputComponents = vk_physical_device_properties.limits.maxTessellationControlPerVertexOutputComponents;
+		pProperties->limits.maxTessellationControlPerPatchOutputComponents = vk_physical_device_properties.limits.maxTessellationControlPerPatchOutputComponents;
+		pProperties->limits.maxTessellationControlTotalOutputComponents = vk_physical_device_properties.limits.maxTessellationControlTotalOutputComponents;
+		pProperties->limits.maxTessellationEvaluationInputComponents = vk_physical_device_properties.limits.maxTessellationEvaluationInputComponents;
+		pProperties->limits.maxTessellationEvaluationOutputComponents = vk_physical_device_properties.limits.maxTessellationEvaluationOutputComponents;
+		pProperties->limits.maxGeometryShaderInvocations = vk_physical_device_properties.limits.maxGeometryShaderInvocations;
+		pProperties->limits.maxGeometryInputComponents = vk_physical_device_properties.limits.maxGeometryInputComponents;
+		pProperties->limits.maxGeometryOutputComponents = vk_physical_device_properties.limits.maxGeometryOutputComponents;
+		pProperties->limits.maxGeometryOutputVertices = vk_physical_device_properties.limits.maxGeometryOutputVertices;
+		pProperties->limits.maxGeometryTotalOutputComponents = vk_physical_device_properties.limits.maxGeometryTotalOutputComponents;
+		pProperties->limits.maxFragmentInputComponents = vk_physical_device_properties.limits.maxFragmentInputComponents;
+		pProperties->limits.maxFragmentOutputAttachments = vk_physical_device_properties.limits.maxFragmentOutputAttachments;
+		pProperties->limits.maxFragmentDualSrcAttachments = vk_physical_device_properties.limits.maxFragmentDualSrcAttachments;
+		pProperties->limits.maxFragmentCombinedOutputResources = vk_physical_device_properties.limits.maxFragmentCombinedOutputResources;
+		pProperties->limits.maxComputeSharedMemorySize = vk_physical_device_properties.limits.maxComputeSharedMemorySize;
+		for (uint32_t i = 0; i < 3; i++)
+		{
+			pProperties->limits.maxComputeWorkGroupCount[i] = vk_physical_device_properties.limits.maxComputeWorkGroupCount[i];
+		}
+		pProperties->limits.maxComputeWorkGroupInvocations = vk_physical_device_properties.limits.maxComputeWorkGroupInvocations;
+		for (uint32_t i = 0; i < 3; i++)
+		{
+			pProperties->limits.maxComputeWorkGroupSize[i] = vk_physical_device_properties.limits.maxComputeWorkGroupSize[i];
+		}
+		pProperties->limits.subPixelPrecisionBits = vk_physical_device_properties.limits.subPixelPrecisionBits;
+		pProperties->limits.subTexelPrecisionBits = vk_physical_device_properties.limits.subTexelPrecisionBits;
+		pProperties->limits.mipmapPrecisionBits = vk_physical_device_properties.limits.mipmapPrecisionBits;
+		pProperties->limits.maxDrawIndexedIndexValue = vk_physical_device_properties.limits.maxDrawIndexedIndexValue;
+		pProperties->limits.maxDrawIndirectCount = vk_physical_device_properties.limits.maxDrawIndirectCount;
+		pProperties->limits.maxSamplerLodBias = vk_physical_device_properties.limits.maxSamplerLodBias;
+		pProperties->limits.maxSamplerAnisotropy = vk_physical_device_properties.limits.maxSamplerAnisotropy;
+		pProperties->limits.maxViewports = vk_physical_device_properties.limits.maxViewports;
+		for (uint32_t i = 0; i < 2; i++)
+		{
+			pProperties->limits.maxViewportDimensions[i] = vk_physical_device_properties.limits.maxViewportDimensions[i];
+		}
+		for (uint32_t i = 0; i < 2; i++)
+		{
+			pProperties->limits.viewportBoundsRange[i] = vk_physical_device_properties.limits.viewportBoundsRange[i];
+		}
+		pProperties->limits.viewportSubPixelBits = vk_physical_device_properties.limits.viewportSubPixelBits;
+		pProperties->limits.minMemoryMapAlignment = vk_physical_device_properties.limits.minMemoryMapAlignment;
+		pProperties->limits.minTexelBufferOffsetAlignment = (VkDeviceSize)vk_physical_device_properties.limits.minTexelBufferOffsetAlignment;
+		pProperties->limits.minUniformBufferOffsetAlignment = (VkDeviceSize)vk_physical_device_properties.limits.minUniformBufferOffsetAlignment;
+		pProperties->limits.minStorageBufferOffsetAlignment = (VkDeviceSize)vk_physical_device_properties.limits.minStorageBufferOffsetAlignment;
+		pProperties->limits.minTexelOffset = vk_physical_device_properties.limits.minTexelOffset;
+		pProperties->limits.maxTexelOffset = vk_physical_device_properties.limits.maxTexelOffset;
+		pProperties->limits.minTexelGatherOffset = vk_physical_device_properties.limits.minTexelGatherOffset;
+		pProperties->limits.maxTexelGatherOffset = vk_physical_device_properties.limits.maxTexelGatherOffset;
+		pProperties->limits.minInterpolationOffset = vk_physical_device_properties.limits.minInterpolationOffset;
+		pProperties->limits.maxInterpolationOffset = vk_physical_device_properties.limits.maxInterpolationOffset;
+		pProperties->limits.subPixelInterpolationOffsetBits = vk_physical_device_properties.limits.subPixelInterpolationOffsetBits;
+		pProperties->limits.maxFramebufferWidth = vk_physical_device_properties.limits.maxFramebufferWidth;
+		pProperties->limits.maxFramebufferHeight = vk_physical_device_properties.limits.maxFramebufferHeight;
+		pProperties->limits.maxFramebufferLayers = vk_physical_device_properties.limits.maxFramebufferLayers;
+		pProperties->limits.framebufferColorSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.framebufferColorSampleCounts;
+		pProperties->limits.framebufferDepthSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.framebufferDepthSampleCounts;
+		pProperties->limits.framebufferStencilSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.framebufferStencilSampleCounts;
+		pProperties->limits.framebufferNoAttachmentsSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.framebufferNoAttachmentsSampleCounts;
+		pProperties->limits.maxColorAttachments = vk_physical_device_properties.limits.maxColorAttachments;
+		pProperties->limits.sampledImageColorSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.sampledImageColorSampleCounts;
+		pProperties->limits.sampledImageIntegerSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.sampledImageIntegerSampleCounts;
+		pProperties->limits.sampledImageDepthSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.sampledImageDepthSampleCounts;
+		pProperties->limits.sampledImageStencilSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.sampledImageStencilSampleCounts;
+		pProperties->limits.storageImageSampleCounts = (VkSampleCountFlags)vk_physical_device_properties.limits.storageImageSampleCounts;
+		pProperties->limits.maxSampleMaskWords = vk_physical_device_properties.limits.maxSampleMaskWords;
+		pProperties->limits.timestampComputeAndGraphics = (VkBool32)vk_physical_device_properties.limits.timestampComputeAndGraphics;
+		pProperties->limits.timestampPeriod = vk_physical_device_properties.limits.timestampPeriod;
+		pProperties->limits.maxClipDistances = vk_physical_device_properties.limits.maxClipDistances;
+		pProperties->limits.maxCullDistances = vk_physical_device_properties.limits.maxCullDistances;
+		pProperties->limits.maxCombinedClipAndCullDistances = vk_physical_device_properties.limits.maxCombinedClipAndCullDistances;
+		pProperties->limits.discreteQueuePriorities = vk_physical_device_properties.limits.discreteQueuePriorities;
+		for (uint32_t i = 0; i < 2; i++)
+		{
+			pProperties->limits.pointSizeRange[i] = vk_physical_device_properties.limits.pointSizeRange[i];
+		}
+		for (uint32_t i = 0; i < 2; i++)
+		{
+			pProperties->limits.lineWidthRange[i] = vk_physical_device_properties.limits.lineWidthRange[i];
+		}
+		pProperties->limits.pointSizeGranularity = vk_physical_device_properties.limits.pointSizeGranularity;
+		pProperties->limits.lineWidthGranularity = vk_physical_device_properties.limits.lineWidthGranularity;
+		pProperties->limits.strictLines = (VkBool32)vk_physical_device_properties.limits.strictLines;
+		pProperties->limits.standardSampleLocations = (VkBool32)vk_physical_device_properties.limits.standardSampleLocations;
+		pProperties->limits.optimalBufferCopyOffsetAlignment = (VkDeviceSize)vk_physical_device_properties.limits.optimalBufferCopyOffsetAlignment;
+		pProperties->limits.optimalBufferCopyRowPitchAlignment = (VkDeviceSize)vk_physical_device_properties.limits.optimalBufferCopyRowPitchAlignment;
+		pProperties->limits.nonCoherentAtomSize = (VkDeviceSize)vk_physical_device_properties.limits.nonCoherentAtomSize;
+
 	}
 	RHICommandBuffer* VulkanRendererAPI::GetCurrentCommandBuffer() const
 	{

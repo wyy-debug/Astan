@@ -59,6 +59,8 @@ namespace Astan
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
 
+		void GetPointLight();
+
 		void RenderScene(EditorCamera& camera);
 	private:
 		entt::registry m_Registry;

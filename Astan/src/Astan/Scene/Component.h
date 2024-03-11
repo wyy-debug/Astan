@@ -11,6 +11,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include <math.h>
+#include <algorithm>
+
+#define PI acos(-1)
+
 namespace Astan
 {
 	struct IDComponent
@@ -172,6 +177,39 @@ namespace Astan
 	};
 
 
+	struct PointLight
+	{
+		glm::vec3 Position;
+		glm::vec3 Fulx;
+
+		float calculteRadius() const
+		{
+			const float INTENSITY_CUTOFF = 1.0f;
+			const float ATTENTUATION_CUTOFF = 0.05f;
+			glm::vec3 intensity = glm::vec3(Fulx.x / (4.0f * PI), Fulx.y / (4.0f * PI), Fulx.z / (4.0f * PI));
+			float maxIntensity = glm::max(intensity.x, glm::max(intensity.y, intensity.z));
+			float  attenuation = std::max(INTENSITY_CUTOFF, ATTENTUATION_CUTOFF * maxIntensity) / maxIntensity;
+			return 1.0f / sqrtf(attenuation);
+		}
+		PointLight() = default;
+		PointLight(const PointLight&) = default;
+	};
+
+	struct AmbientLight
+	{
+		glm::vec3 Irradiance;
+		AmbientLight() = default;
+		AmbientLight(const AmbientLight&) = default;
+	};
+
+	struct PDirectionalLight
+	{
+		glm::vec3 Direction;
+		glm::vec3 Color;
+		PDirectionalLight() = default;
+		PDirectionalLight(const PDirectionalLight&) = default;
+	};
+
 	template<typename...Component>
 	struct ComponentGroup
 	{
@@ -181,6 +219,6 @@ namespace Astan
 		ComponentGroup<TransformComponent, SpriteRendererComponent,
 		CircleRendererComponent, CameraComponent, ScriptComponent,
 		NativeScriptComponent,Rigidbody2DComponent, BoxCollider2DComponent,
-		CircleCollider2DComponent, TextComponent>;
+		CircleCollider2DComponent, TextComponent, PointLight, AmbientLight, PDirectionalLight>;
 
 }

@@ -1,3 +1,4 @@
+#include "aspch.h"
 #include "RenderPass.h"
 
 void Astan::RenderPass::Initialize()
