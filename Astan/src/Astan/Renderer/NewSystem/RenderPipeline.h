@@ -2,6 +2,11 @@
 #include "MainCameraPass.h"
 #include "Platform/Vulkan/VulkanRendererAPI.h"
 #include "ColorGradingPass.h"
+#include "FxaaPass.h"
+#include "ToneMappingPass.h"
+#include "UIPass.h"
+#include "CombineUIPass.h"
+#include "ParticlePass.h"
 
 namespace Astan 
 {
@@ -21,5 +26,10 @@ namespace Astan
 	private:
 		Ref<MainCameraPass> m_MainCameraPass;
 		Ref<ColorGradingPass> m_ColorGradingPass;
+		Ref<FXAAPass> m_FXAAPass;
+		Ref<ToneMappingPass> m_ToneMappingPass;
+		Ref<UIPass> m_UIPass;
+		Ref<CombineUIPass> m_CombineUIPass;
+		Ref<ParticlePass> m_ParticlePass;
 	};
 }

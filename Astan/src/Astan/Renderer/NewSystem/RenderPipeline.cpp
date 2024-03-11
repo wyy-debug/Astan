@@ -3,6 +3,7 @@
 #include "RenderResource.h"
 
 
+
 namespace Astan
 {
 	RenderPipeline::~RenderPipeline()
@@ -40,15 +41,15 @@ namespace Astan
 
 
         ColorGradingPass& color_grading_pass = *(static_cast<ColorGradingPass*>(m_ColorGradingPass.get()));
-        //FXAAPass& fxaa_pass = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
-        //ToneMappingPass& tone_mapping_pass = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
-        //UIPass& ui_pass = *(static_cast<UIPass*>(m_ui_pass.get()));
-        //CombineUIPass& combine_ui_pass = *(static_cast<CombineUIPass*>(m_combine_ui_pass.get()));
-        //ParticlePass& particle_pass = *(static_cast<ParticlePass*>(m_particle_pass.get()));
+        FXAAPass& fxaa_pass = *(static_cast<FXAAPass*>(m_FXAAPass.get()));
+        ToneMappingPass& tone_mapping_pass = *(static_cast<ToneMappingPass*>(m_ToneMappingPass.get()));
+        UIPass& ui_pass = *(static_cast<UIPass*>(m_UIPass.get()));
+        CombineUIPass& combine_ui_pass = *(static_cast<CombineUIPass*>(m_CombineUIPass.get()));
+        ParticlePass& particle_pass = *(static_cast<ParticlePass*>(m_ParticlePass.get()));
 
-        //static_cast<ParticlePass*>(m_particle_pass.get())
-        //    ->setRenderCommandBufferHandle(
-        //        static_cast<MainCameraPass*>(m_main_camera_pass.get())->getRenderCommandBuffer());
+        static_cast<ParticlePass*>(m_ParticlePass.get())
+            ->SetRenderCommandBufferHandle(
+                static_cast<MainCameraPass*>(m_MainCameraPass.get())->GetRenderCommandBuffer());
 
         static_cast<MainCameraPass*>(m_MainCameraPass.get())
             ->DrawForward(color_grading_pass,

@@ -71,6 +71,7 @@ namespace Astan
             uint32_t          current_swapchain_image_index);
 
         void UpdateAfterFramebufferRecreate();
+        RHICommandBuffer* GetRenderCommandBuffer();
 
     private:
         void SetupParticlePass();
@@ -92,6 +93,7 @@ namespace Astan
         void DrawMeshLighting();
         void DrawSkybox();
         void DrawAxis();
+
 
     private:
         std::vector<RHIFramebuffer*> m_SwapchainFramebuffers;

@@ -216,7 +216,7 @@ namespace Astan
 
         RHIDescriptorPool* m_descriptor_pool = new VulkanDescriptorPool();
 
-        RHICommandPool* m_RenderCommand_command_pool;
+        RHICommandPool* m_rhi_command_pool;
 
         RHICommandBuffer* m_command_buffers[k_max_frames_in_flight];
         RHICommandBuffer* m_current_command_buffer = new VulkanCommandBuffer();

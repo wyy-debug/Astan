@@ -12,6 +12,11 @@
 #include "shader/axis_vert.h"
 #include "shader/axis_frag.h"
 #include "ColorGradingPass.h"
+#include "FxaaPass.h"
+#include "ToneMappingPass.h"
+#include "UIPass.h"
+#include "CombineUIPass.h"
+#include "ParticlePass.h"
 
 namespace Astan
 {
@@ -41,10 +46,181 @@ namespace Astan
         ParticlePass& particle_pass,
         uint32_t          current_swapchain_image_index)
     {
+        {
+            RHIRenderPassBeginInfo renderpass_begin_info{};
+            renderpass_begin_info.sType = RHI_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderpass_begin_info.renderPass = m_FrameBuffer.render_pass;
+            renderpass_begin_info.framebuffer = m_SwapchainFramebuffers[current_swapchain_image_index];
+            renderpass_begin_info.renderArea.offset = { 0, 0 };
+            renderpass_begin_info.renderArea.extent = m_RenderCommand->GetSwapchainInfo().extent;
+
+            RHIClearValue clear_values[_main_camera_pass_attachment_count];
+            clear_values[_main_camera_pass_gbuffer_a].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+            clear_values[_main_camera_pass_gbuffer_b].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+            clear_values[_main_camera_pass_gbuffer_c].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+            clear_values[_main_camera_pass_backup_buffer_odd].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clear_values[_main_camera_pass_backup_buffer_even].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clear_values[_main_camera_pass_post_process_buffer_odd].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clear_values[_main_camera_pass_post_process_buffer_even].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clear_values[_main_camera_pass_depth].depthStencil = { 1.0f, 0 };
+            clear_values[_main_camera_pass_swap_chain_image].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            renderpass_begin_info.clearValueCount = (sizeof(clear_values) / sizeof(clear_values[0]));
+            renderpass_begin_info.pClearValues = clear_values;
+
+            m_RenderCommand->CmdBeginRenderPassPFN(m_RenderCommand->GetCurrentCommandBuffer(), &renderpass_begin_info, RHI_SUBPASS_CONTENTS_INLINE);
+        }
+
+        float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        m_RenderCommand->PushEvent(m_RenderCommand->GetCurrentCommandBuffer(), "BasePass", color);
+
+        DrawMeshGbuffer();
+
+        m_RenderCommand->PopEvent(m_RenderCommand->GetCurrentCommandBuffer());
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        m_RenderCommand->PushEvent(m_RenderCommand->GetCurrentCommandBuffer(), "Deferred Lighting", color);
+
+        DrawDeferredLighting();
+
+        m_RenderCommand->PopEvent(m_RenderCommand->GetCurrentCommandBuffer());
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        m_RenderCommand->PushEvent(m_RenderCommand->GetCurrentCommandBuffer(), "Forward Lighting", color);
+
+        particle_pass.Draw();
+
+        m_RenderCommand->PopEvent(m_RenderCommand->GetCurrentCommandBuffer());
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        tone_mapping_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        color_grading_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        if (m_enable_fxaa)
+            fxaa_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        RHIClearAttachment clear_attachments[1];
+        clear_attachments[0].aspectMask = RHI_IMAGE_ASPECT_COLOR_BIT;
+        clear_attachments[0].colorAttachment = 0;
+        clear_attachments[0].clearValue.color.float32[0] = 0.0;
+        clear_attachments[0].clearValue.color.float32[1] = 0.0;
+        clear_attachments[0].clearValue.color.float32[2] = 0.0;
+        clear_attachments[0].clearValue.color.float32[3] = 0.0;
+        RHIClearRect clear_rects[1];
+        clear_rects[0].baseArrayLayer = 0;
+        clear_rects[0].layerCount = 1;
+        clear_rects[0].rect.offset.x = 0;
+        clear_rects[0].rect.offset.y = 0;
+        clear_rects[0].rect.extent.width = m_RenderCommand->GetSwapchainInfo().extent.width;
+        clear_rects[0].rect.extent.height = m_RenderCommand->GetSwapchainInfo().extent.height;
+        m_RenderCommand->CmdClearAttachmentsPFN(m_RenderCommand->GetCurrentCommandBuffer(),
+            sizeof(clear_attachments) / sizeof(clear_attachments[0]),
+            clear_attachments,
+            sizeof(clear_rects) / sizeof(clear_rects[0]),
+            clear_rects);
+
+        DrawAxis();
+
+        ui_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        combine_ui_pass.Draw();
+
+        m_RenderCommand->CmdEndRenderPassPFN(m_RenderCommand->GetCurrentCommandBuffer());
     }
 
     void MainCameraPass::DrawForward(ColorGradingPass& color_grading_pass, FXAAPass& fxaa_pass, ToneMappingPass& tone_mapping_pass, UIPass& ui_pass, CombineUIPass& combine_ui_pass, ParticlePass& particle_pass, uint32_t current_swapchain_image_index)
     {
+        {
+            RHIRenderPassBeginInfo renderpass_begin_info{};
+            renderpass_begin_info.sType = RHI_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderpass_begin_info.renderPass = m_FrameBuffer.render_pass;
+            renderpass_begin_info.framebuffer = m_SwapchainFramebuffers[current_swapchain_image_index];
+            renderpass_begin_info.renderArea.offset = { 0, 0 };
+            renderpass_begin_info.renderArea.extent = m_RenderCommand->GetSwapchainInfo().extent;
+
+            RHIClearValue clear_values[_main_camera_pass_attachment_count];
+            clear_values[_main_camera_pass_gbuffer_a].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+            clear_values[_main_camera_pass_gbuffer_b].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+            clear_values[_main_camera_pass_gbuffer_c].color = { {0.0f, 0.0f, 0.0f, 0.0f} };
+            clear_values[_main_camera_pass_backup_buffer_odd].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clear_values[_main_camera_pass_backup_buffer_even].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clear_values[_main_camera_pass_depth].depthStencil = { 1.0f, 0 };
+            clear_values[_main_camera_pass_swap_chain_image].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            renderpass_begin_info.clearValueCount = (sizeof(clear_values) / sizeof(clear_values[0]));
+            renderpass_begin_info.pClearValues = clear_values;
+
+            m_RenderCommand->CmdBeginRenderPassPFN(m_RenderCommand->GetCurrentCommandBuffer(), &renderpass_begin_info, RHI_SUBPASS_CONTENTS_INLINE);
+        }
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        m_RenderCommand->PushEvent(m_RenderCommand->GetCurrentCommandBuffer(), "Forward Lighting", color);
+
+        DrawMeshLighting();
+        DrawSkybox();
+        particle_pass.Draw();
+
+        m_RenderCommand->PopEvent(m_RenderCommand->GetCurrentCommandBuffer());
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        tone_mapping_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        color_grading_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        if (m_enable_fxaa)
+            fxaa_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        RHIClearAttachment clear_attachments[1];
+        clear_attachments[0].aspectMask = RHI_IMAGE_ASPECT_COLOR_BIT;
+        clear_attachments[0].colorAttachment = 0;
+        clear_attachments[0].clearValue.color.float32[0] = 0.0;
+        clear_attachments[0].clearValue.color.float32[1] = 0.0;
+        clear_attachments[0].clearValue.color.float32[2] = 0.0;
+        clear_attachments[0].clearValue.color.float32[3] = 0.0;
+        RHIClearRect clear_rects[1];
+        clear_rects[0].baseArrayLayer = 0;
+        clear_rects[0].layerCount = 1;
+        clear_rects[0].rect.offset.x = 0;
+        clear_rects[0].rect.offset.y = 0;
+        clear_rects[0].rect.extent.width = m_RenderCommand->GetSwapchainInfo().extent.width;
+        clear_rects[0].rect.extent.height = m_RenderCommand->GetSwapchainInfo().extent.height;
+        m_RenderCommand->CmdClearAttachmentsPFN(m_RenderCommand->GetCurrentCommandBuffer(),
+            sizeof(clear_attachments) / sizeof(clear_attachments[0]),
+            clear_attachments,
+            sizeof(clear_rects) / sizeof(clear_rects[0]),
+            clear_rects);
+
+        DrawAxis();
+
+        ui_pass.Draw();
+
+        m_RenderCommand->CmdNextSubpassPFN(m_RenderCommand->GetCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+        combine_ui_pass.Draw();
+
+        m_RenderCommand->CmdEndRenderPassPFN(m_RenderCommand->GetCurrentCommandBuffer());
+
     }
 
     void MainCameraPass::SetupParticlePass()
@@ -1949,6 +2125,8 @@ namespace Astan
     void MainCameraPass::DrawAxis()
     {
     }
+
+    RHICommandBuffer* MainCameraPass::GetRenderCommandBuffer() { return m_RenderCommand->GetCurrentCommandBuffer(); }
 
     void MainCameraPass::UpdateAfterFramebufferRecreate()
     {

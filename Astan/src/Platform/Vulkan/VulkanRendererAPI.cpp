@@ -1791,7 +1791,39 @@ namespace Astan
 	}
 	bool VulkanRendererAPI::BeginCommandBuffer(RHICommandBuffer* commandBuffer, const RHICommandBufferBeginInfo* pBeginInfo)
 	{
-		return false;
+		VkCommandBufferInheritanceInfo command_buffer_inheritance_info{};
+		const VkCommandBufferInheritanceInfo* command_buffer_inheritance_info_ptr = nullptr;
+		if (pBeginInfo->pInheritanceInfo != nullptr)
+		{
+			command_buffer_inheritance_info.sType = (VkStructureType)(pBeginInfo->pInheritanceInfo->sType);
+			command_buffer_inheritance_info.pNext = (const void*)pBeginInfo->pInheritanceInfo->pNext;
+			command_buffer_inheritance_info.renderPass = ((VulkanRenderPass*)pBeginInfo->pInheritanceInfo->renderPass)->getResource();
+			command_buffer_inheritance_info.subpass = pBeginInfo->pInheritanceInfo->subpass;
+			command_buffer_inheritance_info.framebuffer = ((VulkanFramebuffer*)(pBeginInfo->pInheritanceInfo->framebuffer))->getResource();
+			command_buffer_inheritance_info.occlusionQueryEnable = (VkBool32)pBeginInfo->pInheritanceInfo->occlusionQueryEnable;
+			command_buffer_inheritance_info.queryFlags = (VkQueryControlFlags)pBeginInfo->pInheritanceInfo->queryFlags;
+			command_buffer_inheritance_info.pipelineStatistics = (VkQueryPipelineStatisticFlags)pBeginInfo->pInheritanceInfo->pipelineStatistics;
+
+			command_buffer_inheritance_info_ptr = &command_buffer_inheritance_info;
+		}
+
+		VkCommandBufferBeginInfo command_buffer_begin_info{};
+		command_buffer_begin_info.sType = (VkStructureType)pBeginInfo->sType;
+		command_buffer_begin_info.pNext = (const void*)pBeginInfo->pNext;
+		command_buffer_begin_info.flags = (VkCommandBufferUsageFlags)pBeginInfo->flags;
+		command_buffer_begin_info.pInheritanceInfo = command_buffer_inheritance_info_ptr;
+
+		VkResult result = vkBeginCommandBuffer(((VulkanCommandBuffer*)commandBuffer)->getResource(), &command_buffer_begin_info);
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkBeginCommandBuffer failed!");
+			return false;
+		}
 	}
 	void VulkanRendererAPI::CmdCopyImageToBuffer(RHICommandBuffer* commandBuffer, RHIImage* srcImage, RHIImageLayout srcImageLayout, RHIBuffer* dstBuffer, uint32_t regionCount, const RHIBufferImageCopy* pRegions)
 	{
@@ -1817,7 +1849,17 @@ namespace Astan
 	}
 	bool VulkanRendererAPI::EndCommandBuffer(RHICommandBuffer* commandBuffer)
 	{
-		return false;
+		VkResult result = vkEndCommandBuffer(((VulkanCommandBuffer*)commandBuffer)->getResource());
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkEndCommandBuffer failed!");
+			return false;
+		}
 	}
 	void VulkanRendererAPI::UpdateDescriptorSets(uint32_t descriptorWriteCount, const RHIWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const RHICopyDescriptorSet* pDescriptorCopies)
 	{
@@ -1922,11 +1964,150 @@ namespace Astan
 	}
 	bool VulkanRendererAPI::QueueSubmit(RHIQueue* queue, uint32_t submitCount, const RHISubmitInfo* pSubmits, RHIFence* fence)
 	{
-		return false;
+		//submit_info
+		int command_buffer_size_total = 0;
+		int semaphore_size_total = 0;
+		int signal_semaphore_size_total = 0;
+		int pipeline_stage_flags_size_total = 0;
+
+		int submit_info_size = submitCount;
+		for (int i = 0; i < submit_info_size; ++i)
+		{
+			const auto& rhi_submit_info_element = pSubmits[i];
+			command_buffer_size_total += rhi_submit_info_element.commandBufferCount;
+			semaphore_size_total += rhi_submit_info_element.waitSemaphoreCount;
+			signal_semaphore_size_total += rhi_submit_info_element.signalSemaphoreCount;
+			pipeline_stage_flags_size_total += rhi_submit_info_element.waitSemaphoreCount;
+		}
+		std::vector<VkCommandBuffer> vk_command_buffer_list_external(command_buffer_size_total);
+		std::vector<VkSemaphore> vk_semaphore_list_external(semaphore_size_total);
+		std::vector<VkSemaphore> vk_signal_semaphore_list_external(signal_semaphore_size_total);
+		std::vector<VkPipelineStageFlags> vk_pipeline_stage_flags_list_external(pipeline_stage_flags_size_total);
+
+		int command_buffer_size_current = 0;
+		int semaphore_size_current = 0;
+		int signal_semaphore_size_current = 0;
+		int pipeline_stage_flags_size_current = 0;
+
+
+		std::vector<VkSubmitInfo> vk_submit_info_list(submit_info_size);
+		for (int i = 0; i < submit_info_size; ++i)
+		{
+			const auto& rhi_submit_info_element = pSubmits[i];
+			auto& vk_submit_info_element = vk_submit_info_list[i];
+
+			vk_submit_info_element.sType = (VkStructureType)rhi_submit_info_element.sType;
+			vk_submit_info_element.pNext = (const void*)rhi_submit_info_element.pNext;
+
+			//command_buffer
+			if (rhi_submit_info_element.commandBufferCount > 0)
+			{
+				vk_submit_info_element.commandBufferCount = rhi_submit_info_element.commandBufferCount;
+				vk_submit_info_element.pCommandBuffers = &vk_command_buffer_list_external[command_buffer_size_current];
+				int command_buffer_size = rhi_submit_info_element.commandBufferCount;
+				for (int i = 0; i < command_buffer_size; ++i)
+				{
+					const auto& rhi_command_buffer_element = rhi_submit_info_element.pCommandBuffers[i];
+					auto& vk_command_buffer_element = vk_command_buffer_list_external[command_buffer_size_current];
+
+					vk_command_buffer_element = ((VulkanCommandBuffer*)rhi_command_buffer_element)->getResource();
+
+					command_buffer_size_current++;
+				};
+			}
+
+			//semaphore
+			if (rhi_submit_info_element.waitSemaphoreCount > 0)
+			{
+				vk_submit_info_element.waitSemaphoreCount = rhi_submit_info_element.waitSemaphoreCount;
+				vk_submit_info_element.pWaitSemaphores = &vk_semaphore_list_external[semaphore_size_current];
+				int semaphore_size = rhi_submit_info_element.waitSemaphoreCount;
+				for (int i = 0; i < semaphore_size; ++i)
+				{
+					const auto& rhi_semaphore_element = rhi_submit_info_element.pWaitSemaphores[i];
+					auto& vk_semaphore_element = vk_semaphore_list_external[semaphore_size_current];
+
+					vk_semaphore_element = ((VulkanSemaphore*)rhi_semaphore_element)->getResource();
+
+					semaphore_size_current++;
+				};
+			}
+
+			//signal_semaphore
+			if (rhi_submit_info_element.signalSemaphoreCount > 0)
+			{
+				vk_submit_info_element.signalSemaphoreCount = rhi_submit_info_element.signalSemaphoreCount;
+				vk_submit_info_element.pSignalSemaphores = &vk_signal_semaphore_list_external[signal_semaphore_size_current];
+				int signal_semaphore_size = rhi_submit_info_element.signalSemaphoreCount;
+				for (int i = 0; i < signal_semaphore_size; ++i)
+				{
+					const auto& rhi_signal_semaphore_element = rhi_submit_info_element.pSignalSemaphores[i];
+					auto& vk_signal_semaphore_element = vk_signal_semaphore_list_external[signal_semaphore_size_current];
+
+					vk_signal_semaphore_element = ((VulkanSemaphore*)rhi_signal_semaphore_element)->getResource();
+
+					signal_semaphore_size_current++;
+				};
+			}
+
+			//pipeline_stage_flags
+			if (rhi_submit_info_element.waitSemaphoreCount > 0)
+			{
+				vk_submit_info_element.pWaitDstStageMask = &vk_pipeline_stage_flags_list_external[pipeline_stage_flags_size_current];
+				int pipeline_stage_flags_size = rhi_submit_info_element.waitSemaphoreCount;
+				for (int i = 0; i < pipeline_stage_flags_size; ++i)
+				{
+					const auto& rhi_pipeline_stage_flags_element = rhi_submit_info_element.pWaitDstStageMask[i];
+					auto& vk_pipeline_stage_flags_element = vk_pipeline_stage_flags_list_external[pipeline_stage_flags_size_current];
+
+					vk_pipeline_stage_flags_element = (VkPipelineStageFlags)rhi_pipeline_stage_flags_element;
+
+					pipeline_stage_flags_size_current++;
+				};
+			}
+		};
+
+
+		if ((command_buffer_size_total != command_buffer_size_current)
+			|| (semaphore_size_total != semaphore_size_current)
+			|| (signal_semaphore_size_total != signal_semaphore_size_current)
+			|| (pipeline_stage_flags_size_total != pipeline_stage_flags_size_current))
+		{
+			AS_CORE_ERROR("submit info is not right!");
+			return false;
+		}
+
+		VkFence vk_fence = VK_NULL_HANDLE;
+		if (fence != nullptr)
+		{
+			vk_fence = ((VulkanFence*)fence)->getResource();
+		}
+
+		VkResult result = vkQueueSubmit(((VulkanQueue*)queue)->getResource(), submitCount, vk_submit_info_list.data(), vk_fence);
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkQueueSubmit failed!");
+			return false;
+		}
 	}
 	bool VulkanRendererAPI::QueueWaitIdle(RHIQueue* queue)
 	{
-		return false;
+		VkResult result = vkQueueWaitIdle(((VulkanQueue*)queue)->getResource());
+
+		if (result == VK_SUCCESS)
+		{
+			return true;
+		}
+		else
+		{
+			AS_CORE_ERROR("vkQueueWaitIdle failed!");
+			return false;
+		}
 	}
 	void VulkanRendererAPI::ResetCommandPool()
 	{
@@ -2121,11 +2302,11 @@ namespace Astan
 	}
 	RHICommandBuffer* const* VulkanRendererAPI::GetCommandBufferList() const
 	{
-		return nullptr;
+		return m_command_buffers;
 	}
 	RHICommandPool* VulkanRendererAPI::GetCommandPoor() const
 	{
-		return nullptr;
+		return m_rhi_command_pool;
 	}
 	RHIDescriptorPool* VulkanRendererAPI::GetDescriptorPoor() const
 	{
@@ -2141,7 +2322,7 @@ namespace Astan
 	}
 	RHIQueue* VulkanRendererAPI::GetGraphicsQueue() const
 	{
-		return nullptr;
+		return m_graphics_queue;
 	}
 	RHIQueue* VulkanRendererAPI::GetComputeQueue() const
 	{
