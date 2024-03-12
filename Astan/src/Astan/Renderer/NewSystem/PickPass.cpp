@@ -3,6 +3,7 @@
 
 #include <map>
 #include <stdexcept>
+#include <Astan/Scene/Scene.h>
 
 namespace Astan
 {
@@ -21,16 +22,12 @@ namespace Astan
         SetupDescriptorSet();
     }
     void PickPass::PostInitialize() {}
-    void PickPass::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void PickPass::PreparePassData(Ref<Scene> scene)
     {
-        const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.get());
-        if (vulkan_resource)
-        {
-            _mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix =
-                vulkan_resource->m_mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix;
-            _mesh_inefficient_pick_perframe_storage_buffer_object.rt_width = m_RenderCommand->GetSwapchainInfo().extent.width;
-            _mesh_inefficient_pick_perframe_storage_buffer_object.rt_height = m_RenderCommand->GetSwapchainInfo().extent.height;
-        }
+        _mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix =
+            scene->m_MeshInefficientPickPerframeStorageBufferObject.proj_view_matrix;
+        _mesh_inefficient_pick_perframe_storage_buffer_object.rt_width = m_RenderCommand->GetSwapchainInfo().extent.width;
+        _mesh_inefficient_pick_perframe_storage_buffer_object.rt_height = m_RenderCommand->GetSwapchainInfo().extent.height;
     }
     void PickPass::Draw() {}
     void PickPass::SetupAttachments()

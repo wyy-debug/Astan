@@ -20,9 +20,9 @@ namespace Astan
 		RenderPipeline() = default;
 		~RenderPipeline();
 		void Initialize();
-		void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
-		void ForwardRender(std::shared_ptr<VulkanRendererAPI> rhi, std::shared_ptr<RenderResourceBase> render_resource);
-		void DeferredRender(std::shared_ptr<VulkanRendererAPI> rhi, std::shared_ptr<RenderResourceBase> render_resource);
+		void PreparePassData(Ref<Scene> Scene);
+		void ForwardRender(Ref<VulkanRendererAPI> rhi, Ref<Scene> Scene);
+		void DeferredRender(Ref<VulkanRendererAPI> rhi, Ref<RenderResourceBase> render_resource);
 		void PassUpdateAfterRecreateSwapchain();
 	//TODO father class
 	public:

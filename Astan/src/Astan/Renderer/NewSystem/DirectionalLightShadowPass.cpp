@@ -2,6 +2,7 @@
 #include "DirectionalLightShadowPass.h"
 
 #include <stdexcept>
+#include <Astan/Scene/Scene.h>
 
 namespace Astan
 {
@@ -19,14 +20,9 @@ namespace Astan
         SetupPipelines();
         SetupDescriptorSet();
     }
-    void DirectionalLightShadowPass::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void DirectionalLightShadowPass::PreparePassData(Ref<Scene> Scene)
     {
-        const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.get());
-        if (vulkan_resource)
-        {
-            m_mesh_directional_light_shadow_perframe_storage_buffer_object =
-                vulkan_resource->m_mesh_directional_light_shadow_perframe_storage_buffer_object;
-        }
+            m_mesh_directional_light_shadow_perframe_storage_buffer_object = Scene->m_MeshDirectionalLightShadowPerframeStorageBufferObject;
     }
     void DirectionalLightShadowPass::Draw() { DrawModel(); }
     void DirectionalLightShadowPass::SetupAttachments()

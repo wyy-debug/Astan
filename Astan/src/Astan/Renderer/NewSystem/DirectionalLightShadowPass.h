@@ -11,7 +11,7 @@ namespace Astan
     public:
         void Initialize(const RenderPassInitInfo* init_info) override final;
         void PostInitialize();
-        void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+        void PreparePassData(Ref<Scene> Scene);
         void Draw() override final;
 
         void SetPerMeshLayout(RHIDescriptorSetLayout* layout) { m_per_mesh_layout = layout; }

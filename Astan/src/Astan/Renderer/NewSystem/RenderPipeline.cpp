@@ -18,21 +18,20 @@ namespace Astan
 
 
 	}
-	void RenderPipeline::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+	void RenderPipeline::PreparePassData(Ref<Scene> Scene)
 	{
-        m_MainCameraPass->PreparePassData(render_resource);
-        m_PickPass->PreparePassData(render_resource);
-        m_DirectionalLightShadowPass->PreparePassData(render_resource);
-        m_PointLightShadowPass->PreparePassData(render_resource);
-        m_ParticlePass->PreparePassData(render_resource);
+        m_MainCameraPass->PreparePassData(Scene);
+        m_PickPass->PreparePassData(Scene);
+        m_DirectionalLightShadowPass->PreparePassData(Scene);
+        m_PointLightShadowPass->PreparePassData(Scene);
+        m_ParticlePass->PreparePassData(Scene);
         //g_runtime_global_context.m_debugdraw_manager->preparePassData(render_resource);
 	}
-	void RenderPipeline::ForwardRender(std::shared_ptr<VulkanRendererAPI> rhi, std::shared_ptr<RenderResourceBase> render_resource)
+	void RenderPipeline::ForwardRender(Ref<VulkanRendererAPI> rhi, Ref<Scene> scene)
 	{
         VulkanRendererAPI* vulkan_rhi = static_cast<VulkanRendererAPI*>(rhi.get());
-        RenderResource* vulkan_resource = static_cast<RenderResource*>(render_resource.get());
 
-        vulkan_resource->ResetRingBufferOffset(vulkan_rhi->m_current_frame_index);
+        scene->ResetRingBufferOffset(vulkan_rhi->m_current_frame_index);
 
         vulkan_rhi->WaitForFences();
 
@@ -73,7 +72,7 @@ namespace Astan
         //static_cast<ParticlePass*>(m_particle_pass.get())->copyNormalAndDepthImage();
         //static_cast<ParticlePass*>(m_particle_pass.get())->simulate();
 	}
-	void RenderPipeline::DeferredRender(std::shared_ptr<VulkanRendererAPI> rhi, std::shared_ptr<RenderResourceBase> render_resource)
+	void RenderPipeline::DeferredRender(Ref<VulkanRendererAPI> rhi, Ref<RenderResourceBase> render_resource)
 	{
 	}
 

@@ -29,7 +29,7 @@ namespace Astan
     {
         std::optional<float>            m_fov_x;
         std::optional<RenderCameraType> m_camera_type;
-        std::optional<Matrix4x4>        m_view_matrix;
+        std::optional<glm::mat4>        m_view_matrix;
     };
 
     struct GameObjectResourceDesc

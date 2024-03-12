@@ -1,6 +1,7 @@
 #include "aspch.h"
 #include "RenderUtils.h"
 #include "Astan/Renderer/EditorCamera.h"
+#include "Astan/Scene/Scene.h"
 namespace Astan
 {
     ClusterFrustum CreateClusterFrustumFromMatrix(glm::mat4 mat,
@@ -306,15 +307,18 @@ namespace Astan
             scene_bounding_box.min_bound = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
             scene_bounding_box.max_bound = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-            for (const RenderEntity& entity : scene.m_render_entities)
+            auto view = scene.m_Registry.view<RenderEntityComponent>();
+            for (auto e : view)
             {
-                BoundingBox mesh_asset_bounding_box{ entity.m_bounding_box.getMinCorner(),
-                                                     entity.m_bounding_box.getMaxCorner() };
+                auto renderEntity = scene.m_Registry.get<RenderEntityComponent>(e);
+                BoundingBox mesh_asset_bounding_box{ renderEntity.m_BoundingBox.getMinCorner(),
+                                                     renderEntity.m_BoundingBox.getMaxCorner() };
 
                 BoundingBox mesh_bounding_box_world =
-                    BoundingBoxTransform(mesh_asset_bounding_box, entity.m_model_matrix);
+                    BoundingBoxTransform(mesh_asset_bounding_box, renderEntity.m_ModelMatrix);
                 scene_bounding_box.merge(mesh_bounding_box_world);
             }
+
         }
 
         // CascadedShadowMaps11 / ComputeNearAndFar
@@ -328,8 +332,16 @@ namespace Astan
                 (frustum_bounding_box.max_bound.y - frustum_bounding_box.min_bound.y) * 0.5,
                 (frustum_bounding_box.max_bound.z - frustum_bounding_box.min_bound.z) * 0.5);
 
+            auto view = scene.m_Registry.view<PDirectionalLightComponent>();
+            PDirectionalLightComponent directionalLight;
+            for (auto e : view)
+            {
+                PDirectionalLightComponent directionalLight = scene.m_Registry.get<PDirectionalLightComponent>(e);
+            }
             glm::vec3 eye =
-                box_center + scene.m_directional_light.m_direction * box_extents.length();
+                box_center + glm::vec3(directionalLight.Direction.x * box_extents.length(), 
+                                       directionalLight.Direction.y * box_extents.length(),
+                                       directionalLight.Direction.z * box_extents.length()) ;
             glm::vec3 center = box_center;
             light_view = Math::makeLookAtMatrix(eye, center, glm::vec3(0.0, 0.0, 1.0));
 

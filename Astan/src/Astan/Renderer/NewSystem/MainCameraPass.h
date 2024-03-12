@@ -54,7 +54,7 @@ namespace Astan
 	public:
 		void Initialize();
 
-        void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+        void PreparePassData(Ref<Scene> Scene);
 
         void Draw(ColorGradingPass& color_grading_pass,
             FXAAPass& fxaa_pass,

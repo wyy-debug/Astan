@@ -212,7 +212,8 @@ namespace Astan
 
 	struct RenderEntityComponent
 	{
-		glm::mat4 m_model_matrix{ glm::mat4(1.0f)};
+		uint32_t m_InstanceId{ 0 };
+		glm::mat4 m_ModelMatrix{ glm::mat4(1.0f)};
 
 		// mesh
 		size_t                 m_MeshAssetId{ 0 };
@@ -221,7 +222,7 @@ namespace Astan
 		AxisAlignedBox         m_BoundingBox;
 
 		// material
-		size_t  m_Material_asset_id{ 0 };
+		size_t  m_MaterialAssetId{ 0 };
 		bool    m_Blend{ false };
 		bool    m_DoubleSided{ false };
 		glm::vec4 m_BaseColorFactor{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -230,6 +231,9 @@ namespace Astan
 		float   m_NormalScale{ 1.0f };
 		float   m_OcclusionStrength{ 1.0f };
 		glm::vec3 m_EmissiveFactor{ 0.0f, 0.0f, 0.0f };
+
+		RenderEntityComponent() = default;
+		RenderEntityComponent(const RenderEntityComponent&) = default;
 	};
 	template<typename...Component>
 	struct ComponentGroup

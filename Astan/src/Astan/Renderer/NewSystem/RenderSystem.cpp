@@ -43,9 +43,9 @@ namespace Astan
 
         // prepare pipeline's render passes data
         // 准备管线渲染passes数据
-        m_RenderPipeline->PreparePassData(m_render_resource);
+        m_RenderPipeline->PreparePassData(m_RenderScene);
 
-        g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
+        //g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
 
         // render one frame
         // 渲染一帧

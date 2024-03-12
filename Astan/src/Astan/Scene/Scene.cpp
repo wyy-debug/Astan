@@ -1,7 +1,6 @@
 #include "aspch.h"
 #include "Scene.h"
 
-#include "Component.h"
 #include "ScriptableEntity.h"
 #include "Astan/Renderer/Renderer2D.h"
 #include "Astan/Scripting/ScriptEngine.h"
@@ -130,51 +129,211 @@ namespace Astan
 		ClusterFrustum frustum =
 			CreateClusterFrustumFromMatrix(directionalLightProjView, -1.0, 1.0, -1.0, 1.0, 0.0, 1.0);
 
-		for (const RenderEntity& entity : m_render_entities)
+		
+		auto view = m_Registry.view<RenderEntityComponent,IDComponent>();
+		for (auto e : view)
 		{
-			BoundingBox mesh_asset_bounding_box{ entity.m_bounding_box.getMinCorner(),
-												 entity.m_bounding_box.getMaxCorner() };
+			Entity entity = { e, this };
 
-			if (TiledFrustumIntersectBox(frustum, BoundingBoxTransform(mesh_asset_bounding_box, entity.m_model_matrix)))
+			auto& RenderEntity = entity.GetComponent<RenderEntityComponent>();
+			BoundingBox mesh_asset_bounding_box{ RenderEntity.m_BoundingBox.getMinCorner(),
+												 RenderEntity.m_BoundingBox.getMaxCorner() };
+
+			if (TiledFrustumIntersectBox(frustum, BoundingBoxTransform(mesh_asset_bounding_box, RenderEntity.m_ModelMatrix)))
 			{
 				m_DirectionalLightVisibleMeshNodes.emplace_back();
 				RenderMeshNode& temp_node = m_DirectionalLightVisibleMeshNodes.back();
 
-				temp_node.model_matrix = &entity.m_model_matrix;
+				temp_node.model_matrix = &RenderEntity.m_ModelMatrix;
 
-				assert(entity.m_joint_matrices.size() <= s_mesh_vertex_blending_max_joint_count);
-				if (!entity.m_joint_matrices.empty())
+				AS_CORE_ASSERT(RenderEntity.m_JointMatrices.size() <= s_mesh_vertex_blending_max_joint_count);
+				if (!RenderEntity.m_JointMatrices.empty())
 				{
-					temp_node.joint_count = static_cast<uint32_t>(entity.m_joint_matrices.size());
-					temp_node.joint_matrices = entity.m_joint_matrices.data();
+					temp_node.joint_count = static_cast<uint32_t>(RenderEntity.m_JointMatrices.size());
+					temp_node.joint_matrices = RenderEntity.m_JointMatrices.data();
 				}
-				temp_node.node_id = entity.m_instance_id;
 
-				VulkanMesh& mesh_asset = render_resource->getEntityMesh(entity);
+				temp_node.node_id = RenderEntity.m_InstanceId;
+
+				VulkanMesh& mesh_asset = GetEntityMesh(RenderEntity);
 				temp_node.ref_mesh = &mesh_asset;
-				temp_node.enable_vertex_blending = entity.m_enable_vertex_blending;
+				temp_node.enable_vertex_blending = RenderEntity.m_EnableVertexBlending;
 
-				VulkanPBRMaterial& material_asset = render_resource->getEntityMaterial(entity);
+				VulkanPBRMaterial& material_asset = GetEntityMaterial(RenderEntity);
 				temp_node.ref_material = &material_asset;
 			}
+		}
+
+	}
+
+	VulkanMesh& Scene::GetEntityMesh(RenderEntityComponent entity)
+	{
+		size_t assetid = entity.m_MeshAssetId;
+
+		auto it = m_VulkanMeshes.find(assetid);
+		if (it != m_VulkanMeshes.end())
+		{
+			return it->second;
+		}
+		else
+		{
+			throw std::runtime_error("failed to get entity mesh");
+		}
+	}
+
+	VulkanPBRMaterial& Scene::GetEntityMaterial(RenderEntityComponent entity)
+	{
+		size_t assetid = entity.m_MaterialAssetId;
+
+		auto it = m_VulkanPbrMaterials.find(assetid);
+		if (it != m_VulkanPbrMaterials.end())
+		{
+			return it->second;
+		}
+		else
+		{
+			throw std::runtime_error("failed to get entity material");
 		}
 	}
 
 	void Scene::UpdateVisibleObjectsPointLight()
-	{}
+	{
+		m_PointLightsVisibleMeshNodes.clear();
 
-	void Scene::UpdateVisibleObjectsMainCamera(Ref<EditorCamera> camera){}
+		std::vector<BoundingSphere> point_lights_bounding_spheres;
+
+		auto view = m_Registry.view<PointLightComponent>();
+		uint32_t point_light_num = view.size();
+		point_lights_bounding_spheres.resize(point_light_num);
+		{
+			int i = 0;
+			for (auto e : view)
+			{
+				Entity entity = { e, this };
+
+				auto& pointLight = entity.GetComponent<PointLightComponent>();
+				point_lights_bounding_spheres[i].m_center = pointLight.Position;
+				point_lights_bounding_spheres[i].m_radius = pointLight.calculteRadius();
+				i++;
+			}
+		}
+
+		auto view = m_Registry.view<RenderEntityComponent>();
+		for (auto e : view)
+		{
+			Entity entity = { e,this };
+
+			auto renderEntity = entity.GetComponent<RenderEntityComponent>();
+			BoundingBox mesh_asset_bounding_box{ renderEntity.m_BoundingBox.getMinCorner(),
+												 renderEntity.m_BoundingBox.getMaxCorner() };
+
+			bool intersect_with_point_lights = true;
+			for (size_t i = 0; i < point_light_num; i++)
+			{
+				if (!BoxIntersectsWithSphere(BoundingBoxTransform(mesh_asset_bounding_box, renderEntity.m_ModelMatrix),
+					point_lights_bounding_spheres[i]))
+				{
+					intersect_with_point_lights = false;
+					break;
+				}
+			}
+
+			if (intersect_with_point_lights)
+			{
+				m_PointLightsVisibleMeshNodes.emplace_back();
+				RenderMeshNode& temp_node = m_PointLightsVisibleMeshNodes.back();
+
+				temp_node.model_matrix = &renderEntity.m_ModelMatrix;
+
+				AS_CORE_ASSERT(renderEntity.m_JointMatrices.size() <= s_mesh_vertex_blending_max_joint_count);
+				if (!renderEntity.m_JointMatrices.empty())
+				{
+					temp_node.joint_count = static_cast<uint32_t>(renderEntity.m_JointMatrices.size());
+					temp_node.joint_matrices = renderEntity.m_JointMatrices.data();
+				}
+				temp_node.node_id = renderEntity.m_InstanceId;
+
+				VulkanMesh& mesh_asset = GetEntityMesh(renderEntity);
+				temp_node.ref_mesh = &mesh_asset;
+				temp_node.enable_vertex_blending = renderEntity.m_EnableVertexBlending;
+
+				VulkanPBRMaterial& material_asset = GetEntityMaterial(renderEntity);
+				temp_node.ref_material = &material_asset;
+			}
+		}
+
+	}
+
+	void Scene::UpdateVisibleObjectsMainCamera(Ref<EditorCamera> camera)
+	{
+		m_MainCameraVisibleMeshNodes.clear();
+
+		glm::mat4 view_matrix = camera->GetViewMatrix();
+		glm::mat4 proj_matrix = camera->GetProjection();
+		glm::mat4 proj_view_matrix = proj_matrix * view_matrix;
+
+		ClusterFrustum f = CreateClusterFrustumFromMatrix(proj_view_matrix, -1.0, 1.0, -1.0, 1.0, 0.0, 1.0);
+
+		auto view = m_Registry.view<RenderEntityComponent>();
+		for (auto e : view)
+		{
+			Entity entity = { e,this };
+			auto renderEntity = entity.GetComponent<RenderEntityComponent>();
+
+			BoundingBox mesh_asset_bounding_box{ renderEntity.m_BoundingBox.getMinCorner(),
+												 renderEntity.m_BoundingBox.getMaxCorner() };
+
+			if (TiledFrustumIntersectBox(f, BoundingBoxTransform(mesh_asset_bounding_box, renderEntity.m_ModelMatrix)))
+			{
+				m_MainCameraVisibleMeshNodes.emplace_back();
+				RenderMeshNode& temp_node = m_MainCameraVisibleMeshNodes.back();
+				temp_node.model_matrix = &renderEntity.m_ModelMatrix;
+
+				assert(renderEntity.m_JointMatrices.size() <= s_mesh_vertex_blending_max_joint_count);
+				if (!renderEntity.m_JointMatrices.empty())
+				{
+					temp_node.joint_count = static_cast<uint32_t>(renderEntity.m_JointMatrices.size());
+					temp_node.joint_matrices = renderEntity.m_JointMatrices.data();
+				}
+				temp_node.node_id = renderEntity.m_InstanceId;
+
+				VulkanMesh& mesh_asset = GetEntityMesh(renderEntity);
+				temp_node.ref_mesh = &mesh_asset;
+				temp_node.enable_vertex_blending = renderEntity.m_EnableVertexBlending;
+
+				VulkanPBRMaterial& material_asset = GetEntityMaterial(renderEntity);
+				temp_node.ref_material = &material_asset;
+			}
+		}
+
+	}
 	
-	void Scene::UpdateVisibleObjectsAxis() {}
+	void Scene::UpdateVisibleObjectsAxis() 
+	{
+		if (m_RenderAxis.has_value())
+		{
+			RenderEntityComponent& axis = *m_RenderAxis;
 
-	void Scene::UpdateVisibleObjectsParticle() {}
+			m_AxisNode.model_matrix = axis.m_ModelMatrix;
+			m_AxisNode.node_id = axis.m_InstanceId;
+
+			VulkanMesh& mesh_asset = GetEntityMesh(axis);
+			m_AxisNode.ref_mesh = &mesh_asset;
+			m_AxisNode.enable_vertex_blending = axis.m_EnableVertexBlending;
+		}
+	}
+
+	void Scene::UpdateVisibleObjectsParticle() 
+	{
+		// TODO
+	}
 
 
 	void Scene::UpdatePerFrameBuffer(Ref<EditorCamera> camera)
 	{
 		glm::mat4 view_matrix = camera->GetViewMatrix();
-		glm::mat4 proj_matrix = camera->GetViewProjection();
-		glm::vec3   camera_position = camera->GetPosition();
+		glm::mat4 proj_matrix = camera->GetProjection();
+		glm::vec3 camera_position = camera->GetPosition();
 		glm::mat4 proj_view_matrix = proj_matrix * view_matrix;
 
 		// ambient light
@@ -251,6 +410,14 @@ namespace Astan
 		m_ParticlebillboardPerframeStorageBufferObject.foward_direction = camera->GetForwardDirection();
 		m_ParticlebillboardPerframeStorageBufferObject.up_direction = camera->GetUpDirection();
 	}
+
+	void Scene::ResetRingBufferOffset(uint8_t current_frame_index)
+	{
+		m_GlobalRenderResource._storage_buffer._global_upload_ringbuffers_end[current_frame_index] =
+			m_GlobalRenderResource._storage_buffer._global_upload_ringbuffers_begin[current_frame_index];
+	}
+
+
 
 	Entity Scene::CreateEntity(const std::string& name)
 	{

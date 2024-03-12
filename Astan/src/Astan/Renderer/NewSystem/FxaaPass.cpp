@@ -1,3 +1,4 @@
+#include "aspch.h"
 #include "FxaaPass.h"
 #include <stdexcept>
 

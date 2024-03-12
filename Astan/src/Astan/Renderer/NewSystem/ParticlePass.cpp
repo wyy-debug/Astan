@@ -1,3 +1,4 @@
+#include "aspch.h"
 #include "ParticlePass.h"
 #include <fstream>
 
@@ -1847,7 +1848,7 @@ namespace Astan
         float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
         float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
         float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-        m_ubo.pack = Vector4{ rnd0, static_cast<float>(m_RenderCommand->GetCurrentFrameIndex()), rnd1, rnd2 };
+        m_ubo.pack = glm::vec4{ rnd0, static_cast<float>(m_RenderCommand->GetCurrentFrameIndex()), rnd1, rnd2 };
         m_ubo.xemit_count = 100000;
 
         m_viewport_params = *m_RenderCommand->GetSwapchainInfo().viewport;
@@ -1898,7 +1899,7 @@ namespace Astan
         float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
         float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
         float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-        m_ubo.pack = Vector4{ rnd0, rnd1, rnd2, static_cast<float>(m_RenderCommand->GetCurrentFrameIndex()) };
+        m_ubo.pack = glm::vec4{ rnd0, rnd1, rnd2, static_cast<float>(m_RenderCommand->GetCurrentFrameIndex()) };
 
         m_ubo.viewport.x = m_RenderCommand->GetSwapchainInfo().viewport->x;
         m_ubo.viewport.y = m_RenderCommand->GetSwapchainInfo().viewport->y;
@@ -1912,27 +1913,23 @@ namespace Astan
         memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
     }
 
-    void ParticlePass::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void ParticlePass::PreparePassData(Ref<Scene> Scene)
     {
-        const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.Get());
-        if (vulkan_resource)
-        {
-            m_particle_collision_perframe_storage_buffer_object =
-                vulkan_resource->m_particle_collision_perframe_storage_buffer_object;
-            memcpy(m_scene_uniform_buffer_mapped,
-                &m_particle_collision_perframe_storage_buffer_object,
-                sizeof(ParticleCollisionPerframeStorageBufferObject));
+        m_particle_collision_perframe_storage_buffer_object =
+            Scene->m_ParticleCollisionPerframeStorageBufferObject;
+        memcpy(m_scene_uniform_buffer_mapped,
+            &m_particle_collision_perframe_storage_buffer_object,
+            sizeof(ParticleCollisionPerframeStorageBufferObject));
 
-            m_particlebillboard_perframe_storage_buffer_object =
-                vulkan_resource->m_particlebillboard_perframe_storage_buffer_object;
-            memcpy(m_particle_billboard_uniform_buffer_mapped,
-                &m_particlebillboard_perframe_storage_buffer_object,
-                sizeof(m_particlebillboard_perframe_storage_buffer_object));
+        m_particlebillboard_perframe_storage_buffer_object =
+            Scene->m_ParticlebillboardPerframeStorageBufferObject;
+        memcpy(m_particle_billboard_uniform_buffer_mapped,
+            &m_particlebillboard_perframe_storage_buffer_object,
+            sizeof(m_particlebillboard_perframe_storage_buffer_object));
 
-            m_viewport_params = *m_RenderCommand->GetSwapchainInfo().viewport;
-            updateUniformBuffer();
-            updateEmitterTransform();
-        }
+        m_viewport_params = *m_RenderCommand->GetSwapchainInfo().viewport;
+        UpdateUniformBuffer();
+        UpdateEmitterTransform();
     }
 
     void ParticlePass::SetDepthAndNormalImage(RHIImage* depth_image, RHIImage* normal_image)

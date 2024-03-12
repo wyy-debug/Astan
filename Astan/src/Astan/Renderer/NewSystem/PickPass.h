@@ -15,7 +15,7 @@ namespace Astan
     public:
         void Initialize(const RenderPassInitInfo* init_info) override final;
         void PostInitialize();
-        void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+        void PreparePassData(Ref<Scene> Scene);
         void Draw() override final;
 
         uint32_t Pick(const glm::vec2& picked_uv);

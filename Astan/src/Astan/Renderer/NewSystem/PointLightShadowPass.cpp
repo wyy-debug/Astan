@@ -3,6 +3,7 @@
 #include <map>
 #include <stdexcept>
 #include <vector>
+#include <Astan/Scene/Scene.h>
 
 namespace Astan
 {
@@ -20,14 +21,10 @@ namespace Astan
         SetupPipelines();
         SetupDescriptorSet();
     }
-    void PointLightShadowPass::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void PointLightShadowPass::PreparePassData(Ref<Scene> scene)
     {
-        const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.get());
-        if (vulkan_resource)
-        {
-            m_mesh_point_light_shadow_perframe_storage_buffer_object =
-                vulkan_resource->m_mesh_point_light_shadow_perframe_storage_buffer_object;
-        }
+        m_mesh_point_light_shadow_perframe_storage_buffer_object =
+            scene->m_MeshPointLightShadowPerframeStorageBufferObject;
     }
     void PointLightShadowPass::Draw()
     {

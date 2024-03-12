@@ -42,15 +42,37 @@ namespace Astan
 
         void merge(const BoundingBox& rhs)
         {
-            min_bound.makeFloor(rhs.min_bound);
-            max_bound.makeCeil(rhs.max_bound);
+            makeFloor(min_bound, rhs.min_bound);
+            makeFloor(max_bound, rhs.max_bound);
         }
 
         void merge(const glm::vec3& point)
         {
-            min_bound.makeFloor(point);
-            max_bound.makeCeil(point);
+            makeFloor(min_bound, point);
+            makeFloor(max_bound, point);
         }
+
+        void makeFloor(glm::vec3& base,const glm::vec3& cmp)
+        {
+            if (cmp.x < base.x)
+                base.x = cmp.x;
+            if (cmp.y < base.y)
+                base.y = cmp.y;
+            if (cmp.z < base.z)
+                base.z = cmp.z;
+        }
+
+        void makeCeil(glm::vec3& base, const glm::vec3& cmp)
+        {
+            if (cmp.x > base.x)
+                base.x = cmp.x;
+            if (cmp.y > base.y)
+                base.y = cmp.y;
+            if (cmp.z > base.z)
+                base.z = cmp.z;
+        }
+
+
     };
 
     struct BoundingSphere
