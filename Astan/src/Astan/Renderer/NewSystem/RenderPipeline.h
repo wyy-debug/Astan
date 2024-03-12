@@ -7,6 +7,10 @@
 #include "UIPass.h"
 #include "CombineUIPass.h"
 #include "ParticlePass.h"
+#include "PointLightShadowPass.h"
+#include "PickPass.h"
+#include "DirectionalLightShadowPass.h"
+
 
 namespace Astan 
 {
@@ -25,6 +29,9 @@ namespace Astan
 		Ref<VulkanRendererAPI> m_RenderCommand;
 	private:
 		Ref<MainCameraPass> m_MainCameraPass;
+		Ref<PickPass> m_PickPass;
+		Ref<PointLightShadowPass> m_PointLightShadowPass;
+		Ref<DirectionalLightShadowPass> m_DirectionalLightShadowPass;
 		Ref<ColorGradingPass> m_ColorGradingPass;
 		Ref<FXAAPass> m_FXAAPass;
 		Ref<ToneMappingPass> m_ToneMappingPass;

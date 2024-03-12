@@ -3,6 +3,7 @@
 #include "Astan/Core/UUID.h"
 #include "Astan/Renderer/EditorCamera.h"
 #include "entt.hpp"
+#include <Astan/Renderer/NewSystem/RenderConfig.h>
 
 class b2World;
 
@@ -17,6 +18,9 @@ namespace Astan
 		~Scene();
 
 		static Ref<Scene> Copy(Ref<Scene> other);
+
+
+		void UpdatePerFrameBuffer(Ref<EditorCamera> camera);
 
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
@@ -59,8 +63,6 @@ namespace Astan
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
 
-		void GetPointLight();
-
 		void RenderScene(EditorCamera& camera);
 	private:
 		entt::registry m_Registry;
@@ -72,6 +74,13 @@ namespace Astan
 		int m_StepFrames = 0;
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
+		MeshPerframeStorageBufferObject    m_MeshPerframeStorageBufferObject;
+		MeshPointLightShadowPerframeStorageBufferObject m_MeshPointLightShadowPerframeStorageBufferObject;
+		MeshInefficientPickPerframeStorageBufferObject m_MeshInefficientPickPerframeStorageBufferObject;
+		ParticleBillboardPerframeStorageBufferObject   m_ParticlebillboardPerframeStorageBufferObject;
+		ParticleCollisionPerframeStorageBufferObject   m_ParticleCollisionPerframeStorageBufferObject;
+
+
 
 		friend class Entity;
 		friend class SceneSerializer;

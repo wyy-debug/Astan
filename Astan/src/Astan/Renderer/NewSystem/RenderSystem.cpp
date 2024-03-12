@@ -36,10 +36,10 @@ namespace Astan
 
 
         // 移到scene中处理
-        m_RenderResource->UpdatePerFrameBuffer(m_RenderScene, m_RenderCamera);
+        m_RenderScene->UpdatePerFrameBuffer(m_RenderCamera);
 
-        // update per-frame visible objects
-        m_RenderScene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
+        // 在scene场景中处理
+        m_RenderScene->UpdateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
             m_render_camera);
 
         // prepare pipeline's render passes data

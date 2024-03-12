@@ -38,6 +38,16 @@ namespace Astan
         SetupSwapchainFramebuffers();
     }
 
+    void MainCameraPass::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    {
+        const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.get());
+        if (vulkan_resource)
+        {
+            m_mesh_perframe_storage_buffer_object = vulkan_resource->m_mesh_perframe_storage_buffer_object;
+            m_axis_storage_buffer_object = vulkan_resource->m_axis_storage_buffer_object;
+        }
+    }
+
     void MainCameraPass::Draw(ColorGradingPass& color_grading_pass,
         FXAAPass& fxaa_pass,
         ToneMappingPass& tone_mapping_pass,

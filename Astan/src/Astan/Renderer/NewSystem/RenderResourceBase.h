@@ -36,9 +36,6 @@ namespace Astan
             RenderEntity         render_entity,
             RenderMaterialData   material_data) = 0;
 
-        virtual void UpdatePerFrameBuffer(Ref<Scene>  render_scene,
-            Ref<EditorCamera> camera) = 0;
-
         // TODO: data caching
         Ref<TextureData> LoadTextureHDR(std::string file, int desired_channels = 4);
         Ref<TextureData> LoadTexture(std::string file, bool is_srgb = false);

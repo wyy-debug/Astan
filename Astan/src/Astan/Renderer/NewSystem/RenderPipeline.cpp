@@ -20,6 +20,12 @@ namespace Astan
 	}
 	void RenderPipeline::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
 	{
+        m_MainCameraPass->PreparePassData(render_resource);
+        m_PickPass->PreparePassData(render_resource);
+        m_DirectionalLightShadowPass->PreparePassData(render_resource);
+        m_PointLightShadowPass->PreparePassData(render_resource);
+        m_ParticlePass->PreparePassData(render_resource);
+        //g_runtime_global_context.m_debugdraw_manager->preparePassData(render_resource);
 	}
 	void RenderPipeline::ForwardRender(std::shared_ptr<VulkanRendererAPI> rhi, std::shared_ptr<RenderResourceBase> render_resource)
 	{

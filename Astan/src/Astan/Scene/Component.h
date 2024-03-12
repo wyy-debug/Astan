@@ -177,7 +177,7 @@ namespace Astan
 	};
 
 
-	struct PointLight
+	struct PointLightComponent
 	{
 		glm::vec3 Position;
 		glm::vec3 Fulx;
@@ -191,23 +191,23 @@ namespace Astan
 			float  attenuation = std::max(INTENSITY_CUTOFF, ATTENTUATION_CUTOFF * maxIntensity) / maxIntensity;
 			return 1.0f / sqrtf(attenuation);
 		}
-		PointLight() = default;
-		PointLight(const PointLight&) = default;
+		PointLightComponent() = default;
+		PointLightComponent(const PointLightComponent&) = default;
 	};
 
-	struct AmbientLight
+	struct AmbientLightComponent
 	{
 		glm::vec3 Irradiance;
-		AmbientLight() = default;
-		AmbientLight(const AmbientLight&) = default;
+		AmbientLightComponent() = default;
+		AmbientLightComponent(const AmbientLightComponent&) = default;
 	};
 
-	struct PDirectionalLight
+	struct PDirectionalLightComponent
 	{
 		glm::vec3 Direction;
 		glm::vec3 Color;
-		PDirectionalLight() = default;
-		PDirectionalLight(const PDirectionalLight&) = default;
+		PDirectionalLightComponent() = default;
+		PDirectionalLightComponent(const PDirectionalLightComponent&) = default;
 	};
 
 	template<typename...Component>
@@ -219,6 +219,6 @@ namespace Astan
 		ComponentGroup<TransformComponent, SpriteRendererComponent,
 		CircleRendererComponent, CameraComponent, ScriptComponent,
 		NativeScriptComponent,Rigidbody2DComponent, BoxCollider2DComponent,
-		CircleCollider2DComponent, TextComponent, PointLight, AmbientLight, PDirectionalLight>;
+		CircleCollider2DComponent, TextComponent, PointLightComponent, AmbientLightComponent, PDirectionalLightComponent>;
 
 }

@@ -52,7 +52,9 @@ namespace Astan
         AxisStorageBufferObject                      m_axis_storage_buffer_object;
 
 	public:
-		void Initialize() override;
+		void Initialize();
+
+        void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
 
         void Draw(ColorGradingPass& color_grading_pass,
             FXAAPass& fxaa_pass,

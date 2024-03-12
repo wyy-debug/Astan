@@ -109,6 +109,88 @@ namespace Astan
 	}
 
 
+	void Scene::UpdatePerFrameBuffer(Ref<EditorCamera> camera)
+	{
+		glm::mat4 view_matrix = camera->GetViewMatrix();
+		glm::mat4 proj_matrix = camera->GetViewProjection();
+		glm::vec3   camera_position = camera->GetPosition();
+		glm::mat4 proj_view_matrix = proj_matrix * view_matrix;
+
+		// ambient light
+		auto view = m_Registry.view<AmbientLightComponent>();
+		for (auto e : view)
+		{
+			Entity entity = { e, this };
+			
+			auto& ambinetLgiht = entity.GetComponent<AmbientLightComponent>();
+
+			m_MeshPerframeStorageBufferObject.proj_view_matrix = proj_view_matrix;
+			m_MeshPerframeStorageBufferObject.camera_position = camera_position;
+			m_MeshPerframeStorageBufferObject.ambient_light = ambinetLgiht.Irradiance;
+		}
+
+
+		auto view = m_Registry.view<PointLightComponent>();
+		m_MeshPointLightShadowPerframeStorageBufferObject.point_light_num = 0;
+		for (auto e : view)
+		{
+			Entity entity = { e, this };
+			auto& ambinetLgiht = entity.GetComponent<PointLightComponent>();
+			m_MeshPointLightShadowPerframeStorageBufferObject.point_light_num++;
+		}
+
+
+		// set ubo data
+		m_ParticleCollisionPerframeStorageBufferObject.view_matrix = view_matrix;
+		m_ParticleCollisionPerframeStorageBufferObject.proj_view_matrix = proj_view_matrix;
+		m_ParticleCollisionPerframeStorageBufferObject.proj_inv_matrix = glm::inverse(proj_matrix);
+
+		// point lights
+		{
+			auto view = m_Registry.view<PointLightComponent>();
+			int j = 0;
+			for (auto e : view)
+			{
+
+				Entity entity = { e, this };
+				auto& ambinetLgiht = entity.GetComponent<PointLightComponent>();
+				glm::vec3 point_light_position = ambinetLgiht.Position;
+				glm::vec3 point_light_intensity = glm::vec3(ambinetLgiht.Fulx.x / (4.0f * PI), ambinetLgiht.Fulx.y / (4.0f * PI), ambinetLgiht.Fulx.z / (4.0f * PI));
+
+				float radius = ambinetLgiht.calculteRadius();
+
+				m_MeshPerframeStorageBufferObject.scene_point_lights[j].position = point_light_position;
+				m_MeshPerframeStorageBufferObject.scene_point_lights[j].radius = radius;
+				m_MeshPerframeStorageBufferObject.scene_point_lights[j].intensity = point_light_intensity;
+				m_MeshPointLightShadowPerframeStorageBufferObject.point_lights_position_and_radius[j] = glm::vec4(point_light_position, radius);
+				j++;
+			}
+		}
+
+		// directional light
+		{
+			auto view = m_Registry.view<PDirectionalLightComponent>();
+			for (auto e : view)
+			{
+
+				Entity entity = { e, this };
+				auto& DirectionalLight = entity.GetComponent<PDirectionalLightComponent>();
+				m_MeshPerframeStorageBufferObject.scene_directional_light.direction = glm::normalize(DirectionalLight.Direction);
+				m_MeshPerframeStorageBufferObject.scene_directional_light.color = DirectionalLight.Color;
+			}
+		}
+
+		// pick pass view projection matrix
+		m_MeshInefficientPickPerframeStorageBufferObject.proj_view_matrix = proj_view_matrix;
+
+		m_ParticlebillboardPerframeStorageBufferObject.proj_view_matrix = proj_view_matrix;
+
+		//TODO
+		m_ParticlebillboardPerframeStorageBufferObject.right_direction = camera->GetRightDirection();
+		m_ParticlebillboardPerframeStorageBufferObject.foward_direction = camera->GetForwardDirection();
+		m_ParticlebillboardPerframeStorageBufferObject.up_direction = camera->GetUpDirection();
+	}
+
 	Entity Scene::CreateEntity(const std::string& name)
 	{
 		return CreateEntityWithUUID(UUID(), name);
@@ -438,20 +520,6 @@ namespace Astan
 		m_PhysicsWorld = nullptr;
 	}
 
-	void Scene::GetPointLight()
-	{
-		auto view = m_Registry.view<PointLight>();
-		for (auto e : view)
-		{
-			Entity entity = { e,this };
-
-			if (entity.HasComponent<PointLight>())
-			{
-				auto& light = entity.GetComponent<PointLight>();
-			}
-		}
-	}
-
 
 	void Scene::RenderScene(EditorCamera& camera)
 	{
@@ -559,17 +627,17 @@ namespace Astan
 	}
 
 	template<>
-	void Scene::OnComponentAdded<PointLight>(Entity entity, PointLight& component)
+	void Scene::OnComponentAdded<PointLightComponent>(Entity entity, PointLightComponent& component)
 	{
 	}
 
 	template<>
-	void Scene::OnComponentAdded<AmbientLight>(Entity entity, AmbientLight& component)
+	void Scene::OnComponentAdded<AmbientLightComponent>(Entity entity, AmbientLightComponent& component)
 	{
 	}
 
 	template<>
-	void Scene::OnComponentAdded<PDirectionalLight>(Entity entity, PDirectionalLight& component)
+	void Scene::OnComponentAdded<PDirectionalLightComponent>(Entity entity, PDirectionalLightComponent& component)
 	{
 	}
 }
