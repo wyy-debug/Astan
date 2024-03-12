@@ -19,6 +19,18 @@ namespace Astan
 
 		static Ref<Scene> Copy(Ref<Scene> other);
 
+		void UpdateVisibleObjects(Ref<EditorCamera> camera);
+
+		void UpdateVisibleObjectsDirectionalLight(Ref<EditorCamera> camera);
+
+		void UpdateVisibleObjectsPointLight();
+
+		void UpdateVisibleObjectsMainCamera(Ref<EditorCamera> camera);
+
+		void UpdateVisibleObjectsAxis();
+
+		void UpdateVisibleObjectsParticle();
+
 
 		void UpdatePerFrameBuffer(Ref<EditorCamera> camera);
 
@@ -76,9 +88,11 @@ namespace Astan
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 		MeshPerframeStorageBufferObject    m_MeshPerframeStorageBufferObject;
 		MeshPointLightShadowPerframeStorageBufferObject m_MeshPointLightShadowPerframeStorageBufferObject;
+		MeshDirectionalLightShadowPerframeStorageBufferObject m_MeshDirectionalLightShadowPerframeStorageBufferObject;
 		MeshInefficientPickPerframeStorageBufferObject m_MeshInefficientPickPerframeStorageBufferObject;
 		ParticleBillboardPerframeStorageBufferObject   m_ParticlebillboardPerframeStorageBufferObject;
 		ParticleCollisionPerframeStorageBufferObject   m_ParticleCollisionPerframeStorageBufferObject;
+		std::vector<RenderMeshNode> m_DirectionalLightVisibleMeshNodes;
 
 
 

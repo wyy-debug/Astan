@@ -15,6 +15,7 @@
 #include "box2d/b2_fixture.h"
 #include "box2d/b2_polygon_shape.h"
 #include "box2d/b2_circle_shape.h"
+#include <Astan/Renderer/NewSystem/RenderUtils.h>
 
 namespace Astan
 {
@@ -107,6 +108,66 @@ namespace Astan
 
 		return newScene;
 	}
+
+	void Scene::UpdateVisibleObjects(Ref<EditorCamera> camera)
+	{
+		UpdateVisibleObjectsDirectionalLight(camera);
+		UpdateVisibleObjectsPointLight();
+		UpdateVisibleObjectsMainCamera(camera);
+		UpdateVisibleObjectsAxis();
+		UpdateVisibleObjectsParticle();
+	}
+
+	void Scene::UpdateVisibleObjectsDirectionalLight(Ref<EditorCamera> camera)
+	{
+		glm::mat4 directionalLightProjView = CalculateDirectionalLightCamera(*this, *camera);
+
+		m_MeshPerframeStorageBufferObject.directional_light_proj_view = directionalLightProjView;
+		m_MeshDirectionalLightShadowPerframeStorageBufferObject.light_proj_view = directionalLightProjView;
+
+		m_DirectionalLightVisibleMeshNodes.clear();
+
+		ClusterFrustum frustum =
+			CreateClusterFrustumFromMatrix(directionalLightProjView, -1.0, 1.0, -1.0, 1.0, 0.0, 1.0);
+
+		for (const RenderEntity& entity : m_render_entities)
+		{
+			BoundingBox mesh_asset_bounding_box{ entity.m_bounding_box.getMinCorner(),
+												 entity.m_bounding_box.getMaxCorner() };
+
+			if (TiledFrustumIntersectBox(frustum, BoundingBoxTransform(mesh_asset_bounding_box, entity.m_model_matrix)))
+			{
+				m_DirectionalLightVisibleMeshNodes.emplace_back();
+				RenderMeshNode& temp_node = m_DirectionalLightVisibleMeshNodes.back();
+
+				temp_node.model_matrix = &entity.m_model_matrix;
+
+				assert(entity.m_joint_matrices.size() <= s_mesh_vertex_blending_max_joint_count);
+				if (!entity.m_joint_matrices.empty())
+				{
+					temp_node.joint_count = static_cast<uint32_t>(entity.m_joint_matrices.size());
+					temp_node.joint_matrices = entity.m_joint_matrices.data();
+				}
+				temp_node.node_id = entity.m_instance_id;
+
+				VulkanMesh& mesh_asset = render_resource->getEntityMesh(entity);
+				temp_node.ref_mesh = &mesh_asset;
+				temp_node.enable_vertex_blending = entity.m_enable_vertex_blending;
+
+				VulkanPBRMaterial& material_asset = render_resource->getEntityMaterial(entity);
+				temp_node.ref_material = &material_asset;
+			}
+		}
+	}
+
+	void Scene::UpdateVisibleObjectsPointLight()
+	{}
+
+	void Scene::UpdateVisibleObjectsMainCamera(Ref<EditorCamera> camera){}
+	
+	void Scene::UpdateVisibleObjectsAxis() {}
+
+	void Scene::UpdateVisibleObjectsParticle() {}
 
 
 	void Scene::UpdatePerFrameBuffer(Ref<EditorCamera> camera)

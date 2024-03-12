@@ -210,6 +210,27 @@ namespace Astan
 		PDirectionalLightComponent(const PDirectionalLightComponent&) = default;
 	};
 
+	struct RenderEntityComponent
+	{
+		glm::mat4 m_model_matrix{ glm::mat4(1.0f)};
+
+		// mesh
+		size_t                 m_MeshAssetId{ 0 };
+		bool                   m_EnableVertexBlending{ false };
+		std::vector<glm::mat4> m_JointMatrices;
+		AxisAlignedBox         m_BoundingBox;
+
+		// material
+		size_t  m_Material_asset_id{ 0 };
+		bool    m_Blend{ false };
+		bool    m_DoubleSided{ false };
+		glm::vec4 m_BaseColorFactor{ 1.0f, 1.0f, 1.0f, 1.0f };
+		float   m_MetallicFactor{ 1.0f };
+		float   m_RoughnessFactor{ 1.0f };
+		float   m_NormalScale{ 1.0f };
+		float   m_OcclusionStrength{ 1.0f };
+		glm::vec3 m_EmissiveFactor{ 0.0f, 0.0f, 0.0f };
+	};
 	template<typename...Component>
 	struct ComponentGroup
 	{
@@ -219,6 +240,6 @@ namespace Astan
 		ComponentGroup<TransformComponent, SpriteRendererComponent,
 		CircleRendererComponent, CameraComponent, ScriptComponent,
 		NativeScriptComponent,Rigidbody2DComponent, BoxCollider2DComponent,
-		CircleCollider2DComponent, TextComponent, PointLightComponent, AmbientLightComponent, PDirectionalLightComponent>;
+		CircleCollider2DComponent, TextComponent, PointLightComponent, AmbientLightComponent, PDirectionalLightComponent, RenderEntityComponent>;
 
 }
