@@ -6,6 +6,7 @@
 #include <Astan/Renderer/NewSystem/RenderConfig.h>
 #include "Component.h"
 #include <vma/VmaAllocation.h>
+#include <Astan/Renderer/NewSystem/GlobalRender.h>
 class b2World;
 
 
@@ -90,6 +91,26 @@ namespace Astan
 		ColorGradingResource _color_grading_resource;
 		StorageBuffer        _storage_buffer;
 	};
+
+	struct LevelIBLResourceDesc
+	{
+		SkyBoxIrradianceMap m_skybox_irradiance_map;
+		SkyBoxSpecularMap   m_skybox_specular_map;
+		std::string         m_brdf_map;
+	};
+
+	struct LevelColorGradingResourceDesc
+	{
+		std::string m_color_grading_map;
+	};
+
+	struct LevelResourceDesc
+	{
+		LevelIBLResourceDesc          m_ibl_resource_desc;
+		LevelColorGradingResourceDesc m_color_grading_resource_desc;
+	};
+
+
 	class Entity;
 	class Scene
 	{
@@ -105,6 +126,19 @@ namespace Astan
 		void UpdateVisibleObjectsMainCamera(Ref<EditorCamera> camera);
 		void UpdateVisibleObjectsAxis();
 		void UpdateVisibleObjectsParticle();
+		
+		void UploadGlobalRenderResource(std::shared_ptr<VulkanRendererAPI> rhi, LevelResourceDesc level_resource_desc);
+
+		void CreateAndMapStorageBuffer(std::shared_ptr<VulkanRendererAPI> rhi);
+
+		void CreateIBLSamplers(std::shared_ptr<VulkanRendererAPI> rhi);
+
+		void CreateIBLTextures(std::shared_ptr<VulkanRendererAPI> rhi, std::array<std::shared_ptr<TextureData>, 6> irradiance_maps, std::array<std::shared_ptr<TextureData>, 6> specular_maps);
+
+		Ref<TextureData> LoadTextureHDR(std::string file, int desired_channels = 4);
+
+		std::shared_ptr<TextureData> LoadTexture(std::string file, bool is_srgb = false);
+
 
 		VulkanMesh& GetEntityMesh(RenderEntityComponent entity);
 

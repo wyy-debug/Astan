@@ -15,6 +15,7 @@
 #include "box2d/b2_polygon_shape.h"
 #include "box2d/b2_circle_shape.h"
 #include <Astan/Renderer/NewSystem/RenderUtils.h>
+#include <stb_image.h>
 
 namespace Astan
 {
@@ -326,6 +327,306 @@ namespace Astan
 	void Scene::UpdateVisibleObjectsParticle() 
 	{
 		// TODO
+	}
+
+	void Scene::UploadGlobalRenderResource(Ref<VulkanRendererAPI> rhi, LevelResourceDesc level_resource_desc)
+	{
+		// create and map global storage buffer
+		CreateAndMapStorageBuffer(rhi);
+
+		// sky box irradiance
+		SkyBoxIrradianceMap skybox_irradiance_map = level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map;
+		Ref<TextureData> irradiace_pos_x_map = LoadTextureHDR(skybox_irradiance_map.m_positive_x_map);
+		Ref<TextureData> irradiace_neg_x_map = LoadTextureHDR(skybox_irradiance_map.m_negative_x_map);
+		Ref<TextureData> irradiace_pos_y_map = LoadTextureHDR(skybox_irradiance_map.m_positive_y_map);
+		Ref<TextureData> irradiace_neg_y_map = LoadTextureHDR(skybox_irradiance_map.m_negative_y_map);
+		Ref<TextureData> irradiace_pos_z_map = LoadTextureHDR(skybox_irradiance_map.m_positive_z_map);
+		Ref<TextureData> irradiace_neg_z_map = LoadTextureHDR(skybox_irradiance_map.m_negative_z_map);
+
+		// sky box specular
+		SkyBoxSpecularMap            skybox_specular_map = level_resource_desc.m_ibl_resource_desc.m_skybox_specular_map;
+		Ref<TextureData> specular_pos_x_map = LoadTextureHDR(skybox_specular_map.m_positive_x_map);
+		Ref<TextureData> specular_neg_x_map = LoadTextureHDR(skybox_specular_map.m_negative_x_map);
+		Ref<TextureData> specular_pos_y_map = LoadTextureHDR(skybox_specular_map.m_positive_y_map);
+		Ref<TextureData> specular_neg_y_map = LoadTextureHDR(skybox_specular_map.m_negative_y_map);
+		Ref<TextureData> specular_pos_z_map = LoadTextureHDR(skybox_specular_map.m_positive_z_map);
+		Ref<TextureData> specular_neg_z_map = LoadTextureHDR(skybox_specular_map.m_negative_z_map);
+
+		// brdf
+		Ref<TextureData> brdf_map = LoadTextureHDR(level_resource_desc.m_ibl_resource_desc.m_brdf_map);
+
+		// create IBL samplers
+		CreateIBLSamplers(rhi);
+
+		// create IBL textures, take care of the texture order
+		std::array<Ref<TextureData>, 6> irradiance_maps = { irradiace_pos_x_map,
+																	   irradiace_neg_x_map,
+																	   irradiace_pos_z_map,
+																	   irradiace_neg_z_map,
+																	   irradiace_pos_y_map,
+																	   irradiace_neg_y_map };
+		std::array<Ref<TextureData>, 6> specular_maps = { specular_pos_x_map,
+																	 specular_neg_x_map,
+																	 specular_pos_z_map,
+																	 specular_neg_z_map,
+																	 specular_pos_y_map,
+																	 specular_neg_y_map };
+		CreateIBLTextures(rhi, irradiance_maps, specular_maps);
+
+		// create brdf lut texture
+		rhi->CreateGlobalImage(
+			m_GlobalRenderResource._ibl_resource._brdfLUT_texture_image,
+			m_GlobalRenderResource._ibl_resource._brdfLUT_texture_image_view,
+			m_GlobalRenderResource._ibl_resource._brdfLUT_texture_image_allocation,
+			brdf_map->m_width,
+			brdf_map->m_height,
+			brdf_map->m_pixels,
+			brdf_map->m_format);
+
+		// color grading
+		Ref<TextureData> color_grading_map =
+			LoadTexture(level_resource_desc.m_color_grading_resource_desc.m_color_grading_map);
+
+		// create color grading texture
+		rhi->CreateGlobalImage(
+			m_GlobalRenderResource._color_grading_resource._color_grading_LUT_texture_image,
+			m_GlobalRenderResource._color_grading_resource._color_grading_LUT_texture_image_view,
+			m_GlobalRenderResource._color_grading_resource._color_grading_LUT_texture_image_allocation,
+			color_grading_map->m_width,
+			color_grading_map->m_height,
+			color_grading_map->m_pixels,
+			color_grading_map->m_format);
+	}
+
+	void Scene::CreateAndMapStorageBuffer(Ref<VulkanRendererAPI> rhi)
+	{
+		VulkanRendererAPI* raw_rhi = static_cast<VulkanRendererAPI*>(rhi.get());
+		StorageBuffer& _storage_buffer = m_GlobalRenderResource._storage_buffer;
+		uint32_t       frames_in_flight = raw_rhi->k_max_frames_in_flight;
+
+		RHIPhysicalDeviceProperties properties;
+		rhi->GetPhysicalDeviceProperties(&properties);
+
+		_storage_buffer._min_uniform_buffer_offset_alignment =
+			static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
+		_storage_buffer._min_storage_buffer_offset_alignment =
+			static_cast<uint32_t>(properties.limits.minStorageBufferOffsetAlignment);
+		_storage_buffer._max_storage_buffer_range = properties.limits.maxStorageBufferRange;
+		_storage_buffer._non_coherent_atom_size = properties.limits.nonCoherentAtomSize;
+
+		// In Vulkan, the storage buffer should be pre-allocated.
+		// The size is 128MB in NVIDIA D3D11
+		// driver(https://developer.nvidia.com/content/constant-buffers-without-constant-pain-0).
+		uint32_t global_storage_buffer_size = 1024 * 1024 * 128;
+		rhi->CreateBuffer(global_storage_buffer_size,
+			RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			_storage_buffer._global_upload_ringbuffer,
+			_storage_buffer._global_upload_ringbuffer_memory);
+
+		_storage_buffer._global_upload_ringbuffers_begin.resize(frames_in_flight);
+		_storage_buffer._global_upload_ringbuffers_end.resize(frames_in_flight);
+		_storage_buffer._global_upload_ringbuffers_size.resize(frames_in_flight);
+		for (uint32_t i = 0; i < frames_in_flight; ++i)
+		{
+			_storage_buffer._global_upload_ringbuffers_begin[i] = (global_storage_buffer_size * i) / frames_in_flight;
+			_storage_buffer._global_upload_ringbuffers_size[i] =
+				(global_storage_buffer_size * (i + 1)) / frames_in_flight -
+				(global_storage_buffer_size * i) / frames_in_flight;
+		}
+
+		// axis
+		rhi->CreateBuffer(sizeof(AxisStorageBufferObject),
+			RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			_storage_buffer._axis_inefficient_storage_buffer,
+			_storage_buffer._axis_inefficient_storage_buffer_memory);
+
+		// null descriptor
+		rhi->CreateBuffer(64,
+			RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			0,
+			_storage_buffer._global_null_descriptor_storage_buffer,
+			_storage_buffer._global_null_descriptor_storage_buffer_memory);
+
+		// TODO: Unmap when program terminates
+		rhi->MapMemory(_storage_buffer._global_upload_ringbuffer_memory,
+			0,
+			RHI_WHOLE_SIZE,
+			0,
+			&_storage_buffer._global_upload_ringbuffer_memory_pointer);
+
+		rhi->MapMemory(_storage_buffer._axis_inefficient_storage_buffer_memory,
+			0,
+			RHI_WHOLE_SIZE,
+			0,
+			&_storage_buffer._axis_inefficient_storage_buffer_memory_pointer);
+
+		static_assert(64 >= sizeof(MeshVertex::VulkanMeshVertexJointBinding), "");
+	}
+
+	void Scene::CreateIBLSamplers(Ref<VulkanRendererAPI> rhi)
+	{
+		VulkanRendererAPI* raw_rhi = static_cast<VulkanRendererAPI*>(rhi.get());
+
+		RHIPhysicalDeviceProperties physical_device_properties{};
+		rhi->GetPhysicalDeviceProperties(&physical_device_properties);
+
+		RHISamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = RHI_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = RHI_FILTER_LINEAR;
+		samplerInfo.minFilter = RHI_FILTER_LINEAR;
+		samplerInfo.addressModeU = RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV = RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW = RHI_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.anisotropyEnable = RHI_TRUE;                                                // close:false
+		samplerInfo.maxAnisotropy = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
+		samplerInfo.borderColor = RHI_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = RHI_FALSE;
+		samplerInfo.compareEnable = RHI_FALSE;
+		samplerInfo.compareOp = RHI_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = RHI_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.maxLod = 0.0f;
+
+		if (m_GlobalRenderResource._ibl_resource._brdfLUT_texture_sampler != RHI_NULL_HANDLE)
+		{
+			rhi->DestroySampler(m_GlobalRenderResource._ibl_resource._brdfLUT_texture_sampler);
+		}
+
+		if (rhi->CreateSampler(&samplerInfo, m_GlobalRenderResource._ibl_resource._brdfLUT_texture_sampler) != RHI_SUCCESS)
+		{
+			throw std::runtime_error("vk create sampler");
+		}
+
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 8.0f; // TODO: irradiance_texture_miplevels
+		samplerInfo.mipLodBias = 0.0f;
+
+		if (m_GlobalRenderResource._ibl_resource._irradiance_texture_sampler != RHI_NULL_HANDLE)
+		{
+			rhi->DestroySampler(m_GlobalRenderResource._ibl_resource._irradiance_texture_sampler);
+		}
+
+		if (rhi->CreateSampler(&samplerInfo, m_GlobalRenderResource._ibl_resource._irradiance_texture_sampler) != RHI_SUCCESS)
+		{
+			throw std::runtime_error("vk create sampler");
+		}
+
+		if (m_GlobalRenderResource._ibl_resource._specular_texture_sampler != RHI_NULL_HANDLE)
+		{
+			rhi->DestroySampler(m_GlobalRenderResource._ibl_resource._specular_texture_sampler);
+		}
+
+		if (rhi->CreateSampler(&samplerInfo, m_GlobalRenderResource._ibl_resource._specular_texture_sampler) != RHI_SUCCESS)
+		{
+			throw std::runtime_error("vk create sampler");
+		}
+	}
+
+	void Scene::CreateIBLTextures(Ref<VulkanRendererAPI>                        rhi,
+		std::array<Ref<TextureData>, 6> irradiance_maps,
+		std::array<Ref<TextureData>, 6> specular_maps)
+	{
+		// assume all textures have same width, height and format
+		uint32_t irradiance_cubemap_miplevels =
+			static_cast<uint32_t>(
+				std::floor(log2(std::max(irradiance_maps[0]->m_width, irradiance_maps[0]->m_height)))) +
+			1;
+		rhi->CreateCubeMap(
+			m_GlobalRenderResource._ibl_resource._irradiance_texture_image,
+			m_GlobalRenderResource._ibl_resource._irradiance_texture_image_view,
+			m_GlobalRenderResource._ibl_resource._irradiance_texture_image_allocation,
+			irradiance_maps[0]->m_width,
+			irradiance_maps[0]->m_height,
+			{ irradiance_maps[0]->m_pixels,
+			 irradiance_maps[1]->m_pixels,
+			 irradiance_maps[2]->m_pixels,
+			 irradiance_maps[3]->m_pixels,
+			 irradiance_maps[4]->m_pixels,
+			 irradiance_maps[5]->m_pixels },
+			irradiance_maps[0]->m_format,
+			irradiance_cubemap_miplevels);
+
+		uint32_t specular_cubemap_miplevels =
+			static_cast<uint32_t>(
+				std::floor(log2(std::max(specular_maps[0]->m_width, specular_maps[0]->m_height)))) +
+			1;
+		rhi->CreateCubeMap(
+			m_GlobalRenderResource._ibl_resource._specular_texture_image,
+			m_GlobalRenderResource._ibl_resource._specular_texture_image_view,
+			m_GlobalRenderResource._ibl_resource._specular_texture_image_allocation,
+			specular_maps[0]->m_width,
+			specular_maps[0]->m_height,
+			{ specular_maps[0]->m_pixels,
+			 specular_maps[1]->m_pixels,
+			 specular_maps[2]->m_pixels,
+			 specular_maps[3]->m_pixels,
+			 specular_maps[4]->m_pixels,
+			 specular_maps[5]->m_pixels },
+			specular_maps[0]->m_format,
+			specular_cubemap_miplevels);
+	}
+
+	Ref<TextureData> Scene::LoadTextureHDR(std::string file, int desired_channels)
+	{
+		Ref<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		AS_CORE_ASSERT(asset_manager);
+
+		Ref<TextureData> texture = std::make_shared<TextureData>();
+
+		int iw, ih, n;
+		texture->m_pixels =
+			stbi_loadf(asset_manager->getFullPath(file).generic_string().c_str(), &iw, &ih, &n, desired_channels);
+
+		if (!texture->m_pixels)
+			return nullptr;
+
+		texture->m_width = iw;
+		texture->m_height = ih;
+		switch (desired_channels)
+		{
+		case 2:
+			texture->m_format = RHIFormat::RHI_FORMAT_R32G32_SFLOAT;
+			break;
+		case 4:
+			texture->m_format = RHIFormat::RHI_FORMAT_R32G32B32A32_SFLOAT;
+			break;
+		default:
+			// three component format is not supported in some vulkan driver implementations
+			throw std::runtime_error("unsupported channels number");
+			break;
+		}
+		texture->m_depth = 1;
+		texture->m_array_layers = 1;
+		texture->m_mip_levels = 1;
+		texture->m_type = ASTAN_IMAGE_TYPE::ASTAN_IMAGE_TYPE_2D;
+
+		return texture;
+	}
+
+	Ref<TextureData> Scene::LoadTexture(std::string file, bool is_srgb)
+	{
+		Ref<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		AS_CORE_ASSERT(asset_manager);
+
+		Ref<TextureData> texture = std::make_shared<TextureData>();
+
+		int iw, ih, n;
+		texture->m_pixels = stbi_load(asset_manager->getFullPath(file).generic_string().c_str(), &iw, &ih, &n, 4);
+
+		if (!texture->m_pixels)
+			return nullptr;
+
+		texture->m_width = iw;
+		texture->m_height = ih;
+		texture->m_format = (is_srgb) ? RHIFormat::RHI_FORMAT_R8G8B8A8_SRGB :
+			RHIFormat::RHI_FORMAT_R8G8B8A8_UNORM;
+		texture->m_depth = 1;
+		texture->m_array_layers = 1;
+		texture->m_mip_levels = 1;
+		texture->m_type = ASTAN_IMAGE_TYPE::ASTAN_IMAGE_TYPE_2D;
+
+		return texture;
 	}
 
 

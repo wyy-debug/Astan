@@ -1,5 +1,6 @@
 #include "aspch.h"
 #include "RenderSystem.h"
+#include <Astan/Core/AssetManager.h>
 namespace Astan
 {
 	RenderSystem::~RenderSystem()
@@ -50,7 +51,7 @@ namespace Astan
         // render one frame
         // 渲染一帧
 
-        m_RenderPipeline->ForwardRender(m_RenderCommand, m_render_resource);
+        m_RenderPipeline->ForwardRender(m_RenderCommand, m_RenderScene);
 #if 0
         if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::FORWARD_PIPELINE)
         {
@@ -77,18 +78,43 @@ namespace Astan
     6. 处理其他渲染数据交换：此外，该函数还负责处理其他类型的数据交换，如更新渲染场景中的可见对象、准备渲染管线的数据等。
     移到scene中处理
     ***/
+    // 全局管理？ Entity
 	void RenderSystem::ProcessSwapData()
 	{
+        return m_swap_data[m_render_swap_data_index]
+        struct LevelResourceDesc
+        {
+            LevelIBLResourceDesc          m_ibl_resource_desc;
+            LevelColorGradingResourceDesc m_color_grading_resource_desc;
+        };
+
+        struct RenderSwapData
+        {
+            std::optional<LevelResourceDesc>       m_level_resource_desc;
+            std::optional<GameObjectResourceDesc>  m_game_object_resource_desc;
+            std::optional<GameObjectResourceDesc>  m_game_object_to_delete;
+            std::optional<CameraSwapData>          m_camera_swap_data;
+            std::optional<ParticleSubmitRequest>   m_particle_submit_request;
+            std::optional<EmitterTickRequest>      m_emitter_tick_request;
+            std::optional<EmitterTransformRequest> m_emitter_transform_request;
+
+            void addDirtyGameObject(GameObjectDesc&& desc);
+            void addDeleteGameObject(GameObjectDesc&& desc);
+
+            void addNewParticleEmitter(ParticleEmitterDesc& desc);
+            void addTickParticleEmitter(ParticleEmitterID id);
+            void updateParticleTransform(ParticleEmitterTransformDesc& desc);
+        };
         RenderSwapData& swap_data = m_SwapContext.getRenderSwapData();
 
-        std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+        Ref<AssetManager> asset_manager = CreateRef<AssetManager>();
         AS_CORE_ASSERT(asset_manager);
 
         // TODO: update global resources if needed
         // TOD0: 更新全局资源
         if (swap_data.m_level_resource_desc.has_value())
         {
-            m_render_resource->uploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
+            m_RenderScene->UploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
 
             // reset level resource swap data to a clean state
             m_SwapContext.resetLevelRsourceSwapData();
@@ -107,30 +133,30 @@ namespace Astan
                     const auto& game_object_part = gobject.getObjectParts()[part_index];
                     GameObjectPartId part_id = { gobject.getId(), part_index };
 
-                    bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(part_id);
+                    bool is_entity_in_scene = m_RenderScene->getInstanceIdAllocator().hasElement(part_id);
 
                     RenderEntity render_entity;
                     render_entity.m_instance_id =
-                        static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(part_id));
+                        static_cast<uint32_t>(m_RenderScene->getInstanceIdAllocator().allocGuid(part_id));
                     render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
 
-                    m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
+                    m_RenderScene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
 
                     // mesh properties
                     MeshSourceDesc mesh_source = { game_object_part.m_mesh_desc.m_mesh_file };
-                    bool           is_mesh_loaded = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
+                    bool           is_mesh_loaded = m_RenderScene->getMeshAssetIdAllocator().hasElement(mesh_source);
 
                     RenderMeshData mesh_data;
                     if (!is_mesh_loaded)
                     {
-                        mesh_data = m_render_resource->loadMeshData(mesh_source, render_entity.m_bounding_box);
+                        mesh_data = m_RenderScene->loadMeshData(mesh_source, render_entity.m_bounding_box);
                     }
                     else
                     {
-                        render_entity.m_bounding_box = m_render_resource->getCachedBoudingBox(mesh_source);
+                        render_entity.m_bounding_box = m_RenderScene->getCachedBoudingBox(mesh_source);
                     }
 
-                    render_entity.m_mesh_asset_id = m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
+                    render_entity.m_mesh_asset_id = m_RenderScene->getMeshAssetIdAllocator().allocGuid(mesh_source);
                     render_entity.m_enable_vertex_blending =
                         game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
                     render_entity.m_joint_matrices.resize(
@@ -162,36 +188,36 @@ namespace Astan
                             "",
                             "" };
                     }
-                    bool is_material_loaded = m_render_scene->getMaterialAssetdAllocator().hasElement(material_source);
+                    bool is_material_loaded = m_RenderScene->getMaterialAssetdAllocator().hasElement(material_source);
 
                     RenderMaterialData material_data;
                     if (!is_material_loaded)
                     {
-                        material_data = m_render_resource->loadMaterialData(material_source);
+                        material_data = m_RenderScene->loadMaterialData(material_source);
                     }
 
                     render_entity.m_material_asset_id =
-                        m_render_scene->getMaterialAssetdAllocator().allocGuid(material_source);
+                        m_RenderScene->getMaterialAssetdAllocator().allocGuid(material_source);
 
                     // create game object on the graphics api side
                     if (!is_mesh_loaded)
                     {
-                        m_render_resource->uploadGameObjectRenderResource(m_RenderCommand, render_entity, mesh_data);
+                        m_RenderScene->uploadGameObjectRenderResource(m_RenderCommand, render_entity, mesh_data);
                     }
 
                     if (!is_material_loaded)
                     {
-                        m_render_resource->uploadGameObjectRenderResource(m_RenderCommand, render_entity, material_data);
+                        m_RenderScene->uploadGameObjectRenderResource(m_RenderCommand, render_entity, material_data);
                     }
 
                     // add object to render scene if needed
                     if (!is_entity_in_scene)
                     {
-                        m_render_scene->m_render_entities.push_back(render_entity);
+                        m_RenderScene->m_render_entities.push_back(render_entity);
                     }
                     else
                     {
-                        for (auto& entity : m_render_scene->m_render_entities)
+                        for (auto& entity : m_RenderScene->m_render_entities)
                         {
                             if (entity.m_instance_id == render_entity.m_instance_id)
                             {
@@ -215,7 +241,7 @@ namespace Astan
             while (!swap_data.m_game_object_to_delete->isEmpty())
             {
                 GameObjectDesc gobject = swap_data.m_game_object_to_delete->getNextProcessObject();
-                m_render_scene->deleteEntityByGObjectID(gobject.getId());
+                m_RenderScene->deleteEntityByGObjectID(gobject.getId());
                 swap_data.m_game_object_to_delete->pop();
             }
 

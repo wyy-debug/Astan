@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Math/Math.h"
 namespace Astan
 {
     class Scene;
@@ -42,35 +42,17 @@ namespace Astan
 
         void merge(const BoundingBox& rhs)
         {
-            makeFloor(min_bound, rhs.min_bound);
-            makeFloor(max_bound, rhs.max_bound);
+            Utils::makeFloor(min_bound, rhs.min_bound);
+            Utils::makeFloor(max_bound, rhs.max_bound);
         }
 
         void merge(const glm::vec3& point)
         {
-            makeFloor(min_bound, point);
-            makeFloor(max_bound, point);
+            Utils::makeFloor(min_bound, point);
+            Utils::makeFloor(max_bound, point);
         }
 
-        void makeFloor(glm::vec3& base,const glm::vec3& cmp)
-        {
-            if (cmp.x < base.x)
-                base.x = cmp.x;
-            if (cmp.y < base.y)
-                base.y = cmp.y;
-            if (cmp.z < base.z)
-                base.z = cmp.z;
-        }
-
-        void makeCeil(glm::vec3& base, const glm::vec3& cmp)
-        {
-            if (cmp.x > base.x)
-                base.x = cmp.x;
-            if (cmp.y > base.y)
-                base.y = cmp.y;
-            if (cmp.z > base.z)
-                base.z = cmp.z;
-        }
+        
 
 
     };

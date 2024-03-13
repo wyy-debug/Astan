@@ -13,6 +13,7 @@
 
 #include <math.h>
 #include <algorithm>
+#include <Astan/Renderer/NewSystem/AxisAligned.h>
 
 #define PI acos(-1)
 
@@ -235,6 +236,26 @@ namespace Astan
 		RenderEntityComponent() = default;
 		RenderEntityComponent(const RenderEntityComponent&) = default;
 	};
+
+	struct RenderSwapData
+	{
+		std::optional<LevelResourceDesc>       m_level_resource_desc;
+		std::optional<GameObjectResourceDesc>  m_game_object_resource_desc;
+		std::optional<GameObjectResourceDesc>  m_game_object_to_delete;
+		std::optional<CameraSwapData>          m_camera_swap_data;
+		std::optional<ParticleSubmitRequest>   m_particle_submit_request;
+		std::optional<EmitterTickRequest>      m_emitter_tick_request;
+		std::optional<EmitterTransformRequest> m_emitter_transform_request;
+
+		void addDirtyGameObject(GameObjectDesc&& desc);
+		void addDeleteGameObject(GameObjectDesc&& desc);
+
+		void addNewParticleEmitter(ParticleEmitterDesc& desc);
+		void addTickParticleEmitter(ParticleEmitterID id);
+		void updateParticleTransform(ParticleEmitterTransformDesc& desc);
+	};
+
+
 	template<typename...Component>
 	struct ComponentGroup
 	{
