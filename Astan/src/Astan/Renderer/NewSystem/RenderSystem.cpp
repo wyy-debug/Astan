@@ -48,14 +48,14 @@ namespace Astan
 
         // prepare pipeline's render passes data
         // 准备管线渲染passes数据
-        m_RenderPipeline->PreparePassData(m_RenderScene);
+        m_RenderPipeline->PreparePassData(m_RenderResource);
 
         //g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
 
         // render one frame
         // 渲染一帧
 
-        m_RenderPipeline->ForwardRender(m_RenderCommand, m_RenderScene);
+        m_RenderPipeline->ForwardRender(m_RenderCommand, m_RenderResource);
 #if 0
         if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::FORWARD_PIPELINE)
         {
@@ -85,6 +85,46 @@ namespace Astan
     // 全局管理？ Entity
 	void RenderSystem::ProcessSwapData()
 	{
+        struct GameObjectMeshDesc
+        {
+            std::string m_mesh_file;
+        };
+
+        struct GameObjectMaterialDesc
+        {
+            std::string m_base_color_texture_file;
+            std::string m_metallic_roughness_texture_file;
+            std::string m_normal_texture_file;
+            std::string m_occlusion_texture_file;
+            std::string m_emissive_texture_file;
+            bool        m_with_texture{ false };
+        }
+
+        struct Animation
+        {
+            bool m_with_animation;
+        };
+
+        SkeletonBindingDesc
+        std::string m_skeleton_binding_file;
+
+        SkeletonAnimationResult
+        Matrix4x4 m_matrix;
+
+
+        Gameobject
+        {
+             GameObjectMeshDesc      m_mesh_desc;
+        GameObjectMaterialDesc  m_material_desc;
+        GameObjectTransformDesc m_transform_desc;
+        bool                    m_with_animation {false};
+        SkeletonBindingDesc     m_skeleton_binding_desc;
+        SkeletonAnimationResult m_skeleton_animation_result;
+        }
+
+
+
+
         return m_swap_data[m_render_swap_data_index]
         struct LevelResourceDesc
         {

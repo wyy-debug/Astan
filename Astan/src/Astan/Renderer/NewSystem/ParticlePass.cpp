@@ -1913,16 +1913,16 @@ namespace Astan
         memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
     }
 
-    void ParticlePass::PreparePassData(Ref<Scene> Scene)
+    void ParticlePass::PreparePassData(Ref<RenderSource> source)
     {
         m_particle_collision_perframe_storage_buffer_object =
-            Scene->m_ParticleCollisionPerframeStorageBufferObject;
+            source->m_ParticleCollisionPerframeStorageBufferObject;
         memcpy(m_scene_uniform_buffer_mapped,
             &m_particle_collision_perframe_storage_buffer_object,
             sizeof(ParticleCollisionPerframeStorageBufferObject));
 
         m_particlebillboard_perframe_storage_buffer_object =
-            Scene->m_ParticlebillboardPerframeStorageBufferObject;
+            source->m_ParticlebillboardPerframeStorageBufferObject;
         memcpy(m_particle_billboard_uniform_buffer_mapped,
             &m_particlebillboard_perframe_storage_buffer_object,
             sizeof(m_particlebillboard_perframe_storage_buffer_object));

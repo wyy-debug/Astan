@@ -1,6 +1,7 @@
 #pragma once
 #include "RenderPass.h"
 #include <Astan/Scene/Scene.h>
+#include "RenderSource.h"
 
 namespace Astan
 {
@@ -47,7 +48,7 @@ namespace Astan
     public:
         void Initialize(const RenderPassInitInfo* init_info) override final;
 
-        void PreparePassData(Ref<Scene> Scene) ;
+        void PreparePassData(Ref<RenderSource> source) ;
 
         void Draw() override final;
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderPass.h"
+#include "RenderSource.h"
 
 namespace Astan
 {
@@ -54,7 +55,7 @@ namespace Astan
 	public:
 		void Initialize();
 
-        void PreparePassData(Ref<Scene> Scene);
+        void PreparePassData(Ref<RenderSource> Scene);
 
         void Draw(ColorGradingPass& color_grading_pass,
             FXAAPass& fxaa_pass,

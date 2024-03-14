@@ -20,9 +20,9 @@ namespace Astan
         SetupPipelines();
         SetupDescriptorSet();
     }
-    void DirectionalLightShadowPass::PreparePassData(Ref<Scene> Scene)
+    void DirectionalLightShadowPass::PreparePassData(Ref<RenderSource> source)
     {
-            m_mesh_directional_light_shadow_perframe_storage_buffer_object = Scene->m_MeshDirectionalLightShadowPerframeStorageBufferObject;
+            m_mesh_directional_light_shadow_perframe_storage_buffer_object = source->m_MeshDirectionalLightShadowPerframeStorageBufferObject;
     }
     void DirectionalLightShadowPass::Draw() { DrawModel(); }
     void DirectionalLightShadowPass::SetupAttachments()

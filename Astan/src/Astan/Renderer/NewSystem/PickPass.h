@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderPass.h"
+#include "RenderSource.h"
 
 namespace Astan
 {
@@ -15,7 +16,7 @@ namespace Astan
     public:
         void Initialize(const RenderPassInitInfo* init_info) override final;
         void PostInitialize();
-        void PreparePassData(Ref<Scene> Scene);
+        void PreparePassData(Ref<RenderSource> source);
         void Draw() override final;
 
         uint32_t Pick(const glm::vec2& picked_uv);

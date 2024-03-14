@@ -1,6 +1,8 @@
 #pragma once
 
 #include "RenderPass.h"
+#include "RenderSource.h"
+
 namespace Astan
 {
     class RenderResourceBase;
@@ -10,7 +12,7 @@ namespace Astan
     public:
         void Initialize(const RenderPassInitInfo* init_info) override final;
         void PostInitialize();
-        void PreparePassData(Ref<Scene> Scene) ;
+        void PreparePassData(Ref<RenderSource> source) ;
         void Draw() override final;
 
         void SetPerMeshLayout(RHIDescriptorSetLayout* layout) { m_per_mesh_layout = layout; }

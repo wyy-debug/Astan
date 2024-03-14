@@ -10,6 +10,7 @@
 #include "PointLightShadowPass.h"
 #include "PickPass.h"
 #include "DirectionalLightShadowPass.h"
+#include "RenderSource.h"
 
 
 namespace Astan 
@@ -20,8 +21,8 @@ namespace Astan
 		RenderPipeline() = default;
 		~RenderPipeline();
 		void Initialize();
-		void PreparePassData(Ref<Scene> Scene);
-		void ForwardRender(Ref<VulkanRendererAPI> rhi, Ref<Scene> Scene);
+		void PreparePassData(Ref<RenderSource> Scene);
+		void ForwardRender(Ref<VulkanRendererAPI> rhi, Ref<RenderSource> source);
 		void DeferredRender(Ref<VulkanRendererAPI> rhi, Ref<RenderResourceBase> render_resource);
 		void PassUpdateAfterRecreateSwapchain();
 	//TODO father class

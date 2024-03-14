@@ -22,10 +22,10 @@ namespace Astan
         SetupDescriptorSet();
     }
     void PickPass::PostInitialize() {}
-    void PickPass::PreparePassData(Ref<Scene> scene)
+    void PickPass::PreparePassData(Ref<RenderSource> source)
     {
         _mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix =
-            scene->m_MeshInefficientPickPerframeStorageBufferObject.proj_view_matrix;
+            source->m_MeshInefficientPickPerframeStorageBufferObject.proj_view_matrix;
         _mesh_inefficient_pick_perframe_storage_buffer_object.rt_width = m_RenderCommand->GetSwapchainInfo().extent.width;
         _mesh_inefficient_pick_perframe_storage_buffer_object.rt_height = m_RenderCommand->GetSwapchainInfo().extent.height;
     }

@@ -21,10 +21,10 @@ namespace Astan
         SetupPipelines();
         SetupDescriptorSet();
     }
-    void PointLightShadowPass::PreparePassData(Ref<Scene> scene)
+    void PointLightShadowPass::PreparePassData(Ref<RenderSource> source)
     {
         m_mesh_point_light_shadow_perframe_storage_buffer_object =
-            scene->m_MeshPointLightShadowPerframeStorageBufferObject;
+            source->m_MeshPointLightShadowPerframeStorageBufferObject;
     }
     void PointLightShadowPass::Draw()
     {

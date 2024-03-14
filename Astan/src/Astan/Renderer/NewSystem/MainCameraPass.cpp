@@ -39,10 +39,10 @@ namespace Astan
         SetupSwapchainFramebuffers();
     }
 
-    void MainCameraPass::PreparePassData(Ref<Scene> Scene)
+    void MainCameraPass::PreparePassData(Ref<RenderSource> source)
     {
-        m_mesh_perframe_storage_buffer_object = Scene->m_MeshPerframeStorageBufferObject;
-        m_axis_storage_buffer_object = Scene->m_AxisStorageBufferObject;
+        m_mesh_perframe_storage_buffer_object = source->m_MeshPerframeStorageBufferObject;
+        m_axis_storage_buffer_object = source->m_AxisStorageBufferObject;
     }
 
     void MainCameraPass::Draw(ColorGradingPass& color_grading_pass,

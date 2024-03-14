@@ -17,20 +17,20 @@ namespace Astan
 
 
 	}
-	void RenderPipeline::PreparePassData(Ref<Scene> Scene)
+	void RenderPipeline::PreparePassData(Ref<RenderSource> source)
 	{
-        m_MainCameraPass->PreparePassData(Scene);
-        m_PickPass->PreparePassData(Scene);
-        m_DirectionalLightShadowPass->PreparePassData(Scene);
-        m_PointLightShadowPass->PreparePassData(Scene);
-        m_ParticlePass->PreparePassData(Scene);
+        m_MainCameraPass->PreparePassData(source);
+        m_PickPass->PreparePassData(source);
+        m_DirectionalLightShadowPass->PreparePassData(source);
+        m_PointLightShadowPass->PreparePassData(source);
+        m_ParticlePass->PreparePassData(source);
         //g_runtime_global_context.m_debugdraw_manager->preparePassData(render_resource);
 	}
-	void RenderPipeline::ForwardRender(Ref<VulkanRendererAPI> rhi, Ref<Scene> scene)
+	void RenderPipeline::ForwardRender(Ref<VulkanRendererAPI> rhi, Ref<RenderSource> source)
 	{
         VulkanRendererAPI* vulkan_rhi = static_cast<VulkanRendererAPI*>(rhi.get());
 
-        scene->ResetRingBufferOffset(vulkan_rhi->m_current_frame_index);
+        source->ResetRingBufferOffset(vulkan_rhi->m_current_frame_index);
 
         vulkan_rhi->WaitForFences();
 
