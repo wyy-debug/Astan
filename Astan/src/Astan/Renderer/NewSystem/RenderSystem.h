@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderPipeline.h"
+#include "RenderSource.h"
 #include "Astan/Scene/Scene.h"
 #include "Platform/Vulkan/VulkanRendererAPI.h"
 
@@ -17,7 +18,8 @@ namespace Astan
 		Ref<RenderPipeline> m_RenderPipeline;
 		Ref<EditorCamera> m_RenderCamera;
 		Ref<Scene> m_RenderScene;
-		Ref<RenderResourceBase> m_RenderResource;
+		Ref<RenderSource> m_RenderResource;
+		
 
 	private:
 		void ProcessSwapData();

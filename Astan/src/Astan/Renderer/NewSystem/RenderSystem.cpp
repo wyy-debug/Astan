@@ -20,6 +20,9 @@ namespace Astan
 		// 设置渲染场景
 		m_RenderScene = CreateRef<Scene>();
 
+        // 设置渲染资源
+        m_RenderResource = CreateRef<RenderSource>();
+
 		// 初始化渲染管线
 		m_RenderPipeline = CreateRef<RenderPipeline>();
 		m_RenderPipeline->m_RenderCommand = m_RenderCommand;
@@ -35,12 +38,13 @@ namespace Astan
 
 		m_RenderCommand->PrepareContext();
 
+        Scene* scene = std::addressof(*m_RenderScene);
 
         // 移到scene中处理
-        m_RenderScene->UpdatePerFrameBuffer(m_RenderCamera);
+        m_RenderResource->UpdatePerFrameBuffer(scene, m_RenderCamera);
 
         // 在scene场景中处理
-        m_RenderScene->UpdateVisibleObjects(m_RenderCamera);
+        m_RenderResource->UpdateVisibleObjects(scene, m_RenderCamera);
 
         // prepare pipeline's render passes data
         // 准备管线渲染passes数据
@@ -114,7 +118,7 @@ namespace Astan
         // TOD0: 更新全局资源
         if (swap_data.m_level_resource_desc.has_value())
         {
-            m_RenderScene->UploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
+            m_RenderResource->UploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
 
             // reset level resource swap data to a clean state
             m_SwapContext.resetLevelRsourceSwapData();

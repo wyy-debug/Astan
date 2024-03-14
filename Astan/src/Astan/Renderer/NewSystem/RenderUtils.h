@@ -82,5 +82,5 @@ namespace Astan
 
     bool BoxIntersectsWithSphere(BoundingBox const& b, BoundingSphere const& s);
 
-    glm::mat4 CalculateDirectionalLightCamera(Scene& scene, EditorCamera& camera);
+    glm::mat4 CalculateDirectionalLightCamera(Scene* scene, EditorCamera& camera);
 } // namespace Piccolo

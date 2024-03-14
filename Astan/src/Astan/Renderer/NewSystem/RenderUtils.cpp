@@ -2,6 +2,7 @@
 #include "RenderUtils.h"
 #include "Astan/Renderer/EditorCamera.h"
 #include "Astan/Scene/Scene.h"
+#include "Astan/Scene/Entity.h"
 namespace Astan
 {
     ClusterFrustum CreateClusterFrustumFromMatrix(glm::mat4 mat,
@@ -261,7 +262,7 @@ namespace Astan
         return true;
     }
 
-    glm::mat4 CalculateDirectionalLightCamera(Scene& scene, EditorCamera& camera)
+    glm::mat4 CalculateDirectionalLightCamera(Scene* scene, EditorCamera& camera)
     {
         glm::mat4 proj_view_matrix;
         {
@@ -307,10 +308,12 @@ namespace Astan
             scene_bounding_box.min_bound = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
             scene_bounding_box.max_bound = glm::vec3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-            auto view = scene.m_Registry.view<RenderEntityComponent>();
+            auto view = scene->GetAllEntitiesWith<RenderEntityComponent>();
             for (auto e : view)
             {
-                auto renderEntity = scene.m_Registry.get<RenderEntityComponent>(e);
+                Entity entity = { e, scene };
+                auto& renderEntity = entity.GetComponent<RenderEntityComponent>();
+
                 BoundingBox mesh_asset_bounding_box{ renderEntity.m_BoundingBox.getMinCorner(),
                                                      renderEntity.m_BoundingBox.getMaxCorner() };
 
@@ -332,11 +335,12 @@ namespace Astan
                 (frustum_bounding_box.max_bound.y - frustum_bounding_box.min_bound.y) * 0.5,
                 (frustum_bounding_box.max_bound.z - frustum_bounding_box.min_bound.z) * 0.5);
 
-            auto view = scene.m_Registry.view<PDirectionalLightComponent>();
+            auto view = scene->GetAllEntitiesWith<PDirectionalLightComponent>();
             PDirectionalLightComponent directionalLight;
             for (auto e : view)
             {
-                PDirectionalLightComponent directionalLight = scene.m_Registry.get<PDirectionalLightComponent>(e);
+                Entity entity = { e,scene };
+                PDirectionalLightComponent directionalLight = entity.GetComponent<PDirectionalLightComponent>();
             }
             glm::vec3 eye =
                 box_center + glm::vec3(directionalLight.Direction.x * box_extents.length(), 

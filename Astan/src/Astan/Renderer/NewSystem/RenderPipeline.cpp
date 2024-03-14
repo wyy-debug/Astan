@@ -1,6 +1,5 @@
 #include "aspch.h"
 #include "RenderPipeline.h"
-#include "RenderResource.h"
 
 
 
