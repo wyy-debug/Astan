@@ -237,24 +237,47 @@ namespace Astan
 		RenderEntityComponent(const RenderEntityComponent&) = default;
 	};
 
-	struct RenderSwapData
+
+	struct GameObjectMeshComponent
 	{
-		std::optional<LevelResourceDesc>       m_level_resource_desc;
-		std::optional<GameObjectResourceDesc>  m_game_object_resource_desc;
-		std::optional<GameObjectResourceDesc>  m_game_object_to_delete;
-		std::optional<CameraSwapData>          m_camera_swap_data;
-		std::optional<ParticleSubmitRequest>   m_particle_submit_request;
-		std::optional<EmitterTickRequest>      m_emitter_tick_request;
-		std::optional<EmitterTransformRequest> m_emitter_transform_request;
+		std::string m_mesh_file;
 
-		void addDirtyGameObject(GameObjectDesc&& desc);
-		void addDeleteGameObject(GameObjectDesc&& desc);
-
-		void addNewParticleEmitter(ParticleEmitterDesc& desc);
-		void addTickParticleEmitter(ParticleEmitterID id);
-		void updateParticleTransform(ParticleEmitterTransformDesc& desc);
+		GameObjectMeshComponent() = default;
+		GameObjectMeshComponent(const GameObjectMeshComponent&) = default;
 	};
 
+	struct GameObjectMaterialComponent
+	{
+		std::string m_base_color_texture_file;
+		std::string m_metallic_roughness_texture_file;
+		std::string m_normal_texture_file;
+		std::string m_occlusion_texture_file;
+		std::string m_emissive_texture_file;
+		bool        m_with_texture{ false };
+		GameObjectMaterialComponent() = default;
+		GameObjectMaterialComponent(const GameObjectMaterialComponent&) = default;
+	};
+
+	struct AnimationComponet
+	{
+		bool m_with_animation;
+		AnimationComponet() = default;
+		AnimationComponet(const AnimationComponet&) = default;
+	};
+
+	struct SkeletonBindingComponent
+	{
+		std::string m_skeleton_binding_file;
+		SkeletonBindingComponent() = default;
+		SkeletonBindingComponent(const SkeletonBindingComponent&) = default;
+	};
+
+	struct  SkeletonAnimationResultComponent
+	{
+		std::vector<glm::mat4> m_transforms;
+		SkeletonAnimationResultComponent() = default;
+		SkeletonAnimationResultComponent(const SkeletonAnimationResultComponent&) = default;
+	};
 
 	template<typename...Component>
 	struct ComponentGroup

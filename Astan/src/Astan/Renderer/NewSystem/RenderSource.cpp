@@ -617,6 +617,87 @@ namespace Astan
 		m_ParticlebillboardPerframeStorageBufferObject.up_direction = camera->GetUpDirection();
 	}
 
+	RenderMeshData RenderSource::LoadMeshData(const std::string meshfilepath, AxisAlignedBox& boundingBox)
+	{
+		std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		AS_CORE_ASSERT(asset_manager);
+
+		RenderMeshData ret;
+
+		if (std::filesystem::path(meshfilepath).extension() == ".obj")
+		{
+			ret.m_static_mesh_data = loadStaticMesh(meshfilepath, bounding_box);
+		}
+		else if (std::filesystem::path(meshfilepath).extension() == ".json")
+		{
+			std::shared_ptr<MeshData> bind_data = std::make_shared<MeshData>();
+			asset_manager->loadAsset<MeshData>(meshfilepath, *bind_data);
+
+			// vertex buffer
+			size_t vertex_size = bind_data->vertex_buffer.size() * sizeof(MeshVertexDataDefinition);
+			ret.m_static_mesh_data.m_vertex_buffer = std::make_shared<BufferData>(vertex_size);
+			MeshVertexDataDefinition* vertex =
+				(MeshVertexDataDefinition*)ret.m_static_mesh_data.m_vertex_buffer->m_data;
+			for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
+			{
+				vertex[i].x = bind_data->vertex_buffer[i].px;
+				vertex[i].y = bind_data->vertex_buffer[i].py;
+				vertex[i].z = bind_data->vertex_buffer[i].pz;
+				vertex[i].nx = bind_data->vertex_buffer[i].nx;
+				vertex[i].ny = bind_data->vertex_buffer[i].ny;
+				vertex[i].nz = bind_data->vertex_buffer[i].nz;
+				vertex[i].tx = bind_data->vertex_buffer[i].tx;
+				vertex[i].ty = bind_data->vertex_buffer[i].ty;
+				vertex[i].tz = bind_data->vertex_buffer[i].tz;
+				vertex[i].u = bind_data->vertex_buffer[i].u;
+				vertex[i].v = bind_data->vertex_buffer[i].v;
+
+				bounding_box.merge(Vector3(vertex[i].x, vertex[i].y, vertex[i].z));
+			}
+
+			// index buffer
+			size_t index_size = bind_data->index_buffer.size() * sizeof(uint16_t);
+			ret.m_static_mesh_data.m_index_buffer = std::make_shared<BufferData>(index_size);
+			uint16_t* index = (uint16_t*)ret.m_static_mesh_data.m_index_buffer->m_data;
+			for (size_t i = 0; i < bind_data->index_buffer.size(); i++)
+			{
+				index[i] = static_cast<uint16_t>(bind_data->index_buffer[i]);
+			}
+
+			// skeleton binding buffer
+			size_t data_size = bind_data->bind.size() * sizeof(MeshVertexBindingDataDefinition);
+			ret.m_skeleton_binding_buffer = std::make_shared<BufferData>(data_size);
+			MeshVertexBindingDataDefinition* binding_data =
+				reinterpret_cast<MeshVertexBindingDataDefinition*>(ret.m_skeleton_binding_buffer->m_data);
+			for (size_t i = 0; i < bind_data->bind.size(); i++)
+			{
+				binding_data[i].m_index0 = bind_data->bind[i].index0;
+				binding_data[i].m_index1 = bind_data->bind[i].index1;
+				binding_data[i].m_index2 = bind_data->bind[i].index2;
+				binding_data[i].m_index3 = bind_data->bind[i].index3;
+				binding_data[i].m_weight0 = bind_data->bind[i].weight0;
+				binding_data[i].m_weight1 = bind_data->bind[i].weight1;
+				binding_data[i].m_weight2 = bind_data->bind[i].weight2;
+				binding_data[i].m_weight3 = bind_data->bind[i].weight3;
+			}
+		}
+
+		m_bounding_box_cache_map.insert(std::make_pair(source, bounding_box));
+
+		return ret;
+	}
+
+	AxisAlignedBox RenderSource::GetCachedBoudingBox(const std::string meshfilepath) const
+	{
+
+		auto find_it = m_bounding_box_cache_map.find(meshfilepath);
+		if (find_it != m_bounding_box_cache_map.end())
+		{
+			return find_it->second;
+		}
+		return AxisAlignedBox();
+	}
+
 	void RenderSource::ResetRingBufferOffset(uint8_t current_frame_index)
 	{
 		m_GlobalRenderResource._storage_buffer._global_upload_ringbuffers_end[current_frame_index] =

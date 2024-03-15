@@ -130,6 +130,13 @@ namespace Astan
 		Ref<TextureData> LoadTextureHDR(std::string file, int desired_channels = 4);
 		Ref<TextureData> LoadTexture(std::string file, bool is_srgb = false);
 
+
+		RenderMeshData LoadMeshData(const std::string meshfilepath, AxisAlignedBox& boundingBox);
+
+
+		AxisAlignedBox GetCachedBoudingBox(const std::string meshfilepath) const;
+
+
 		void ResetRingBufferOffset(uint8_t current_frame_index);
 
 	public:
@@ -158,5 +165,7 @@ namespace Astan
 		std::vector<RenderMeshNode> m_PointLightsVisibleMeshNodes;
 		std::vector<RenderMeshNode> m_MainCameraVisibleMeshNodes;
 		RenderAxisNode              m_AxisNode;
+	private:
+		std::unordered_map<std::string, AxisAlignedBox> m_bounding_box_cache_map;
 	};
 }

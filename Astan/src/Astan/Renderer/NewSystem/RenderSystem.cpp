@@ -1,5 +1,6 @@
 #include "aspch.h"
 #include "RenderSystem.h"
+#include "Astan/Scene/Entity.h"
 #include <Astan/Core/AssetManager.h>
 namespace Astan
 {
@@ -85,199 +86,51 @@ namespace Astan
     // 全局管理？ Entity
 	void RenderSystem::ProcessSwapData()
 	{
-        struct GameObjectMeshDesc
-        {
-            std::string m_mesh_file;
-        };
-
-        struct GameObjectMaterialDesc
-        {
-            std::string m_base_color_texture_file;
-            std::string m_metallic_roughness_texture_file;
-            std::string m_normal_texture_file;
-            std::string m_occlusion_texture_file;
-            std::string m_emissive_texture_file;
-            bool        m_with_texture{ false };
-        }
-
-        struct Animation
-        {
-            bool m_with_animation;
-        };
-
-        SkeletonBindingDesc
-        std::string m_skeleton_binding_file;
-
-        SkeletonAnimationResult
-        Matrix4x4 m_matrix;
-
-
-        Gameobject
-        {
-             GameObjectMeshDesc      m_mesh_desc;
-        GameObjectMaterialDesc  m_material_desc;
-        GameObjectTransformDesc m_transform_desc;
-        bool                    m_with_animation {false};
-        SkeletonBindingDesc     m_skeleton_binding_desc;
-        SkeletonAnimationResult m_skeleton_animation_result;
-        }
-
-
-
-
-        return m_swap_data[m_render_swap_data_index]
-        struct LevelResourceDesc
-        {
-            LevelIBLResourceDesc          m_ibl_resource_desc;
-            LevelColorGradingResourceDesc m_color_grading_resource_desc;
-        };
-
-        struct RenderSwapData
-        {
-            std::optional<LevelResourceDesc>       m_level_resource_desc;
-            std::optional<GameObjectResourceDesc>  m_game_object_resource_desc;
-            std::optional<GameObjectResourceDesc>  m_game_object_to_delete;
-            std::optional<CameraSwapData>          m_camera_swap_data;
-            std::optional<ParticleSubmitRequest>   m_particle_submit_request;
-            std::optional<EmitterTickRequest>      m_emitter_tick_request;
-            std::optional<EmitterTransformRequest> m_emitter_transform_request;
-
-            void addDirtyGameObject(GameObjectDesc&& desc);
-            void addDeleteGameObject(GameObjectDesc&& desc);
-
-            void addNewParticleEmitter(ParticleEmitterDesc& desc);
-            void addTickParticleEmitter(ParticleEmitterID id);
-            void updateParticleTransform(ParticleEmitterTransformDesc& desc);
-        };
-        RenderSwapData& swap_data = m_SwapContext.getRenderSwapData();
 
         Ref<AssetManager> asset_manager = CreateRef<AssetManager>();
         AS_CORE_ASSERT(asset_manager);
 
-        // TODO: update global resources if needed
-        // TOD0: 更新全局资源
-        if (swap_data.m_level_resource_desc.has_value())
-        {
-            m_RenderResource->UploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
+        // TOD0
+        //if (swap_data.m_level_resource_desc.has_value())
+        //{
+        //    m_RenderResource->UploadGlobalRenderResource(m_RenderCommand, *swap_data.m_level_resource_desc);
 
-            // reset level resource swap data to a clean state
-            m_SwapContext.resetLevelRsourceSwapData();
-        }
+        //    // reset level resource swap data to a clean state
+        //    m_SwapContext.resetLevelRsourceSwapData();
+        //}
 
         // update game object if needed
         // 如果需要的话更新go
-        if (swap_data.m_game_object_resource_desc.has_value())
+        
+        auto view = m_RenderScene->GetAllEntitiesWith<RenderEntityComponent>();
+
+        for (auto e : view)
         {
-            while (!swap_data.m_game_object_resource_desc->isEmpty())
+            Scene* scene = std::addressof(*m_RenderScene);
+            Entity entity = { e,scene };
+            // Mesh
             {
-                GameObjectDesc gobject = swap_data.m_game_object_resource_desc->getNextProcessObject();
+                auto renderComponent = entity.GetComponent<RenderEntityComponent>();
+                // not load mesh
+                RenderMeshData meshData;
+                auto gameObjectComponent = entity.GetComponent<GameObjectMeshComponent>();
+                meshData = m_RenderResource->LoadMeshData(gameObjectComponent.m_mesh_file, renderComponent.m_BoundingBox);
+                // load mesh
+                renderComponent.m_BoundingBox = m_RenderResource->GetCachedBoudingBox(gameObjectComponent.m_mesh_file);
 
-                for (size_t part_index = 0; part_index < gobject.getObjectParts().size(); part_index++)
+                auto skeletonAnimationComponent = entity.GetComponent<SkeletonAnimationResultComponent>();
+                renderComponent.m_EnableVertexBlending = skeletonAnimationComponent.m_transforms.size() > 1;
+                renderComponent.m_JointMatrices.resize(skeletonAnimationComponent.m_transforms.size());
+                
+                for (size_t i = 0; i < skeletonAnimationComponent.m_transforms.size(); i++)
                 {
-                    const auto& game_object_part = gobject.getObjectParts()[part_index];
-                    GameObjectPartId part_id = { gobject.getId(), part_index };
-
-                    bool is_entity_in_scene = m_RenderScene->getInstanceIdAllocator().hasElement(part_id);
-
-                    RenderEntity render_entity;
-                    render_entity.m_instance_id =
-                        static_cast<uint32_t>(m_RenderScene->getInstanceIdAllocator().allocGuid(part_id));
-                    render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
-
-                    m_RenderScene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
-
-                    // mesh properties
-                    MeshSourceDesc mesh_source = { game_object_part.m_mesh_desc.m_mesh_file };
-                    bool           is_mesh_loaded = m_RenderScene->getMeshAssetIdAllocator().hasElement(mesh_source);
-
-                    RenderMeshData mesh_data;
-                    if (!is_mesh_loaded)
-                    {
-                        mesh_data = m_RenderScene->loadMeshData(mesh_source, render_entity.m_bounding_box);
-                    }
-                    else
-                    {
-                        render_entity.m_bounding_box = m_RenderScene->getCachedBoudingBox(mesh_source);
-                    }
-
-                    render_entity.m_mesh_asset_id = m_RenderScene->getMeshAssetIdAllocator().allocGuid(mesh_source);
-                    render_entity.m_enable_vertex_blending =
-                        game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
-                    render_entity.m_joint_matrices.resize(
-                        game_object_part.m_skeleton_animation_result.m_transforms.size());
-                    for (size_t i = 0; i < game_object_part.m_skeleton_animation_result.m_transforms.size(); ++i)
-                    {
-                        render_entity.m_joint_matrices[i] =
-                            game_object_part.m_skeleton_animation_result.m_transforms[i].m_matrix;
-                    }
-
-                    // material properties
-                    // 材质属性
-                    MaterialSourceDesc material_source;
-                    if (game_object_part.m_material_desc.m_with_texture)
-                    {
-                        material_source = { game_object_part.m_material_desc.m_base_color_texture_file,
-                                           game_object_part.m_material_desc.m_metallic_roughness_texture_file,
-                                           game_object_part.m_material_desc.m_normal_texture_file,
-                                           game_object_part.m_material_desc.m_occlusion_texture_file,
-                                           game_object_part.m_material_desc.m_emissive_texture_file };
-                    }
-                    else
-                    {
-                        // TODO: move to default material definition json file
-                        material_source = {
-                            asset_manager->getFullPath("asset/texture/default/albedo.jpg").generic_string(),
-                            asset_manager->getFullPath("asset/texture/default/mr.jpg").generic_string(),
-                            asset_manager->getFullPath("asset/texture/default/normal.jpg").generic_string(),
-                            "",
-                            "" };
-                    }
-                    bool is_material_loaded = m_RenderScene->getMaterialAssetdAllocator().hasElement(material_source);
-
-                    RenderMaterialData material_data;
-                    if (!is_material_loaded)
-                    {
-                        material_data = m_RenderScene->loadMaterialData(material_source);
-                    }
-
-                    render_entity.m_material_asset_id =
-                        m_RenderScene->getMaterialAssetdAllocator().allocGuid(material_source);
-
-                    // create game object on the graphics api side
-                    if (!is_mesh_loaded)
-                    {
-                        m_RenderScene->uploadGameObjectRenderResource(m_RenderCommand, render_entity, mesh_data);
-                    }
-
-                    if (!is_material_loaded)
-                    {
-                        m_RenderScene->uploadGameObjectRenderResource(m_RenderCommand, render_entity, material_data);
-                    }
-
-                    // add object to render scene if needed
-                    if (!is_entity_in_scene)
-                    {
-                        m_RenderScene->m_render_entities.push_back(render_entity);
-                    }
-                    else
-                    {
-                        for (auto& entity : m_RenderScene->m_render_entities)
-                        {
-                            if (entity.m_instance_id == render_entity.m_instance_id)
-                            {
-                                entity = render_entity;
-                                break;
-                            }
-                        }
-                    }
+                    renderComponent.m_JointMatrices[i] = skeletonAnimationComponent.m_transforms[i];
                 }
-                // after finished processing, pop this game object
-                swap_data.m_game_object_resource_desc->pop();
             }
+            // Material
 
-            // reset game object swap data to a clean state
-            m_SwapContext.resetGameObjectResourceSwapData();
         }
+
 
         // remove deleted objects
         if (swap_data.m_game_object_to_delete.has_value())
