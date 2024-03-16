@@ -8,23 +8,23 @@ namespace Astan
 	{
 	}
 
-	// ÐòÁÐ»¯ºó´¦Àí
+	// ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½
 	void RenderSystem::Initialize()
 	{
-		// ³õÊ¼»¯ RHI
+		// ï¿½ï¿½Ê¼ï¿½ï¿½ RHI
 		m_RenderCommand = CreateRef<VulkanRendererAPI>();
 		m_RenderCommand->Initialize();
 		
-		// ÉèÖÃÉãÏñÍ·
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
 		m_RenderCamera = CreateRef<EditorCamera>();
 
-		// ÉèÖÃäÖÈ¾³¡¾°
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½
 		m_RenderScene = CreateRef<Scene>();
 
-        // ÉèÖÃäÖÈ¾×ÊÔ´
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½Ô´
         m_RenderResource = CreateRef<RenderSource>();
 
-		// ³õÊ¼»¯äÖÈ¾¹ÜÏß
+		// ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½
 		m_RenderPipeline = CreateRef<RenderPipeline>();
 		m_RenderPipeline->m_RenderCommand = m_RenderCommand;
 		m_RenderPipeline->Initialize();
@@ -34,27 +34,27 @@ namespace Astan
 
 	void RenderSystem::Tick()
 	{
-		// ×ÊÔ´¸üÐÂ
+		// ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½
 		ProcessSwapData();
 
 		m_RenderCommand->PrepareContext();
 
         Scene* scene = std::addressof(*m_RenderScene);
 
-        // ÒÆµ½sceneÖÐ´¦Àí
+        // ï¿½Æµï¿½sceneï¿½Ð´ï¿½ï¿½ï¿½
         m_RenderResource->UpdatePerFrameBuffer(scene, m_RenderCamera);
 
-        // ÔÚscene³¡¾°ÖÐ´¦Àí
+        // ï¿½ï¿½sceneï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
         m_RenderResource->UpdateVisibleObjects(scene, m_RenderCamera);
 
         // prepare pipeline's render passes data
-        // ×¼±¸¹ÜÏßäÖÈ¾passesÊý¾Ý
+        // ×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾passesï¿½ï¿½ï¿½ï¿½
         m_RenderPipeline->PreparePassData(m_RenderResource);
 
         //g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
 
         // render one frame
-        // äÖÈ¾Ò»Ö¡
+        // ï¿½ï¿½È¾Ò»Ö¡
 
         m_RenderPipeline->ForwardRender(m_RenderCommand, m_RenderResource);
 #if 0
@@ -75,15 +75,15 @@ namespace Astan
 	}
 
     /***
-    1. ¸üÐÂÈ«¾Ö×ÊÔ´£ºÈç¹ûÓÐÈ«¾Ö×ÊÔ´ÐèÒª¸üÐÂ£¨ÀýÈç£¬³¡¾°ÖÐµÄ¹âÕÕ»òÎÆÀíµÈ£©£¬Ëü»áÉÏ´«ÕâÐ©×ÊÔ´µ½äÖÈ¾Ó²¼þ½Ó¿Ú£¨ÈçVulkan£©¡£
-    2. ¸üÐÂÓÎÏ·¶ÔÏó×ÊÔ´£º¶ÔÓÚÓÎÏ·ÖÐµÄÃ¿¸ö¶ÔÏó£¨Èç½ÇÉ«¡¢µÀ¾ßµÈ£©£¬Èç¹ûËüÃÇµÄ×ÊÔ´ÃèÊö·¢Éú±ä»¯£¬Õâ¸öº¯Êý»á´¦ÀíÕâÐ©±ä»¯£¬°üÀ¨¼ÓÔØÐÂµÄÍø¸ñÊý¾Ý¡¢²ÄÖÊÊý¾Ý£¬²¢½«ËüÃÇÉÏ´«µ½äÖÈ¾Ó²¼þ½Ó¿Ú¡£
-    3. É¾³ýÓÎÏ·¶ÔÏó£ºÈç¹ûÓÐÓÎÏ·¶ÔÏó±»±ê¼ÇÎªÉ¾³ý£¬¸Ãº¯Êý»á´ÓäÖÈ¾³¡¾°ÖÐÒÆ³ýÕâÐ©¶ÔÏó¡£
-    4. ´¦ÀíÉãÏñ»úÊý¾Ý½»»»£ºÈç¹ûÓÐ¹ØÉãÏñ»úµÄÊý¾Ý£¨ÈçÊÓ½Ç¡¢ÊÓÍ¼¾ØÕóµÈ£©ÐèÒª¸üÐÂ£¬¸Ãº¯Êý»á¸üÐÂäÖÈ¾ÏµÍ³ÖÐµÄÉãÏñ»ú¶ÔÏó¡£
-    5. ´¦ÀíÁ£×ÓÏµÍ³ÇëÇó£ºÈç¹ûÓÐÁ£×ÓÏµÍ³µÄ¸üÐÂÇëÇó£¬Èç´´½¨ÐÂµÄÁ£×Ó·¢ÉäÆ÷¡¢¸üÐÂÁ£×Ó·¢ÉäÆ÷µÄ×´Ì¬µÈ£¬¸Ãº¯Êý»á´¦ÀíÕâÐ©ÇëÇó¡£
-    6. ´¦ÀíÆäËûäÖÈ¾Êý¾Ý½»»»£º´ËÍâ£¬¸Ãº¯Êý»¹¸ºÔð´¦ÀíÆäËûÀàÐÍµÄÊý¾Ý½»»»£¬Èç¸üÐÂäÖÈ¾³¡¾°ÖÐµÄ¿É¼û¶ÔÏó¡¢×¼±¸äÖÈ¾¹ÜÏßµÄÊý¾ÝµÈ¡£
-    ÒÆµ½sceneÖÐ´¦Àí
+    1. ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½Òªï¿½ï¿½ï¿½Â£ï¿½ï¿½ï¿½ï¿½ç£¬ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ¹ï¿½ï¿½Õ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½Ð©ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½È¾Ó²ï¿½ï¿½ï¿½Ó¿Ú£ï¿½ï¿½ï¿½Vulkanï¿½ï¿½ï¿½ï¿½
+    2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½Ðµï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½ßµÈ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á´¦ï¿½ï¿½ï¿½ï¿½Ð©ï¿½ä»¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ï¿½ï¿½È¾Ó²ï¿½ï¿½ï¿½Ó¿Ú¡ï¿½
+    3. É¾ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ó±»±ï¿½ï¿½ÎªÉ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ³ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½ï¿½
+    4. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½Ó½Ç¡ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½È£ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Â£ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ÏµÍ³ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    5. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ç´´ï¿½ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½È£ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½á´¦ï¿½ï¿½ï¿½ï¿½Ð©ï¿½ï¿½ï¿½ï¿½
+    6. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â£¬ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½Ý½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ¿É¼ï¿½ï¿½ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ßµï¿½ï¿½ï¿½ï¿½ÝµÈ¡ï¿½
+    ï¿½Æµï¿½sceneï¿½Ð´ï¿½ï¿½ï¿½
     ***/
-    // È«¾Ö¹ÜÀí£¿ Entity
+    // È«ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ Entity
 	void RenderSystem::ProcessSwapData()
 	{
 
@@ -100,7 +100,7 @@ namespace Astan
         //}
 
         // update game object if needed
-        // Èç¹ûÐèÒªµÄ»°¸üÐÂgo
+        // ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½go
         
         auto view = m_RenderScene->GetAllEntitiesWith<RenderEntityComponent>();
 
@@ -108,95 +108,59 @@ namespace Astan
         {
             Scene* scene = std::addressof(*m_RenderScene);
             Entity entity = { e,scene };
+            auto renderComponent = entity.GetComponent<RenderEntityComponent>();
             // Mesh
-            {
-                auto renderComponent = entity.GetComponent<RenderEntityComponent>();
-                // not load mesh
-                RenderMeshData meshData;
-                auto gameObjectComponent = entity.GetComponent<GameObjectMeshComponent>();
-                meshData = m_RenderResource->LoadMeshData(gameObjectComponent.m_mesh_file, renderComponent.m_BoundingBox);
-                // load mesh
-                renderComponent.m_BoundingBox = m_RenderResource->GetCachedBoudingBox(gameObjectComponent.m_mesh_file);
+            // not load mesh
+            RenderMeshData meshData;
+            auto gameObjectComponent = entity.GetComponent<GameObjectMeshComponent>();
+            meshData = m_RenderResource->LoadMeshData(gameObjectComponent.m_mesh_file, renderComponent.m_BoundingBox);
+            // load mesh
+            renderComponent.m_BoundingBox = m_RenderResource->GetCachedBoudingBox(gameObjectComponent.m_mesh_file);
 
-                auto skeletonAnimationComponent = entity.GetComponent<SkeletonAnimationResultComponent>();
-                renderComponent.m_EnableVertexBlending = skeletonAnimationComponent.m_transforms.size() > 1;
-                renderComponent.m_JointMatrices.resize(skeletonAnimationComponent.m_transforms.size());
-                
-                for (size_t i = 0; i < skeletonAnimationComponent.m_transforms.size(); i++)
-                {
-                    renderComponent.m_JointMatrices[i] = skeletonAnimationComponent.m_transforms[i];
-                }
+            auto skeletonAnimationComponent = entity.GetComponent<SkeletonAnimationResultComponent>();
+            renderComponent.m_EnableVertexBlending = skeletonAnimationComponent.m_transforms.size() > 1;
+            renderComponent.m_JointMatrices.resize(skeletonAnimationComponent.m_transforms.size());
+            
+            for (size_t i = 0; i < skeletonAnimationComponent.m_transforms.size(); i++)
+            {
+                renderComponent.m_JointMatrices[i] = skeletonAnimationComponent.m_transforms[i];
             }
             // Material
-
-        }
-
-
-        // remove deleted objects
-        if (swap_data.m_game_object_to_delete.has_value())
-        {
-            while (!swap_data.m_game_object_to_delete->isEmpty())
+            
+            MaterialSourceDesc materialSourceDesc;
+            auto materialComponent = entity.GetComponent<GameObjectMaterialComponent>();
+            if(materialComponent.m_with_texture)
             {
-                GameObjectDesc gobject = swap_data.m_game_object_to_delete->getNextProcessObject();
-                m_RenderScene->deleteEntityByGObjectID(gobject.getId());
-                swap_data.m_game_object_to_delete->pop();
+                materialSourceDesc =
+                {
+                    materialComponent.m_base_color_texture_file,
+                    materialComponent.m_metallic_roughness_texture_file,
+                    materialComponent.m_normal_texture_file,
+                    materialComponent.m_occlusion_texture_file,
+                    materialComponent.m_emissive_texture_file
+                };
             }
-
-            m_SwapContext.resetGameObjectToDelete();
-        }
-
-        // process camera swap data
-        if (swap_data.m_camera_swap_data.has_value())
-        {
-            if (swap_data.m_camera_swap_data->m_fov_x.has_value())
+            else
             {
-                m_render_camera->setFOVx(*swap_data.m_camera_swap_data->m_fov_x);
+                materialSourceDesc = 
+                {
+                    asset_manager->getFullPath("asset/texture/default/albedo.jpg").generic_string(),
+                    asset_manager->getFullPath("asset/texture/default/mr.jpg").generic_string(),
+                    asset_manager->getFullPath("asset/texture/default/normal.jpg").generic_string(),
+                    "",
+                    ""
+                };
             }
+            // not load
+            RenderMaterialData materialData;
+            materialData = m_RenderResource->LoadMaterialData(materialSourceDesc);
 
-            if (swap_data.m_camera_swap_data->m_view_matrix.has_value())
-            {
-                m_render_camera->setMainViewMatrix(*swap_data.m_camera_swap_data->m_view_matrix);
-            }
+            // renderComponent.m_MaterialAssetId = 
+            m_RenderResource->UploadGameObjectRenderResource(m_RenderCommand,renderComponent,meshData);
 
-            if (swap_data.m_camera_swap_data->m_camera_type.has_value())
-            {
-                m_render_camera->setCurrentCameraType(*swap_data.m_camera_swap_data->m_camera_type);
-            }
+            m_RenderResource->UploadGameObjectRenderResource(m_RenderCommand,renderComponent,materialData);
 
-            m_SwapContext.resetCameraSwapData();
-        }
-#if 0
-        if (swap_data.m_particle_submit_request.has_value())
-        {
-            std::shared_ptr<ParticlePass> particle_pass =
-                std::static_pointer_cast<ParticlePass>(m_render_pipeline->m_particle_pass);
-
-            int emitter_count = swap_data.m_particle_submit_request->getEmitterCount();
-            particle_pass->setEmitterCount(emitter_count);
-
-            for (int index = 0; index < emitter_count; ++index)
-            {
-                const ParticleEmitterDesc& desc = swap_data.m_particle_submit_request->getEmitterDesc(index);
-                particle_pass->createEmitter(index, desc);
-            }
-
-            particle_pass->initializeEmitters();
-
-            m_SwapContext.resetPartilceBatchSwapData();
-        }
-        if (swap_data.m_emitter_tick_request.has_value())
-        {
-            std::static_pointer_cast<ParticlePass>(m_render_pipeline->m_particle_pass)
-                ->setTickIndices(swap_data.m_emitter_tick_request->m_emitter_indices);
-            m_SwapContext.resetEmitterTickSwapData();
         }
 
-        if (swap_data.m_emitter_transform_request.has_value())
-        {
-            std::static_pointer_cast<ParticlePass>(m_render_pipeline->m_particle_pass)
-                ->setTransformIndices(swap_data.m_emitter_transform_request->m_transform_descs);
-            m_SwapContext.resetEmitterTransformSwapData();
-        }
-#endif
 	}
 }

@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <Astan/Scene/Scene.h>
-
+#include "RenderMesh.h"
 namespace Astan
 {
     void DirectionalLightShadowPass::Initialize(const RenderPassInitInfo* init_info)
@@ -244,8 +244,8 @@ namespace Astan
         RHIPipelineShaderStageCreateInfo shader_stages[] = { vert_pipeline_shader_stage_create_info,
                                                            frag_pipeline_shader_stage_create_info };
 
-        auto                                 vertex_binding_descriptions = MeshVertex::getBindingDescriptions();
-        auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
+        auto                                 vertex_binding_descriptions = MeshVertex::GetBindingDescriptions();
+        auto                                 vertex_attribute_descriptions = MeshVertex::GetAttributeDescriptions();
         RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
         vertex_input_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
@@ -353,7 +353,7 @@ namespace Astan
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.sType =
             RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.pNext = NULL;
-        mesh_directional_light_shadow_global_descriptor_set_alloc_info.descriptorPool = m_RenderCommand->getDescriptorPoor();
+        mesh_directional_light_shadow_global_descriptor_set_alloc_info.descriptorPool = m_RenderCommand->GetDescriptorPoor();
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_directional_light_shadow_global_descriptor_set_alloc_info.pSetLayouts = &m_DescriptorInfos[0].layout;
 

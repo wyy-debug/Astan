@@ -25,8 +25,8 @@ namespace Astan
 
 		struct VulkanMeshVertexJointBinding
 		{
-			int indices[4];
-			glm::vec4 weight;
+			glm::ivec4 indices;
+			glm::vec4 weights;
 		};
 
 		static std::array<RHIVertexInputBindingDescription, 3> GetBindingDescriptions()

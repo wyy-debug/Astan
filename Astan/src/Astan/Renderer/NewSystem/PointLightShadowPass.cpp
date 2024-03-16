@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include <Astan/Scene/Scene.h>
-
+#include "RenderMesh.h"
 namespace Astan
 {
     void PointLightShadowPass::Initialize(const RenderPassInitInfo* init_info)
@@ -42,7 +42,7 @@ namespace Astan
 
         // color
         m_FrameBuffer.attachments[0].format = RHI_FORMAT_R32_SFLOAT;
-        m_RenderCommand->createImage(s_point_light_shadow_map_dimension,
+        m_RenderCommand->CreateImage(s_point_light_shadow_map_dimension,
             s_point_light_shadow_map_dimension,
             m_FrameBuffer.attachments[0].format,
             RHI_IMAGE_TILING_OPTIMAL,
@@ -53,7 +53,7 @@ namespace Astan
             0,
             2 * s_max_point_light_count,
             1);
-        m_RenderCommand->createImageView(m_FrameBuffer.attachments[0].image,
+        m_RenderCommand->CreateImageView(m_FrameBuffer.attachments[0].image,
             m_FrameBuffer.attachments[0].format,
             RHI_IMAGE_ASPECT_COLOR_BIT,
             RHI_IMAGE_VIEW_TYPE_2D_ARRAY,
@@ -62,8 +62,8 @@ namespace Astan
             m_FrameBuffer.attachments[0].view);
 
         // depth
-        m_FrameBuffer.attachments[1].format = m_RenderCommand->getDepthImageInfo().depth_image_format;
-        m_RenderCommand->createImage(s_point_light_shadow_map_dimension,
+        m_FrameBuffer.attachments[1].format = m_RenderCommand->GetDepthImageInfo().depth_image_format;
+        m_RenderCommand->CreateImage(s_point_light_shadow_map_dimension,
             s_point_light_shadow_map_dimension,
             m_FrameBuffer.attachments[1].format,
             RHI_IMAGE_TILING_OPTIMAL,
@@ -74,7 +74,7 @@ namespace Astan
             0,
             2 * s_max_point_light_count,
             1);
-        m_RenderCommand->createImageView(m_FrameBuffer.attachments[1].image,
+        m_RenderCommand->CreateImageView(m_FrameBuffer.attachments[1].image,
             m_FrameBuffer.attachments[1].format,
             RHI_IMAGE_ASPECT_DEPTH_BIT,
             RHI_IMAGE_VIEW_TYPE_2D_ARRAY,
@@ -142,7 +142,7 @@ namespace Astan
         renderpass_create_info.dependencyCount = (sizeof(dependencies) / sizeof(dependencies[0]));
         renderpass_create_info.pDependencies = dependencies;
 
-        if (m_RenderCommand->createRenderPass(&renderpass_create_info, m_FrameBuffer.render_pass) != RHI_SUCCESS)
+        if (m_RenderCommand->CreateRenderPass(&renderpass_create_info, m_FrameBuffer.render_pass) != RHI_SUCCESS)
         {
             throw std::runtime_error("create point light shadow render pass");
         }
@@ -161,7 +161,7 @@ namespace Astan
         framebuffer_create_info.height = s_point_light_shadow_map_dimension;
         framebuffer_create_info.layers = 2 * s_max_point_light_count;
 
-        if (m_RenderCommand->createFramebuffer(&framebuffer_create_info, m_FrameBuffer.framebuffer) != RHI_SUCCESS)
+        if (m_RenderCommand->CreateFramebuffer(&framebuffer_create_info, m_FrameBuffer.framebuffer) != RHI_SUCCESS)
         {
             throw std::runtime_error("create point light shadow framebuffer");
         }
@@ -209,7 +209,7 @@ namespace Astan
                 sizeof(mesh_point_light_shadow_global_layout_bindings[0]));
         mesh_point_light_shadow_global_layout_create_info.pBindings = mesh_point_light_shadow_global_layout_bindings;
 
-        if (RHI_SUCCESS != m_RenderCommand->createDescriptorSetLayout(&mesh_point_light_shadow_global_layout_create_info, m_DescriptorInfos[0].layout))
+        if (RHI_SUCCESS != m_RenderCommand->CreateDescriptorSetLayout(&mesh_point_light_shadow_global_layout_create_info, m_DescriptorInfos[0].layout))
         {
             throw std::runtime_error("create mesh point light shadow global layout");
         }
@@ -227,17 +227,17 @@ namespace Astan
         pipeline_layout_create_info.setLayoutCount = (sizeof(descriptorset_layouts) / sizeof(descriptorset_layouts[0]));
         pipeline_layout_create_info.pSetLayouts = descriptorset_layouts;
 
-        if (m_RenderCommand->createPipelineLayout(&pipeline_layout_create_info, m_RenderPipelines[0].layout) != RHI_SUCCESS)
+        if (m_RenderCommand->CreatePipelineLayout(&pipeline_layout_create_info, m_RenderPipelines[0].layout) != RHI_SUCCESS)
         {
             throw std::runtime_error("create mesh point light shadow pipeline layout");
         }
 
         RHIShader* vert_shader_module =
-            m_RenderCommand->createShaderModule(MESH_POINT_LIGHT_SHADOW_VERT);
+            m_RenderCommand->CreateShaderModule(MESH_POINT_LIGHT_SHADOW_VERT);
         RHIShader* geom_shader_module =
-            m_RenderCommand->createShaderModule(MESH_POINT_LIGHT_SHADOW_GEOM);
+            m_RenderCommand->CreateShaderModule(MESH_POINT_LIGHT_SHADOW_GEOM);
         RHIShader* frag_shader_module =
-            m_RenderCommand->createShaderModule(MESH_POINT_LIGHT_SHADOW_FRAG);
+            m_RenderCommand->CreateShaderModule(MESH_POINT_LIGHT_SHADOW_FRAG);
 
         RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info{};
         vert_pipeline_shader_stage_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -261,8 +261,8 @@ namespace Astan
                                                            geom_pipeline_shader_stage_create_info,
                                                            frag_pipeline_shader_stage_create_info };
 
-        auto                                 vertex_binding_descriptions = MeshVertex::getBindingDescriptions();
-        auto                                 vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
+        auto                                 vertex_binding_descriptions = MeshVertex::GetBindingDescriptions();
+        auto                                 vertex_attribute_descriptions = MeshVertex::GetAttributeDescriptions();
         RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
         vertex_input_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
@@ -281,9 +281,9 @@ namespace Astan
         RHIPipelineViewportStateCreateInfo viewport_state_create_info{};
         viewport_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewport_state_create_info.viewportCount = 1;
-        viewport_state_create_info.pViewports = m_RenderCommand->getSwapchainInfo().viewport;
+        viewport_state_create_info.pViewports = m_RenderCommand->GetSwapchainInfo().viewport;
         viewport_state_create_info.scissorCount = 1;
-        viewport_state_create_info.pScissors = m_RenderCommand->getSwapchainInfo().scissor;
+        viewport_state_create_info.pScissors = m_RenderCommand->GetSwapchainInfo().scissor;
 
         RHIPipelineRasterizationStateCreateInfo rasterization_state_create_info{};
         rasterization_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -356,25 +356,25 @@ namespace Astan
         pipelineInfo.basePipelineHandle = RHI_NULL_HANDLE;
         pipelineInfo.pDynamicState = &dynamic_state_create_info;
 
-        if (m_RenderCommand->createGraphicsPipelines(RHI_NULL_HANDLE, 1, &pipelineInfo, m_RenderPipelines[0].pipeline) != RHI_SUCCESS)
+        if (m_RenderCommand->CreateGraphicsPipelines(RHI_NULL_HANDLE, 1, &pipelineInfo, m_RenderPipelines[0].pipeline) != RHI_SUCCESS)
         {
             throw std::runtime_error("create mesh point light shadow graphics pipeline");
         }
 
-        m_RenderCommand->destroyShaderModule(vert_shader_module);
-        m_RenderCommand->destroyShaderModule(geom_shader_module);
-        m_RenderCommand->destroyShaderModule(frag_shader_module);
+        m_RenderCommand->DestroyShaderModule(vert_shader_module);
+        m_RenderCommand->DestroyShaderModule(geom_shader_module);
+        m_RenderCommand->DestroyShaderModule(frag_shader_module);
     }
     void PointLightShadowPass::SetupDescriptorSet()
     {
         RHIDescriptorSetAllocateInfo mesh_point_light_shadow_global_descriptor_set_alloc_info;
         mesh_point_light_shadow_global_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         mesh_point_light_shadow_global_descriptor_set_alloc_info.pNext = NULL;
-        mesh_point_light_shadow_global_descriptor_set_alloc_info.descriptorPool = m_RenderCommand->getDescriptorPoor();
+        mesh_point_light_shadow_global_descriptor_set_alloc_info.descriptorPool = m_RenderCommand->GetDescriptorPoor();
         mesh_point_light_shadow_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         mesh_point_light_shadow_global_descriptor_set_alloc_info.pSetLayouts = &m_DescriptorInfos[0].layout;
 
-        if (RHI_SUCCESS != m_RenderCommand->allocateDescriptorSets(&mesh_point_light_shadow_global_descriptor_set_alloc_info, m_DescriptorInfos[0].descriptor_set))
+        if (RHI_SUCCESS != m_RenderCommand->AllocateDescriptorSets(&mesh_point_light_shadow_global_descriptor_set_alloc_info, m_DescriptorInfos[0].descriptor_set))
         {
             throw std::runtime_error("allocate mesh point light shadow global descriptor set");
         }

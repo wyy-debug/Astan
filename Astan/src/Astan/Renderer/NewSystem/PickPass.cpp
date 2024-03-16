@@ -4,6 +4,7 @@
 #include <map>
 #include <stdexcept>
 #include <Astan/Scene/Scene.h>
+#include "RenderMesh.h"
 
 namespace Astan
 {
@@ -211,8 +212,8 @@ namespace Astan
         RHIPipelineShaderStageCreateInfo shader_stages[] = { vert_pipeline_shader_stage_create_info,
                                                            frag_pipeline_shader_stage_create_info };
 
-        auto vertex_binding_descriptions = MeshVertex::getBindingDescriptions();
-        auto vertex_attribute_descriptions = MeshVertex::getAttributeDescriptions();
+        auto vertex_binding_descriptions = MeshVertex::GetBindingDescriptions();
+        auto vertex_attribute_descriptions = MeshVertex::GetAttributeDescriptions();
         RHIPipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
         vertex_input_state_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertex_input_state_create_info.vertexBindingDescriptionCount = 1;

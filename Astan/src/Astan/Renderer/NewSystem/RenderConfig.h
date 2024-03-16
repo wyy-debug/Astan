@@ -170,57 +170,57 @@ namespace Astan
     // mesh
     struct VulkanMesh
     {
-        bool enable_vertex_blending;
+         bool enable_vertex_blending;
 
         uint32_t mesh_vertex_count;
 
-        RHIBuffer* mesh_vertex_position_buffer;
+        VkBuffer      mesh_vertex_position_buffer;
         VmaAllocation mesh_vertex_position_buffer_allocation;
 
-        RHIBuffer* mesh_vertex_varying_enable_blending_buffer;
+        VkBuffer      mesh_vertex_varying_enable_blending_buffer;
         VmaAllocation mesh_vertex_varying_enable_blending_buffer_allocation;
 
-        RHIBuffer* mesh_vertex_joint_binding_buffer;
+        VkBuffer      mesh_vertex_joint_binding_buffer;
         VmaAllocation mesh_vertex_joint_binding_buffer_allocation;
 
-        RHIDescriptorSet* mesh_vertex_blending_descriptor_set;
+        VkDescriptorSet mesh_vertex_blending_descriptor_set;
 
-        RHIBuffer* mesh_vertex_varying_buffer;
+        VkBuffer      mesh_vertex_varying_buffer;
         VmaAllocation mesh_vertex_varying_buffer_allocation;
 
         uint32_t mesh_index_count;
 
-        RHIBuffer* mesh_index_buffer;
+        VkBuffer      mesh_index_buffer;
         VmaAllocation mesh_index_buffer_allocation;
     };
 
     // material
-    struct VulkanPBRMaterial
+   struct VulkanPBRMaterial
     {
-        RHIImage* base_color_texture_image;
-        RHIImageView* base_color_image_view;
-        VmaAllocation   base_color_image_allocation;
+        VkImage       base_color_texture_image = VK_NULL_HANDLE;
+        VkImageView   base_color_image_view    = VK_NULL_HANDLE;
+        VmaAllocation base_color_image_allocation;
 
-        RHIImage* metallic_roughness_texture_image;
-        RHIImageView* metallic_roughness_image_view;
-        VmaAllocation   metallic_roughness_image_allocation;
+        VkImage       metallic_roughness_texture_image = VK_NULL_HANDLE;
+        VkImageView   metallic_roughness_image_view    = VK_NULL_HANDLE;
+        VmaAllocation metallic_roughness_image_allocation;
 
-        RHIImage* normal_texture_image;
-        RHIImageView* normal_image_view;
-        VmaAllocation   normal_image_allocation;
+        VkImage       normal_texture_image = VK_NULL_HANDLE;
+        VkImageView   normal_image_view    = VK_NULL_HANDLE;
+        VmaAllocation normal_image_allocation;
 
-        RHIImage* occlusion_texture_image;
-        RHIImageView* occlusion_image_view;
-        VmaAllocation   occlusion_image_allocation;
+        VkImage       occlusion_texture_image = VK_NULL_HANDLE;
+        VkImageView   occlusion_image_view    = VK_NULL_HANDLE;
+        VmaAllocation occlusion_image_allocation;
 
-        RHIImage* emissive_texture_image;
-        RHIImageView* emissive_image_view;
-        VmaAllocation   emissive_image_allocation;
+        VkImage       emissive_texture_image = VK_NULL_HANDLE;
+        VkImageView   emissive_image_view    = VK_NULL_HANDLE;
+        VmaAllocation emissive_image_allocation;
 
-        RHIBuffer* material_uniform_buffer;
-        VmaAllocation   material_uniform_buffer_allocation;
+        VkBuffer      material_uniform_buffer;
+        VmaAllocation material_uniform_buffer_allocation;
 
-        RHIDescriptorSet* material_descriptor_set;
+        VkDescriptorSet material_descriptor_set;
     };
 
     // nodes

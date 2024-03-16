@@ -1,5 +1,6 @@
 #pragma once
 #include "Platform/Vulkan/VulkanRendererAPI.h"
+#include "RenderSource.h"
 namespace Astan
 { 
 	enum
@@ -68,15 +69,21 @@ namespace Astan
 			RHIPipelineLayout* layout;
 			RHIPipeline* pipeline;
 		};
+	
+
+	public:
+		
 		virtual void Initialize(const RenderPassInitInfo* init_info);
 		virtual void Draw();
 		virtual void SetCommonInfo(Ref<VulkanRendererAPI> renderCommand);
 
-	public:
 		GlobalRenderResource* m_global_render_resource{ nullptr };
 		Framebuffer m_FrameBuffer;
 		std::vector<Descriptor>  m_DescriptorInfos;
 		std::vector<RenderPipelineBase> m_RenderPipelines;
+
+
+
 	
 	protected:
 		Ref<VulkanRendererAPI> m_RenderCommand;

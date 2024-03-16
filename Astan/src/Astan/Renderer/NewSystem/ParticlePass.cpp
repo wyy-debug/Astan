@@ -1,6 +1,7 @@
 #include "aspch.h"
 #include "ParticlePass.h"
 #include <fstream>
+#include <random>
 
 namespace Astan
 {

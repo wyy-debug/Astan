@@ -4,6 +4,7 @@
 #include "GlobalRender.h"
 #include "RenderConfig.h"
 #include <Astan/Scene/Component.h>
+#include "Astan/Scene/Scene.h"
 
 namespace Astan
 {
@@ -120,6 +121,10 @@ namespace Astan
 		void UpdateVisibleObjectsParticle();
 		void UploadGlobalRenderResource(Ref<VulkanRendererAPI> rhi, LevelResourceDesc level_resource_desc);
 		void UpdatePerFrameBuffer(Scene* scene,Ref<EditorCamera> camera);
+		void UploadGameObjectRenderResource(Ref<VulkanRendererAPI> rhi, RenderEntityComponent entity, RenderMeshData meshData,RenderMaterialData materialData);
+		void UploadGameObjectRenderResource(Ref<VulkanRendererAPI> rhi, RenderEntityComponent entity, RenderMeshData data);
+		void UploadGameObjectRenderResource(Ref<VulkanRendererAPI> rhi, RenderEntityComponent entity, RenderMaterialData data);
+		
 
 		VulkanMesh& GetEntityMesh(RenderEntityComponent entity);
 		VulkanPBRMaterial& GetEntityMaterial(RenderEntityComponent entity);
@@ -127,12 +132,16 @@ namespace Astan
 		void CreateAndMapStorageBuffer(Ref<VulkanRendererAPI> rhi);
 		void CreateIBLSamplers(Ref<VulkanRendererAPI> rhi);
 		void CreateIBLTextures(Ref<VulkanRendererAPI> rhi, std::array<Ref<TextureData>, 6> irradiance_maps, std::array<Ref<TextureData>, 6> specular_maps);
+		
+		
 		Ref<TextureData> LoadTextureHDR(std::string file, int desired_channels = 4);
 		Ref<TextureData> LoadTexture(std::string file, bool is_srgb = false);
 
+		VulkanMesh& GetorCreateVulkanMesh(Ref<VulkanRendererAPI> rhi, RenderEntityComponent entity, RenderMeshData data);
+		VulkanPBRMaterial& GetorCreateVulkanMesh(Ref<VulkanRendererAPI> rhi, RenderEntityComponent entity, RenderMaterialData data);
 
 		RenderMeshData LoadMeshData(const std::string meshfilepath, AxisAlignedBox& boundingBox);
-
+		RenderMaterialData LoadMaterialData(const MaterialSourceDesc& source);
 
 		AxisAlignedBox GetCachedBoudingBox(const std::string meshfilepath) const;
 
@@ -165,7 +174,40 @@ namespace Astan
 		std::vector<RenderMeshNode> m_PointLightsVisibleMeshNodes;
 		std::vector<RenderMeshNode> m_MainCameraVisibleMeshNodes;
 		RenderAxisNode              m_AxisNode;
+		
+		// descriptor set layout in main camera pass will be used when uploading resource
+		const VkDescriptorSetLayout* m_mesh_descriptor_set_layout{ nullptr };
+		const VkDescriptorSetLayout* m_material_descriptor_set_layout{ nullptr };
+
 	private:
 		std::unordered_map<std::string, AxisAlignedBox> m_bounding_box_cache_map;
+
+	private:
+		void UpdateMeshData(Ref<VulkanRendererAPI>                          rhi,
+			bool                                          enable_vertex_blending,
+			uint32_t                                      index_buffer_size,
+			void* index_buffer_data,
+			uint32_t                                      vertex_buffer_size,
+			struct MeshVertexDataDefinition const* vertex_buffer_data,
+			uint32_t                                      joint_binding_buffer_size,
+			struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
+			VulkanMesh& now_mesh);
+		void UpdateVertexBuffer(Ref<VulkanRendererAPI>                          rhi,
+			bool                                          enable_vertex_blending,
+			uint32_t                                      vertex_buffer_size,
+			struct MeshVertexDataDefinition const* vertex_buffer_data,
+			uint32_t                                      joint_binding_buffer_size,
+			struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
+			uint32_t                                      index_buffer_size,
+			uint16_t* index_buffer_data,
+			VulkanMesh& now_mesh);
+		void UpdateIndexBuffer(Ref<VulkanRendererAPI> rhi,
+			uint32_t             index_buffer_size,
+			void* index_buffer_data,
+			VulkanMesh& now_mesh);
+		void UpdateTextureImageData(Ref<VulkanRendererAPI> rhi, const TextureDataToUpdate& texture_data);
+
+
+		StaticMeshData loadStaticMesh(std::string mesh_file, AxisAlignedBox& bounding_box);
 	};
 }

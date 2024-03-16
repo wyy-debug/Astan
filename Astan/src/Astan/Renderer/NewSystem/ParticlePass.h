@@ -2,7 +2,7 @@
 #include "RenderPass.h"
 #include <Astan/Scene/Scene.h>
 #include "RenderSource.h"
-
+#include <glm/glm.hpp>
 namespace Astan
 {
     struct ParticlePassInitInfo : RenderPass::RenderPassInitInfo
@@ -154,22 +154,22 @@ namespace Astan
             int     xemit_count;
             float   max_life;
             float   time_step;
-            Vector4 pack; // randomness 3 | frame index 1
-            Vector3 gravity;
+            glm::vec4 pack; // randomness 3 | frame index 1
+            glm::vec3 gravity;
             float   padding;
             uvec4   viewport; // x, y, width, height
-            Vector4 extent;   // width, height, near, far
+            glm::vec4 extent;   // width, height, near, far
         } m_ubo;
 
         struct Particle
         {
-            Vector3 pos;
+            glm::vec3 pos;
             float   life;
-            Vector3 vel;
+            glm::vec3 vel;
             float   size_x;
-            Vector3 acc;
+            glm::vec3 acc;
             float   size_y;
-            Vector4 color;
+            glm::vec4 color;
         };
 
         // indirect dispath parameter offset

@@ -1117,7 +1117,6 @@ namespace Astan
         RHIFormat        depth_image_format;
     };
 
-
     struct QueueFamilyIndices
     {
         std::optional<uint32_t> graphics_family;
@@ -1126,4 +1125,12 @@ namespace Astan
 
         bool isComplete() { return graphics_family.has_value() && present_family.has_value() && m_compute_family.has_value();; }
     };
+
+    struct SwapChainSupportDetails
+    {
+        VkSurfaceCapabilitiesKHR        capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR>   presentModes;
+    };
+
 }
