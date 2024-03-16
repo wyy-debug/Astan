@@ -1,6 +1,12 @@
 #pragma once
 #include "RenderPass.h"
 #include "RenderSource.h"
+#include <Astan/Renderer/NewSystem/ColorGradingPass.h>
+#include <Astan/Renderer/NewSystem/FxaaPass.h>
+#include <Astan/Renderer/NewSystem/ToneMappingPass.h>
+#include <Astan/Renderer/NewSystem/UIPass.h>
+#include <Astan/Renderer/NewSystem/CombineUIPass.h>
+#include <Astan/Renderer/NewSystem/ParticlePass.h>
 
 namespace Astan
 {

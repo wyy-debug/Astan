@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <Astan/Scene/Scene.h>
 #include "RenderMesh.h"
+#include <Astan/Renderer/NewSystem/shader/mesh_vert.h>
+#include <Astan/Renderer/NewSystem/RenderUtils.h>
 
 namespace Astan
 {
@@ -193,9 +195,9 @@ namespace Astan
         }
 
         RHIShader* vert_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_INEFFICIENT_PICK_VERT);
+            m_RenderCommand->CreateShaderModule(MESH_VERT);
         RHIShader* frag_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_INEFFICIENT_PICK_FRAG);
+            m_RenderCommand->CreateShaderModule(MESH_VERT);
 
         RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info{};
         vert_pipeline_shader_stage_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -443,7 +445,7 @@ namespace Astan
 
         // reset storage buffer offset
         m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_RenderCommand->GetCurrentFrameIndex()] =
-            m_global_render_resource->_storage_buffer._global_upload_ringbuffers_Begin[m_RenderCommand->GetCurrentFrameIndex()];
+            m_global_render_resource->_storage_buffer._global_upload_ringbuffers_begin[m_RenderCommand->GetCurrentFrameIndex()];
 
         m_RenderCommand->WaitForFences();
 
@@ -521,7 +523,7 @@ namespace Astan
         assert(m_global_render_resource->_storage_buffer
             ._global_upload_ringbuffers_end[m_RenderCommand->GetCurrentFrameIndex()] <=
             (m_global_render_resource->_storage_buffer
-                ._global_upload_ringbuffers_Begin[m_RenderCommand->GetCurrentFrameIndex()] +
+                ._global_upload_ringbuffers_begin[m_RenderCommand->GetCurrentFrameIndex()] +
                 m_global_render_resource->_storage_buffer
                 ._global_upload_ringbuffers_size[m_RenderCommand->GetCurrentFrameIndex()]));
 
@@ -592,7 +594,7 @@ namespace Astan
                         assert(m_global_render_resource->_storage_buffer
                             ._global_upload_ringbuffers_end[m_RenderCommand->GetCurrentFrameIndex()] <=
                             (m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_Begin[m_RenderCommand->GetCurrentFrameIndex()] +
+                                ._global_upload_ringbuffers_begin[m_RenderCommand->GetCurrentFrameIndex()] +
                                 m_global_render_resource->_storage_buffer
                                 ._global_upload_ringbuffers_size[m_RenderCommand->GetCurrentFrameIndex()]));
 
@@ -624,7 +626,7 @@ namespace Astan
                             assert(m_global_render_resource->_storage_buffer
                                 ._global_upload_ringbuffers_end[m_RenderCommand->GetCurrentFrameIndex()] <=
                                 (m_global_render_resource->_storage_buffer
-                                    ._global_upload_ringbuffers_Begin[m_RenderCommand->GetCurrentFrameIndex()] +
+                                    ._global_upload_ringbuffers_begin[m_RenderCommand->GetCurrentFrameIndex()] +
                                     m_global_render_resource->_storage_buffer
                                     ._global_upload_ringbuffers_size[m_RenderCommand->GetCurrentFrameIndex()]));
 

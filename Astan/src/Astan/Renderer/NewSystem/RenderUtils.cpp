@@ -347,18 +347,18 @@ namespace Astan
                                        directionalLight.Direction.y * box_extents.length(),
                                        directionalLight.Direction.z * box_extents.length()) ;
             glm::vec3 center = box_center;
-            light_view = Math::makeLookAtMatrix(eye, center, glm::vec3(0.0, 0.0, 1.0));
+            //light_view = Math::makeLookAtMatrix(eye, center, glm::vec3(0.0, 0.0, 1.0));
 
             BoundingBox frustum_bounding_box_light_view = BoundingBoxTransform(frustum_bounding_box, light_view);
             BoundingBox scene_bounding_box_light_view = BoundingBoxTransform(scene_bounding_box, light_view);
-            light_proj = Math::makeOrthographicProjectionMatrix01(
-                std::max(frustum_bounding_box_light_view.min_bound.x, scene_bounding_box_light_view.min_bound.x),
-                std::min(frustum_bounding_box_light_view.max_bound.x, scene_bounding_box_light_view.max_bound.x),
-                std::max(frustum_bounding_box_light_view.min_bound.y, scene_bounding_box_light_view.min_bound.y),
-                std::min(frustum_bounding_box_light_view.max_bound.y, scene_bounding_box_light_view.max_bound.y),
-                -scene_bounding_box_light_view.max_bound
-                .z, // the objects which are nearer than the frustum bounding box may caster shadow as well
-                -std::max(frustum_bounding_box_light_view.min_bound.z, scene_bounding_box_light_view.min_bound.z));
+            //light_proj = Math::makeOrthographicProjectionMatrix01(
+            //    std::max(frustum_bounding_box_light_view.min_bound.x, scene_bounding_box_light_view.min_bound.x),
+            //    std::min(frustum_bounding_box_light_view.max_bound.x, scene_bounding_box_light_view.max_bound.x),
+            //    std::max(frustum_bounding_box_light_view.min_bound.y, scene_bounding_box_light_view.min_bound.y),
+            //    std::min(frustum_bounding_box_light_view.max_bound.y, scene_bounding_box_light_view.max_bound.y),
+            //    -scene_bounding_box_light_view.max_bound
+            //    .z, // the objects which are nearer than the frustum bounding box may caster shadow as well
+            //    -std::max(frustum_bounding_box_light_view.min_bound.z, scene_bounding_box_light_view.min_bound.z));
         }
 
         glm::mat4 light_proj_view = (light_proj * light_view);

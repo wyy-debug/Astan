@@ -2,6 +2,7 @@
 #include "ToneMappingPass.h"
 
 #include <stdexcept>
+#include <Astan/Renderer/NewSystem/shader/mesh_frag.h>
 
 namespace Astan
 {
@@ -57,8 +58,8 @@ namespace Astan
             throw std::runtime_error("create post process pipeline layout");
         }
 
-        RHIShader* vertShaderModule = m_RenderCommand->CreateShaderModule(POST_PROCESS_VERT);
-        RHIShader* fragShaderModule = m_RenderCommand->CreateShaderModule(TONE_MAPPING_FRAG);
+        RHIShader* vertShaderModule = m_RenderCommand->CreateShaderModule(MESH_FRAG);
+        RHIShader* fragShaderModule = m_RenderCommand->CreateShaderModule(MESH_FRAG);
 
         RHIPipelineShaderStageCreateInfo vertPipelineShaderStageCreateInfo{};
         vertPipelineShaderStageCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

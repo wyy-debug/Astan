@@ -1,3 +1,4 @@
+#include "aspch.h"
 #include "AssetManager.h"
 
 #include <filesystem>

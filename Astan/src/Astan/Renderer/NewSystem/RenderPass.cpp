@@ -1,17 +1,23 @@
 #include "aspch.h"
 #include "RenderPass.h"
 
-void Astan::RenderPass::Initialize(const RenderPassInitInfo* init_info)
+Astan::VisiableNodes Astan::RenderPass::m_visiable_nodes;
+namespace Astan
 {
-	m_global_render_resource =
-		&(std::static_pointer_cast<RenderResource>(m_render_resource)->m_global_render_resource);
-}
 
-void Astan::RenderPass::Draw()
-{
-}
+	void RenderPass::Initialize(const RenderPassInitInfo* init_info)
+	{
+		m_global_render_resource =
+			&(std::static_pointer_cast<RenderSource>(m_render_resource)->m_GlobalRenderResource);
+	}
 
-void Astan::RenderPass::SetCommonInfo(Ref<VulkanRendererAPI> renderCommand)
-{
-	m_RenderCommand = renderCommand;
-}
+	void RenderPass::Draw()
+	{
+	}
+
+	void RenderPass::SetCommonInfo(Ref<VulkanRendererAPI> renderCommand)
+	{
+		m_RenderCommand = renderCommand;
+	}
+
+};

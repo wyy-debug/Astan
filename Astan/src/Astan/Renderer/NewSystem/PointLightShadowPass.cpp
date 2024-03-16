@@ -5,6 +5,8 @@
 #include <vector>
 #include <Astan/Scene/Scene.h>
 #include "RenderMesh.h"
+#include <Astan/Renderer/NewSystem/shader/mesh_vert.h>
+#include <Astan/Renderer/NewSystem/RenderUtils.h>
 namespace Astan
 {
     void PointLightShadowPass::Initialize(const RenderPassInitInfo* init_info)
@@ -233,11 +235,11 @@ namespace Astan
         }
 
         RHIShader* vert_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_POINT_LIGHT_SHADOW_VERT);
+            m_RenderCommand->CreateShaderModule(MESH_VERT);
         RHIShader* geom_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_POINT_LIGHT_SHADOW_GEOM);
+            m_RenderCommand->CreateShaderModule(MESH_VERT);
         RHIShader* frag_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_POINT_LIGHT_SHADOW_FRAG);
+            m_RenderCommand->CreateShaderModule(MESH_VERT);
 
         RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info{};
         vert_pipeline_shader_stage_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -450,7 +452,7 @@ namespace Astan
         mesh_point_light_shadow_per_drawcall_vertex_blending_storage_buffer_write_info.pBufferInfo =
             &mesh_point_light_shadow_per_drawcall_vertex_blending_storage_buffer_info;
 
-        m_RenderCommand->updateDescriptorSets((sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
+        m_RenderCommand->UpdateDescriptorSets((sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
             descriptor_writes,
             0,
             NULL);
@@ -480,7 +482,7 @@ namespace Astan
                 temp.joint_count = node.joint_count;
             }
 
-            mesh_nodes.Push_back(temp);
+            //mesh_nodes.Push_back(temp);
         }
 
         RHIRenderPassBeginInfo renderpass_begin_info{};

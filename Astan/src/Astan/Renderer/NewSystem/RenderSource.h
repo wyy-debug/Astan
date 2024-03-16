@@ -160,7 +160,6 @@ namespace Astan
 		MeshInefficientPickPerframeStorageBufferObject m_MeshInefficientPickPerframeStorageBufferObject;
 		ParticleBillboardPerframeStorageBufferObject   m_ParticlebillboardPerframeStorageBufferObject;
 		ParticleCollisionPerframeStorageBufferObject   m_ParticleCollisionPerframeStorageBufferObject;
-		std::vector<RenderMeshNode> m_DirectionalLightVisibleMeshNodes;
 
 		// cached mesh and material
 		std::map<size_t, VulkanMesh>        m_VulkanMeshes;
@@ -175,9 +174,13 @@ namespace Astan
 		std::vector<RenderMeshNode> m_MainCameraVisibleMeshNodes;
 		RenderAxisNode              m_AxisNode;
 		
+		// cached mesh and material
+		std::map<size_t, VulkanMesh>        m_vulkan_meshes;
+		std::map<size_t, VulkanPBRMaterial> m_vulkan_pbr_materials;
+
 		// descriptor set layout in main camera pass will be used when uploading resource
-		const VkDescriptorSetLayout* m_mesh_descriptor_set_layout{ nullptr };
-		const VkDescriptorSetLayout* m_material_descriptor_set_layout{ nullptr };
+		RHIDescriptorSetLayout* const* m_mesh_descriptor_set_layout{ nullptr };
+		RHIDescriptorSetLayout* const* m_material_descriptor_set_layout{ nullptr };
 
 	private:
 		std::unordered_map<std::string, AxisAlignedBox> m_bounding_box_cache_map;

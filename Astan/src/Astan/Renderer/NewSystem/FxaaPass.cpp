@@ -1,6 +1,7 @@
 #include "aspch.h"
 #include "FxaaPass.h"
 #include <stdexcept>
+#include <Astan/Renderer/NewSystem/shader/mesh_vert.h>
 
 namespace Astan
 {
@@ -64,8 +65,8 @@ namespace Astan
             throw std::runtime_error("create post process pipeline layout");
         }
 
-        RHIShader* vert_shader_module = m_RenderCommand->CreateShaderModule(FXAA_VERT);
-        RHIShader* frag_shader_module = m_RenderCommand->CreateShaderModule(FXAA_FRAG);
+        RHIShader* vert_shader_module = m_RenderCommand->CreateShaderModule(MESH_VERT);
+        RHIShader* frag_shader_module = m_RenderCommand->CreateShaderModule(MESH_VERT);
 
         RHIPipelineShaderStageCreateInfo vertPipelineShaderStageCreateInfo{};
         vertPipelineShaderStageCreateInfo.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

@@ -1,6 +1,7 @@
 #include "aspch.h"
 #include "CombineUIPass.h"
 #include <stdexcept>
+#include <Astan/Renderer/NewSystem/shader/mesh_frag.h>
 
 namespace Astan
 {
@@ -66,8 +67,8 @@ namespace Astan
             throw std::runtime_error("create combine ui pipeline layout");
         }
 
-        RHIShader* vert_shader_module = m_RenderCommand->CreateShaderModule(POST_PROCESS_VERT);
-        RHIShader* frag_shader_module = m_RenderCommand->CreateShaderModule(COMBINE_UI_FRAG);
+        RHIShader* vert_shader_module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
+        RHIShader* frag_shader_module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
 
         RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info{};
         vert_pipeline_shader_stage_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

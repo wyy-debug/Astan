@@ -3,12 +3,66 @@
 #include <Astan/Scene/Scene.h>
 #include "RenderSource.h"
 #include <glm/glm.hpp>
+#include <Astan/Particle/ParticleDesc.h>
+#include <Astan/Particle/ParticleManager.h>
+
+#include <algorithm>
+#include <cfloat>
+#include <random>
 namespace Astan
 {
     struct ParticlePassInitInfo : RenderPass::RenderPassInitInfo
     {
         std::shared_ptr<ParticleManager> m_particle_manager;
     };
+
+    template<typename RandomEngine = std::default_random_engine>
+    class RandomNumberGenerator
+    {
+
+    private:
+        RandomEngine m_engine;
+
+    public:
+        template<typename... Params>
+        explicit RandomNumberGenerator(Params&&... params) : m_engine(std::forward<Params>(params)...)
+        {}
+
+        template<typename... Params>
+        void seed(Params&&... seeding)
+        {
+            m_engine.seed(std::forward<Params>(seeding)...);
+        }
+
+        template<typename DistributionFunc, typename... Params>
+        typename DistributionFunc::result_type distribution(Params&&... params)
+        {
+            DistributionFunc dist(std::forward<Params>(params)...);
+            return dist(m_engine);
+        }
+
+        float uniformUnit() { return uniformDistribution(0.f, std::nextafter(1.f, FLT_MAX)); }
+
+        float uniformSymmetry() { return uniformDistribution(-1.f, std::nextafter(1.f, FLT_MAX)); }
+
+        bool bernoulliDistribution(float probability) { return distribution<std::bernoulli_distribution>(probability); }
+
+        float normalDistribution(float mean, float stddev)
+        {
+            return distribution<std::normal_distribution<float>>(mean, stddev);
+        }
+
+        template<typename DistributionFunc, typename Range, typename... Params>
+        void generator(Range&& range, Params&&... params)
+        {
+            // using ResultType = typename DistributionFunc::result_type;
+
+            DistributionFunc dist(std::forward<Params>(params)...);
+            return std::generate(std::begin(range), std::end(range), [&] { return dist(m_engine); });
+        }
+    };
+
+    using DefaultRNG = RandomNumberGenerator<std::mt19937>;
 
     class ParticleEmitterBufferBatch
     {
@@ -131,7 +185,7 @@ namespace Astan
         RHIImageView* m_piccolo_logo_texture_image_view = nullptr;
         VmaAllocation m_piccolo_logo_texture_vma_allocation;
 
-        RHIRenderPass* m_render_pass = nullptr;
+        RHIRenderPass* m_render_pass;
 
         ParticleBillboardPerframeStorageBufferObject m_particlebillboard_perframe_storage_buffer_object;
         ParticleCollisionPerframeStorageBufferObject m_particle_collision_perframe_storage_buffer_object;

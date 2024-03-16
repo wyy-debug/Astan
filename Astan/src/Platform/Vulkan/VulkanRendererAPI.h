@@ -11,12 +11,6 @@
 
 namespace Astan
 {
-    struct SwapChainSupportDetails
-    {
-        VkSurfaceCapabilitiesKHR        capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR>   presentModes;
-    };
 
 	class VulkanRendererAPI :public RendererAPI
 	{

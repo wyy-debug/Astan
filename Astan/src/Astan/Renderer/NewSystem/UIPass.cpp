@@ -24,7 +24,7 @@ namespace Astan
         init_info.QueueFamily = m_RenderCommand->GetQueueFamilyIndices().graphics_family.value();
         init_info.Queue = ((VulkanQueue*)m_RenderCommand->GetGraphicsQueue())->getResource();
         init_info.DescriptorPool = std::static_pointer_cast<VulkanRendererAPI>(m_RenderCommand)->m_vk_descriptor_pool;
-        init_info.Subpass = _main_camera_subpass_ui;
+        //init_info.Subpass = _main_camera_subpass_ui;
 
         // may be different from the real swapchain image count
         // see ImGui_ImplVulkanH_GetMinImageCountFromPresentMode
@@ -86,7 +86,7 @@ namespace Astan
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            m_window_ui->preRender();
+            //m_window_ui->preRender();
 
             float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
             m_RenderCommand->PushEvent(m_RenderCommand->GetCurrentCommandBuffer(), "ImGUI", color);

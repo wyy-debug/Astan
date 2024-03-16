@@ -20,7 +20,7 @@ namespace Astan
             std::ifstream asset_json_file(asset_path);
             if (!asset_json_file)
             {
-                AS_CORE_EEROR("open file: {} failed!", asset_path.generic_string());
+                //AS_CORE_EEROR("open file: {} failed!", asset_path.generic_string());
                 return false;
             }
 
@@ -30,14 +30,14 @@ namespace Astan
 
             // parse to json object and read to runtime res object
             std::string error;
-            auto&& asset_json = Json::parse(asset_json_text, error);
+            //auto&& asset_json = Json::parse(asset_json_text, error);
             if (!error.empty())
             {
-                AS_CORE_EEROR("parse json file {} failed!", asset_url);
+                //AS_CORE_EEROR("parse json file {} failed!", asset_url);
                 return false;
             }
 
-            Serializer::read(asset_json, out_asset);
+            //Serializer::read(asset_json, out_asset);
             return true;
         }
 

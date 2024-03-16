@@ -767,7 +767,7 @@ namespace Astan
 	{
 		// default graphics command pool
 		{
-			m_RenderCommand_command_pool = new VulkanCommandPool();
+			m_rhi_command_pool = new VulkanCommandPool();
 			VkCommandPool vk_command_pool;
 			VkCommandPoolCreateInfo command_pool_create_info{};
 			command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -780,7 +780,7 @@ namespace Astan
 				AS_CORE_ERROR("vk create command pool");
 			}
 
-			((VulkanCommandPool*)m_RenderCommand_command_pool)->setResource(vk_command_pool);
+			((VulkanCommandPool*)m_rhi_command_pool)->setResource(vk_command_pool);
 		}
 
 		// other command pools
@@ -2362,7 +2362,7 @@ namespace Astan
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = ((VulkanCommandPool*)m_RenderCommand_command_pool)->getResource();
+		allocInfo.commandPool = ((VulkanCommandPool*)m_rhi_command_pool)->getResource();
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer command_buffer;
@@ -2391,7 +2391,7 @@ namespace Astan
 		vkQueueSubmit(((VulkanQueue*)m_graphics_queue)->getResource(), 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(((VulkanQueue*)m_graphics_queue)->getResource());
 
-		vkFreeCommandBuffers(m_device, ((VulkanCommandPool*)m_RenderCommand_command_pool)->getResource(), 1, &vk_command_buffer);
+		vkFreeCommandBuffers(m_device, ((VulkanCommandPool*)m_rhi_command_pool)->getResource(), 1, &vk_command_buffer);
 		delete(command_buffer);
 	}
 	bool VulkanRendererAPI::PrepareBeforePass(std::function<void()> passUpdateAfterRecreateSwapchain)

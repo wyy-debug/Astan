@@ -1,3 +1,4 @@
+#include "aspch.h"
 #include "AxisAligned.h"
 #include "RenderUtils.h"
 namespace Astan

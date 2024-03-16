@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <Astan/Scene/Scene.h>
 #include "RenderMesh.h"
+#include <Astan/Renderer/NewSystem/shader/mesh_vert.h>
+#include <Astan/Renderer/NewSystem/shader/mesh_frag.h>
+#include <Astan/Renderer/NewSystem/RenderUtils.h>
 namespace Astan
 {
     void DirectionalLightShadowPass::Initialize(const RenderPassInitInfo* init_info)
@@ -225,9 +228,9 @@ namespace Astan
         }
 
         RHIShader* vert_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_DIRECTIONAL_LIGHT_SHADOW_VERT);
+            m_RenderCommand->CreateShaderModule(MESH_VERT);
         RHIShader* frag_shader_module =
-            m_RenderCommand->CreateShaderModule(MESH_DIRECTIONAL_LIGHT_SHADOW_FRAG);
+            m_RenderCommand->CreateShaderModule(MESH_FRAG);
 
         RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info{};
         vert_pipeline_shader_stage_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

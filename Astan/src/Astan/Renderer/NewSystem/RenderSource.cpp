@@ -8,6 +8,7 @@
 #include <Astan/Core/AssetManager.h>
 #include <stb_image.h>
 #include "../../../../MeshData.h"
+#include <Astan/Renderer/NewSystem/RenderPass.h>
 
 
 namespace Astan
@@ -100,47 +101,49 @@ namespace Astan
 			}
 		}
 
-		auto view = scene->GetAllEntitiesWith<RenderEntityComponent>();
-		for (auto e : view)
 		{
-			Entity entity = { e,scene };
-
-			auto renderEntity = entity.GetComponent<RenderEntityComponent>();
-			BoundingBox mesh_asset_bounding_box{ renderEntity.m_BoundingBox.getMinCorner(),
-												 renderEntity.m_BoundingBox.getMaxCorner() };
-
-			bool intersect_with_point_lights = true;
-			for (size_t i = 0; i < point_light_num; i++)
+			auto view = scene->GetAllEntitiesWith<RenderEntityComponent>();
+			for (auto e : view)
 			{
-				if (!BoxIntersectsWithSphere(BoundingBoxTransform(mesh_asset_bounding_box, renderEntity.m_ModelMatrix),
-					point_lights_bounding_spheres[i]))
+				Entity entity = { e,scene };
+
+				auto renderEntity = entity.GetComponent<RenderEntityComponent>();
+				BoundingBox mesh_asset_bounding_box{ renderEntity.m_BoundingBox.getMinCorner(),
+													 renderEntity.m_BoundingBox.getMaxCorner() };
+
+				bool intersect_with_point_lights = true;
+				for (size_t i = 0; i < point_light_num; i++)
 				{
-					intersect_with_point_lights = false;
-					break;
+					if (!BoxIntersectsWithSphere(BoundingBoxTransform(mesh_asset_bounding_box, renderEntity.m_ModelMatrix),
+						point_lights_bounding_spheres[i]))
+					{
+						intersect_with_point_lights = false;
+						break;
+					}
 				}
-			}
 
-			if (intersect_with_point_lights)
-			{
-				m_PointLightsVisibleMeshNodes.emplace_back();
-				RenderMeshNode& temp_node = m_PointLightsVisibleMeshNodes.back();
-
-				temp_node.model_matrix = &renderEntity.m_ModelMatrix;
-
-				AS_CORE_ASSERT(renderEntity.m_JointMatrices.size() <= s_mesh_vertex_blending_max_joint_count);
-				if (!renderEntity.m_JointMatrices.empty())
+				if (intersect_with_point_lights)
 				{
-					temp_node.joint_count = static_cast<uint32_t>(renderEntity.m_JointMatrices.size());
-					temp_node.joint_matrices = renderEntity.m_JointMatrices.data();
+					m_PointLightsVisibleMeshNodes.emplace_back();
+					RenderMeshNode& temp_node = m_PointLightsVisibleMeshNodes.back();
+
+					temp_node.model_matrix = &renderEntity.m_ModelMatrix;
+
+					AS_CORE_ASSERT(renderEntity.m_JointMatrices.size() <= s_mesh_vertex_blending_max_joint_count);
+					if (!renderEntity.m_JointMatrices.empty())
+					{
+						temp_node.joint_count = static_cast<uint32_t>(renderEntity.m_JointMatrices.size());
+						temp_node.joint_matrices = renderEntity.m_JointMatrices.data();
+					}
+					temp_node.node_id = renderEntity.m_InstanceId;
+
+					VulkanMesh& mesh_asset = GetEntityMesh(renderEntity);
+					temp_node.ref_mesh = &mesh_asset;
+					temp_node.enable_vertex_blending = renderEntity.m_EnableVertexBlending;
+
+					VulkanPBRMaterial& material_asset = GetEntityMaterial(renderEntity);
+					temp_node.ref_material = &material_asset;
 				}
-				temp_node.node_id = renderEntity.m_InstanceId;
-
-				VulkanMesh& mesh_asset = GetEntityMesh(renderEntity);
-				temp_node.ref_mesh = &mesh_asset;
-				temp_node.enable_vertex_blending = renderEntity.m_EnableVertexBlending;
-
-				VulkanPBRMaterial& material_asset = GetEntityMaterial(renderEntity);
-				temp_node.ref_material = &material_asset;
 			}
 		}
 
@@ -481,7 +484,8 @@ namespace Astan
 
 	Ref<TextureData> RenderSource::LoadTextureHDR(std::string file, int desired_channels)
 	{
-		Ref<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		//Ref<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		Ref<AssetManager> asset_manager = CreateRef<AssetManager>();
 		AS_CORE_ASSERT(asset_manager);
 
 		Ref<TextureData> texture = std::make_shared<TextureData>();
@@ -518,7 +522,8 @@ namespace Astan
 
 	Ref<TextureData> RenderSource::LoadTexture(std::string file, bool is_srgb)
 	{
-		Ref<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		//Ref<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		Ref<AssetManager> asset_manager = CreateRef<AssetManager>();
 		AS_CORE_ASSERT(asset_manager);
 
 		Ref<TextureData> texture = std::make_shared<TextureData>();
@@ -599,274 +604,262 @@ namespace Astan
 	
 	VulkanPBRMaterial& RenderSource::GetorCreateVulkanMesh(Ref<VulkanRendererAPI> rhi, RenderEntityComponent entity, RenderMaterialData data)
 	{
-		VulkanRendererAPI* vulkanRendererAPI = static_cast<VulkanRendererAPI*>(rhi.get());
+		VulkanRendererAPI* vulkan_context = static_cast<VulkanRendererAPI*>(rhi.get());
 
-        size_t assetid = entity.m_material_asset_id;
+		size_t assetid = entity.m_MaterialAssetId;
 
-        auto it = m_vulkan_pbr_materials.find(assetid);
-        if (it != m_vulkan_pbr_materials.end())
-        {
-            return it->second;
-        }
-        else
-        {
-            VulkanPBRMaterial temp;
-            auto              res = m_vulkan_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
-            assert(res.second);
+		auto it = m_vulkan_pbr_materials.find(assetid);
+		if (it != m_vulkan_pbr_materials.end())
+		{
+			return it->second;
+		}
+		else
+		{
+			VulkanPBRMaterial temp;
+			auto              res = m_vulkan_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
+			assert(res.second);
 
-            float empty_image[] = {0.5f, 0.5f, 0.5f, 0.5f};
+			float empty_image[] = { 0.5f, 0.5f, 0.5f, 0.5f };
 
-            void*              base_color_image_pixels = empty_image;
-            uint32_t           base_color_image_width  = 1;
-            uint32_t           base_color_image_height = 1;
-            ASTAN_PIXEL_FORMAT base_color_image_format = ASTAN_PIXEL_FORMAT::ASTAN_PIXEL_FORMAT_R8G8B8A8_SRGB;
-            if (data.m_base_color_texture)
-            {
-                base_color_image_pixels = data.m_base_color_texture->m_pixels;
-                base_color_image_width  = static_cast<uint32_t>(data.m_base_color_texture->m_width);
-                base_color_image_height = static_cast<uint32_t>(data.m_base_color_texture->m_height);
-                base_color_image_format = data.m_base_color_texture->m_format;
-            }
+			void* base_color_image_pixels = empty_image;
+			uint32_t           base_color_image_width = 1;
+			uint32_t           base_color_image_height = 1;
+			RHIFormat base_color_image_format = RHIFormat::RHI_FORMAT_R8G8B8A8_SRGB;
+			if (data.m_base_color_texture)
+			{
+				base_color_image_pixels = data.m_base_color_texture->m_pixels;
+				base_color_image_width = static_cast<uint32_t>(data.m_base_color_texture->m_width);
+				base_color_image_height = static_cast<uint32_t>(data.m_base_color_texture->m_height);
+				base_color_image_format = data.m_base_color_texture->m_format;
+			}
 
-            void*              metallic_roughness_image_pixels = empty_image;
-            uint32_t           metallic_roughness_width        = 1;
-            uint32_t           metallic_roughness_height       = 1;
-            ASTAN_PIXEL_FORMAT metallic_roughness_format       = ASTAN_PIXEL_FORMAT::ASTAN_PIXEL_FORMAT_R8G8B8A8_UNORM;
-            if (data.m_metallic_roughness_texture)
-            {
-                metallic_roughness_image_pixels = data.m_metallic_roughness_texture->m_pixels;
-                metallic_roughness_width  = static_cast<uint32_t>(data.m_metallic_roughness_texture->m_width);
-                metallic_roughness_height = static_cast<uint32_t>(data.m_metallic_roughness_texture->m_height);
-                metallic_roughness_format = data.m_metallic_roughness_texture->m_format;
-            }
+			void* metallic_roughness_image_pixels = empty_image;
+			uint32_t           metallic_roughness_width = 1;
+			uint32_t           metallic_roughness_height = 1;
+			RHIFormat metallic_roughness_format = RHIFormat::RHI_FORMAT_R8G8B8A8_UNORM;
+			if (data.m_metallic_roughness_texture)
+			{
+				metallic_roughness_image_pixels = data.m_metallic_roughness_texture->m_pixels;
+				metallic_roughness_width = static_cast<uint32_t>(data.m_metallic_roughness_texture->m_width);
+				metallic_roughness_height = static_cast<uint32_t>(data.m_metallic_roughness_texture->m_height);
+				metallic_roughness_format = data.m_metallic_roughness_texture->m_format;
+			}
 
-            void*              normal_roughness_image_pixels = empty_image;
-            uint32_t           normal_roughness_width        = 1;
-            uint32_t           normal_roughness_height       = 1;
-            ASTAN_PIXEL_FORMAT normal_roughness_format       = ASTAN_PIXEL_FORMAT::ASTAN_PIXEL_FORMAT_R8G8B8A8_UNORM;
-            if (data.m_normal_texture)
-            {
-                normal_roughness_image_pixels = data.m_normal_texture->m_pixels;
-                normal_roughness_width        = static_cast<uint32_t>(data.m_normal_texture->m_width);
-                normal_roughness_height       = static_cast<uint32_t>(data.m_normal_texture->m_height);
-                normal_roughness_format       = data.m_normal_texture->m_format;
-            }
+			void* normal_roughness_image_pixels = empty_image;
+			uint32_t           normal_roughness_width = 1;
+			uint32_t           normal_roughness_height = 1;
+			RHIFormat normal_roughness_format = RHIFormat::RHI_FORMAT_R8G8B8A8_UNORM;
+			if (data.m_normal_texture)
+			{
+				normal_roughness_image_pixels = data.m_normal_texture->m_pixels;
+				normal_roughness_width = static_cast<uint32_t>(data.m_normal_texture->m_width);
+				normal_roughness_height = static_cast<uint32_t>(data.m_normal_texture->m_height);
+				normal_roughness_format = data.m_normal_texture->m_format;
+			}
 
-            void*              occlusion_image_pixels = empty_image;
-            uint32_t           occlusion_image_width  = 1;
-            uint32_t           occlusion_image_height = 1;
-            ASTAN_PIXEL_FORMAT occlusion_image_format = ASTAN_PIXEL_FORMAT::ASTAN_PIXEL_FORMAT_R8G8B8A8_UNORM;
-            if (data.m_occlusion_texture)
-            {
-                occlusion_image_pixels = data.m_occlusion_texture->m_pixels;
-                occlusion_image_width  = static_cast<uint32_t>(data.m_occlusion_texture->m_width);
-                occlusion_image_height = static_cast<uint32_t>(data.m_occlusion_texture->m_height);
-                occlusion_image_format = data.m_occlusion_texture->m_format;
-            }
+			void* occlusion_image_pixels = empty_image;
+			uint32_t           occlusion_image_width = 1;
+			uint32_t           occlusion_image_height = 1;
+			RHIFormat occlusion_image_format = RHIFormat::RHI_FORMAT_R8G8B8A8_UNORM;
+			if (data.m_occlusion_texture)
+			{
+				occlusion_image_pixels = data.m_occlusion_texture->m_pixels;
+				occlusion_image_width = static_cast<uint32_t>(data.m_occlusion_texture->m_width);
+				occlusion_image_height = static_cast<uint32_t>(data.m_occlusion_texture->m_height);
+				occlusion_image_format = data.m_occlusion_texture->m_format;
+			}
 
-            void*              emissive_image_pixels = empty_image;
-            uint32_t           emissive_image_width  = 1;
-            uint32_t           emissive_image_height = 1;
-            ASTAN_PIXEL_FORMAT emissive_image_format = ASTAN_PIXEL_FORMAT::ASTAN_PIXEL_FORMAT_R8G8B8A8_UNORM;
-            if (data.m_emissive_texture)
-            {
-                emissive_image_pixels = data.m_emissive_texture->m_pixels;
-                emissive_image_width  = static_cast<uint32_t>(data.m_emissive_texture->m_width);
-                emissive_image_height = static_cast<uint32_t>(data.m_emissive_texture->m_height);
-                emissive_image_format = data.m_emissive_texture->m_format;
-            }
+			void* emissive_image_pixels = empty_image;
+			uint32_t           emissive_image_width = 1;
+			uint32_t           emissive_image_height = 1;
+			RHIFormat emissive_image_format = RHIFormat::RHI_FORMAT_R8G8B8A8_UNORM;
+			if (data.m_emissive_texture)
+			{
+				emissive_image_pixels = data.m_emissive_texture->m_pixels;
+				emissive_image_width = static_cast<uint32_t>(data.m_emissive_texture->m_width);
+				emissive_image_height = static_cast<uint32_t>(data.m_emissive_texture->m_height);
+				emissive_image_format = data.m_emissive_texture->m_format;
+			}
 
-            VulkanPBRMaterial& now_material = res.first->second;
+			VulkanPBRMaterial& now_material = res.first->second;
 
-            // similiarly to the vertex/index buffer, we should allocate the uniform
-            // buffer in DEVICE_LOCAL memory and use the temp stage buffer to copy the
-            // data
-            {
-                // temporary staging buffer
-                VkDeviceSize buffer_size = sizeof(MeshPerMaterialUniformBufferObject);
+			// similiarly to the vertex/index buffer, we should allocate the uniform
+			// buffer in DEVICE_LOCAL memory and use the temp stage buffer to copy the
+			// data
+			{
+				// temporary staging buffer
 
-                VkBuffer       inefficient_staging_buffer        = VK_NULL_HANDLE;
-                VkDeviceMemory inefficient_staging_buffer_memory = VK_NULL_HANDLE;
-                VulkanUtil::createBuffer(vulkanRendererAPI->m_physical_device,
-                                         vulkanRendererAPI->m_device,
-                                         buffer_size,
-                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                         inefficient_staging_buffer,
-                                         inefficient_staging_buffer_memory);
-                // VK_BUFFER_USAGE_TRANSFER_SRC_BIT: buffer can be used as source in a
-                // memory transfer operation
+				RHIDeviceSize buffer_size = sizeof(MeshPerMaterialUniformBufferObject);
 
-                void* staging_buffer_data = nullptr;
-                vkMapMemory(vulkanRendererAPI->m_device,
-                            inefficient_staging_buffer_memory,
-                            0,
-                            buffer_size,
-                            0,
-                            &staging_buffer_data);
+				RHIBuffer* inefficient_staging_buffer = RHI_NULL_HANDLE;
+				RHIDeviceMemory* inefficient_staging_buffer_memory = RHI_NULL_HANDLE;
+				rhi->CreateBuffer(
+					buffer_size,
+					RHI_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+					inefficient_staging_buffer,
+					inefficient_staging_buffer_memory);
+				// RHI_BUFFER_USAGE_TRANSFER_SRC_BIT: buffer can be used as source in a
+				// memory transfer operation
 
-                MeshPerMaterialUniformBufferObject& material_uniform_buffer_info =
-                    (*static_cast<MeshPerMaterialUniformBufferObject*>(staging_buffer_data));
-                material_uniform_buffer_info.is_blend          = entity.m_Blend;
-                material_uniform_buffer_info.is_double_sided   = entity.m_DoubleSided;
-                material_uniform_buffer_info.baseColorFactor   = entity.m_BaseColorFactor;
-                material_uniform_buffer_info.metallicFactor    = entity.m_MetallicFactor;
-                material_uniform_buffer_info.roughnessFactor   = entity.m_RoughnessFactor;
-                material_uniform_buffer_info.normalScale       = entity.m_NormalScale;
-                material_uniform_buffer_info.occlusionStrength = entity.m_OcclusionStrength;
-                material_uniform_buffer_info.emissiveFactor    = entity.m_EmissiveFactor;
+				void* staging_buffer_data = nullptr;
+				rhi->MapMemory(
+					inefficient_staging_buffer_memory,
+					0,
+					buffer_size,
+					0,
+					&staging_buffer_data);
 
-                vkUnmapMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory);
+				MeshPerMaterialUniformBufferObject& material_uniform_buffer_info =
+					(*static_cast<MeshPerMaterialUniformBufferObject*>(staging_buffer_data));
+				material_uniform_buffer_info.is_blend = entity.m_Blend;
+				material_uniform_buffer_info.is_double_sided = entity.m_DoubleSided;
+				material_uniform_buffer_info.baseColorFactor = entity.m_BaseColorFactor;
+				material_uniform_buffer_info.metallicFactor = entity.m_MetallicFactor;
+				material_uniform_buffer_info.roughnessFactor = entity.m_RoughnessFactor;
+				material_uniform_buffer_info.normalScale = entity.m_NormalScale;
+				material_uniform_buffer_info.occlusionStrength = entity.m_OcclusionStrength;
+				material_uniform_buffer_info.emissiveFactor = entity.m_EmissiveFactor;
 
-                // use the vmaAllocator to allocate asset uniform buffer
-                VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-                bufferInfo.size               = buffer_size;
-                bufferInfo.usage              = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+				rhi->UnmapMemory(inefficient_staging_buffer_memory);
 
-                VmaAllocationCreateInfo allocInfo = {};
-                allocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+				// use the vmaAllocator to allocate asset uniform buffer
+				RHIBufferCreateInfo bufferInfo = { RHI_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+				bufferInfo.size = buffer_size;
+				bufferInfo.usage = RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT | RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-                vmaCreateBufferWithAlignment(
-                    vulkanRendererAPI->m_assets_allocator,
-                    &bufferInfo,
-                    &allocInfo,
-                    m_global_render_resource._storage_buffer._min_uniform_buffer_offset_alignment,
-                    &now_material.material_uniform_buffer,
-                    &now_material.material_uniform_buffer_allocation,
-                    NULL);
+				VmaAllocationCreateInfo allocInfo = {};
+				allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-                // use the data from staging buffer
-                VulkanUtil::copyBuffer(
-                    rhi.get(), inefficient_staging_buffer, now_material.material_uniform_buffer, 0, 0, buffer_size);
+				rhi->CreateBufferWithAlignmentVMA(
+					vulkan_context->m_assets_allocator,
+					&bufferInfo,
+					&allocInfo,
+					m_GlobalRenderResource._storage_buffer._min_uniform_buffer_offset_alignment,
+					now_material.material_uniform_buffer,
+					&now_material.material_uniform_buffer_allocation,
+					NULL);
 
-                // release staging buffer
-                vkDestroyBuffer(vulkanRendererAPI->m_device, inefficient_staging_buffer, nullptr);
-                vkFreeMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory, nullptr);
-            }
+				// use the data from staging buffer
+				rhi->CopyBuffer(inefficient_staging_buffer, now_material.material_uniform_buffer, 0, 0, buffer_size);
 
-            TextureDataToUpdate update_texture_data;
-            update_texture_data.base_color_image_pixels         = base_color_image_pixels;
-            update_texture_data.base_color_image_width          = base_color_image_width;
-            update_texture_data.base_color_image_height         = base_color_image_height;
-            update_texture_data.base_color_image_format         = base_color_image_format;
-            update_texture_data.metallic_roughness_image_pixels = metallic_roughness_image_pixels;
-            update_texture_data.metallic_roughness_image_width  = metallic_roughness_width;
-            update_texture_data.metallic_roughness_image_height = metallic_roughness_height;
-            update_texture_data.metallic_roughness_image_format = metallic_roughness_format;
-            update_texture_data.normal_roughness_image_pixels   = normal_roughness_image_pixels;
-            update_texture_data.normal_roughness_image_width    = normal_roughness_width;
-            update_texture_data.normal_roughness_image_height   = normal_roughness_height;
-            update_texture_data.normal_roughness_image_format   = normal_roughness_format;
-            update_texture_data.occlusion_image_pixels          = occlusion_image_pixels;
-            update_texture_data.occlusion_image_width           = occlusion_image_width;
-            update_texture_data.occlusion_image_height          = occlusion_image_height;
-            update_texture_data.occlusion_image_format          = occlusion_image_format;
-            update_texture_data.emissive_image_pixels           = emissive_image_pixels;
-            update_texture_data.emissive_image_width            = emissive_image_width;
-            update_texture_data.emissive_image_height           = emissive_image_height;
-            update_texture_data.emissive_image_format           = emissive_image_format;
-            update_texture_data.now_material                    = &now_material;
+				// release staging buffer
+				rhi->DestroyBuffer(inefficient_staging_buffer);
+				rhi->FreeMemory(inefficient_staging_buffer_memory);
+			}
 
-            UpdateTextureImageData(rhi, update_texture_data);
+			TextureDataToUpdate update_texture_data;
+			update_texture_data.base_color_image_pixels = base_color_image_pixels;
+			update_texture_data.base_color_image_width = base_color_image_width;
+			update_texture_data.base_color_image_height = base_color_image_height;
+			update_texture_data.base_color_image_format = base_color_image_format;
+			update_texture_data.metallic_roughness_image_pixels = metallic_roughness_image_pixels;
+			update_texture_data.metallic_roughness_image_width = metallic_roughness_width;
+			update_texture_data.metallic_roughness_image_height = metallic_roughness_height;
+			update_texture_data.metallic_roughness_image_format = metallic_roughness_format;
+			update_texture_data.normal_roughness_image_pixels = normal_roughness_image_pixels;
+			update_texture_data.normal_roughness_image_width = normal_roughness_width;
+			update_texture_data.normal_roughness_image_height = normal_roughness_height;
+			update_texture_data.normal_roughness_image_format = normal_roughness_format;
+			update_texture_data.occlusion_image_pixels = occlusion_image_pixels;
+			update_texture_data.occlusion_image_width = occlusion_image_width;
+			update_texture_data.occlusion_image_height = occlusion_image_height;
+			update_texture_data.occlusion_image_format = occlusion_image_format;
+			update_texture_data.emissive_image_pixels = emissive_image_pixels;
+			update_texture_data.emissive_image_width = emissive_image_width;
+			update_texture_data.emissive_image_height = emissive_image_height;
+			update_texture_data.emissive_image_format = emissive_image_format;
+			update_texture_data.now_material = &now_material;
 
-            VkDescriptorSetAllocateInfo material_descriptor_set_alloc_info;
-            material_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            material_descriptor_set_alloc_info.pNext              = NULL;
-            material_descriptor_set_alloc_info.descriptorPool     = vulkanRendererAPI->m_descriptor_pool;
-            material_descriptor_set_alloc_info.descriptorSetCount = 1;
-            material_descriptor_set_alloc_info.pSetLayouts        = m_material_descriptor_set_layout;
+			UpdateTextureImageData(rhi, update_texture_data);
 
-            if (VK_SUCCESS != vkAllocateDescriptorSets(vulkanRendererAPI->m_device,
-                                                       &material_descriptor_set_alloc_info,
-                                                       &now_material.material_descriptor_set))
-            {
-                throw std::runtime_error("allocate material descriptor set");
-            }
+			RHIDescriptorSetAllocateInfo material_descriptor_set_alloc_info;
+			material_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			material_descriptor_set_alloc_info.pNext = NULL;
+			material_descriptor_set_alloc_info.descriptorPool = vulkan_context->m_descriptor_pool;
+			material_descriptor_set_alloc_info.descriptorSetCount = 1;
+			material_descriptor_set_alloc_info.pSetLayouts = m_material_descriptor_set_layout;
 
-            VkDescriptorBufferInfo material_uniform_buffer_info = {};
-            material_uniform_buffer_info.offset                 = 0;
-            material_uniform_buffer_info.range                  = sizeof(MeshPerMaterialUniformBufferObject);
-            material_uniform_buffer_info.buffer                 = now_material.material_uniform_buffer;
+			if (RHI_SUCCESS != rhi->AllocateDescriptorSets(
+				&material_descriptor_set_alloc_info,
+				now_material.material_descriptor_set))
+			{
+				throw std::runtime_error("allocate material descriptor set");
+			}
 
-            VkDescriptorImageInfo base_color_image_info = {};
-            base_color_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            base_color_image_info.imageView             = now_material.base_color_image_view;
-            base_color_image_info.sampler = VulkanUtil::getOrCreateMipmapSampler(vulkanRendererAPI->m_physical_device,
-                                                                                 vulkanRendererAPI->m_device,
-                                                                                 base_color_image_width,
-                                                                                 base_color_image_height);
+			RHIDescriptorBufferInfo material_uniform_buffer_info = {};
+			material_uniform_buffer_info.offset = 0;
+			material_uniform_buffer_info.range = sizeof(MeshPerMaterialUniformBufferObject);
+			material_uniform_buffer_info.buffer = now_material.material_uniform_buffer;
 
-            VkDescriptorImageInfo metallic_roughness_image_info = {};
-            metallic_roughness_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallic_roughness_image_info.imageView             = now_material.metallic_roughness_image_view;
-            metallic_roughness_image_info.sampler =
-                VulkanUtil::getOrCreateMipmapSampler(vulkanRendererAPI->m_physical_device,
-                                                     vulkanRendererAPI->m_device,
-                                                     metallic_roughness_width,
-                                                     metallic_roughness_height);
+			RHIDescriptorImageInfo base_color_image_info = {};
+			base_color_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			base_color_image_info.imageView = now_material.base_color_image_view;
+			base_color_image_info.sampler = rhi->GetOrCreateMipmapSampler(base_color_image_width,
+				base_color_image_height);
 
-            VkDescriptorImageInfo normal_roughness_image_info = {};
-            normal_roughness_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normal_roughness_image_info.imageView             = now_material.normal_image_view;
-            normal_roughness_image_info.sampler = VulkanUtil::getOrCreateMipmapSampler(vulkanRendererAPI->m_physical_device,
-                                                                                       vulkanRendererAPI->m_device,
-                                                                                       normal_roughness_width,
-                                                                                       normal_roughness_height);
+			RHIDescriptorImageInfo metallic_roughness_image_info = {};
+			metallic_roughness_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			metallic_roughness_image_info.imageView = now_material.metallic_roughness_image_view;
+			metallic_roughness_image_info.sampler = rhi->GetOrCreateMipmapSampler(metallic_roughness_width,
+				metallic_roughness_height);
 
-            VkDescriptorImageInfo occlusion_image_info = {};
-            occlusion_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            occlusion_image_info.imageView             = now_material.occlusion_image_view;
-            occlusion_image_info.sampler = VulkanUtil::getOrCreateMipmapSampler(vulkanRendererAPI->m_physical_device,
-                                                                                vulkanRendererAPI->m_device,
-                                                                                occlusion_image_width,
-                                                                                occlusion_image_height);
+			RHIDescriptorImageInfo normal_roughness_image_info = {};
+			normal_roughness_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			normal_roughness_image_info.imageView = now_material.normal_image_view;
+			normal_roughness_image_info.sampler = rhi->GetOrCreateMipmapSampler(normal_roughness_width,
+				normal_roughness_height);
 
-            VkDescriptorImageInfo emissive_image_info = {};
-            emissive_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            emissive_image_info.imageView             = now_material.emissive_image_view;
-            emissive_image_info.sampler               = VulkanUtil::getOrCreateMipmapSampler(
-                vulkanRendererAPI->m_physical_device, vulkanRendererAPI->m_device, emissive_image_width, emissive_image_height);
+			RHIDescriptorImageInfo occlusion_image_info = {};
+			occlusion_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			occlusion_image_info.imageView = now_material.occlusion_image_view;
+			occlusion_image_info.sampler = rhi->GetOrCreateMipmapSampler(occlusion_image_width, occlusion_image_height);
 
-            VkWriteDescriptorSet mesh_descriptor_writes_info[6];
+			RHIDescriptorImageInfo emissive_image_info = {};
+			emissive_image_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			emissive_image_info.imageView = now_material.emissive_image_view;
+			emissive_image_info.sampler = rhi->GetOrCreateMipmapSampler(emissive_image_width, emissive_image_height);
 
-            mesh_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            mesh_descriptor_writes_info[0].pNext           = NULL;
-            mesh_descriptor_writes_info[0].dstSet          = now_material.material_descriptor_set;
-            mesh_descriptor_writes_info[0].dstBinding      = 0;
-            mesh_descriptor_writes_info[0].dstArrayElement = 0;
-            mesh_descriptor_writes_info[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            mesh_descriptor_writes_info[0].descriptorCount = 1;
-            mesh_descriptor_writes_info[0].pBufferInfo     = &material_uniform_buffer_info;
+			RHIWriteDescriptorSet mesh_descriptor_writes_info[6];
 
-            mesh_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            mesh_descriptor_writes_info[1].pNext           = NULL;
-            mesh_descriptor_writes_info[1].dstSet          = now_material.material_descriptor_set;
-            mesh_descriptor_writes_info[1].dstBinding      = 1;
-            mesh_descriptor_writes_info[1].dstArrayElement = 0;
-            mesh_descriptor_writes_info[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            mesh_descriptor_writes_info[1].descriptorCount = 1;
-            mesh_descriptor_writes_info[1].pImageInfo      = &base_color_image_info;
+			mesh_descriptor_writes_info[0].sType = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			mesh_descriptor_writes_info[0].pNext = NULL;
+			mesh_descriptor_writes_info[0].dstSet = now_material.material_descriptor_set;
+			mesh_descriptor_writes_info[0].dstBinding = 0;
+			mesh_descriptor_writes_info[0].dstArrayElement = 0;
+			mesh_descriptor_writes_info[0].descriptorType = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			mesh_descriptor_writes_info[0].descriptorCount = 1;
+			mesh_descriptor_writes_info[0].pBufferInfo = &material_uniform_buffer_info;
 
-            mesh_descriptor_writes_info[2]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[2].dstBinding = 2;
-            mesh_descriptor_writes_info[2].pImageInfo = &metallic_roughness_image_info;
+			mesh_descriptor_writes_info[1].sType = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			mesh_descriptor_writes_info[1].pNext = NULL;
+			mesh_descriptor_writes_info[1].dstSet = now_material.material_descriptor_set;
+			mesh_descriptor_writes_info[1].dstBinding = 1;
+			mesh_descriptor_writes_info[1].dstArrayElement = 0;
+			mesh_descriptor_writes_info[1].descriptorType = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			mesh_descriptor_writes_info[1].descriptorCount = 1;
+			mesh_descriptor_writes_info[1].pImageInfo = &base_color_image_info;
 
-            mesh_descriptor_writes_info[3]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[3].dstBinding = 3;
-            mesh_descriptor_writes_info[3].pImageInfo = &normal_roughness_image_info;
+			mesh_descriptor_writes_info[2] = mesh_descriptor_writes_info[1];
+			mesh_descriptor_writes_info[2].dstBinding = 2;
+			mesh_descriptor_writes_info[2].pImageInfo = &metallic_roughness_image_info;
 
-            mesh_descriptor_writes_info[4]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[4].dstBinding = 4;
-            mesh_descriptor_writes_info[4].pImageInfo = &occlusion_image_info;
+			mesh_descriptor_writes_info[3] = mesh_descriptor_writes_info[1];
+			mesh_descriptor_writes_info[3].dstBinding = 3;
+			mesh_descriptor_writes_info[3].pImageInfo = &normal_roughness_image_info;
 
-            mesh_descriptor_writes_info[5]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[5].dstBinding = 5;
-            mesh_descriptor_writes_info[5].pImageInfo = &emissive_image_info;
+			mesh_descriptor_writes_info[4] = mesh_descriptor_writes_info[1];
+			mesh_descriptor_writes_info[4].dstBinding = 4;
+			mesh_descriptor_writes_info[4].pImageInfo = &occlusion_image_info;
 
-            vkUpdateDescriptorSets(vulkanRendererAPI->m_device, 6, mesh_descriptor_writes_info, 0, nullptr);
+			mesh_descriptor_writes_info[5] = mesh_descriptor_writes_info[1];
+			mesh_descriptor_writes_info[5].dstBinding = 5;
+			mesh_descriptor_writes_info[5].pImageInfo = &emissive_image_info;
 
-            return now_material;
-        }
+			rhi->UpdateDescriptorSets(6, mesh_descriptor_writes_info, 0, nullptr);
+
+			return now_material;
+		}
 	}
 
 	void RenderSource::UpdatePerFrameBuffer(Scene* scene,Ref<EditorCamera> camera)
@@ -877,26 +870,29 @@ namespace Astan
 		glm::mat4 proj_view_matrix = proj_matrix * view_matrix;
 
 		// ambient light
-		auto view = scene->GetAllEntitiesWith<AmbientLightComponent>();
-		for (auto e : view)
 		{
-			Entity entity = { e, scene };
+			auto view = scene->GetAllEntitiesWith<AmbientLightComponent>();
+			for (auto e : view)
+			{
+				Entity entity = { e, scene };
 
-			auto& ambinetLgiht = entity.GetComponent<AmbientLightComponent>();
+				auto& ambinetLgiht = entity.GetComponent<AmbientLightComponent>();
 
-			m_MeshPerframeStorageBufferObject.proj_view_matrix = proj_view_matrix;
-			m_MeshPerframeStorageBufferObject.camera_position = camera_position;
-			m_MeshPerframeStorageBufferObject.ambient_light = ambinetLgiht.Irradiance;
+				m_MeshPerframeStorageBufferObject.proj_view_matrix = proj_view_matrix;
+				m_MeshPerframeStorageBufferObject.camera_position = camera_position;
+				m_MeshPerframeStorageBufferObject.ambient_light = ambinetLgiht.Irradiance;
+			}
 		}
 
-
-		auto view = scene->GetAllEntitiesWith<PointLightComponent>();
-		m_MeshPointLightShadowPerframeStorageBufferObject.point_light_num = 0;
-		for (auto e : view)
 		{
-			Entity entity = { e, scene };
-			auto& ambinetLgiht = entity.GetComponent<PointLightComponent>();
-			m_MeshPointLightShadowPerframeStorageBufferObject.point_light_num++;
+			auto view = scene->GetAllEntitiesWith<PointLightComponent>();
+			m_MeshPointLightShadowPerframeStorageBufferObject.point_light_num = 0;
+			for (auto e : view)
+			{
+				Entity entity = { e, scene };
+				auto& ambinetLgiht = entity.GetComponent<PointLightComponent>();
+				m_MeshPointLightShadowPerframeStorageBufferObject.point_light_num++;
+			}
 		}
 
 
@@ -969,7 +965,8 @@ namespace Astan
 
 	RenderMeshData RenderSource::LoadMeshData(const std::string meshfilepath, AxisAlignedBox& boundingBox)
 	{
-		std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		//std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+		Ref<AssetManager> asset_manager = CreateRef<AssetManager>();
 		AS_CORE_ASSERT(asset_manager);
 
 		RenderMeshData ret;
@@ -1085,7 +1082,7 @@ namespace Astan
 	}
 	void RenderSource::UpdateVertexBuffer(Ref<VulkanRendererAPI> rhi, bool enable_vertex_blending, uint32_t vertex_buffer_size, MeshVertexDataDefinition const* vertex_buffer_data, uint32_t joint_binding_buffer_size, MeshVertexBindingDataDefinition const* joint_binding_buffer_data, uint32_t index_buffer_size, uint16_t* index_buffer_data, VulkanMesh& now_mesh)
 	{
-		VulkanRendererAPI* vulkanRendererAPI = static_cast<VulkanRendererAPI*>(rhi.get());
+		VulkanRendererAPI* vulkan_context = static_cast<VulkanRendererAPI*>(rhi.get());
 
 		if (enable_vertex_blending)
 		{
@@ -1094,39 +1091,36 @@ namespace Astan
 			assert(0 == (index_buffer_size % sizeof(uint16_t)));
 			uint32_t index_count = index_buffer_size / sizeof(uint16_t);
 
-			VkDeviceSize vertex_position_buffer_size = sizeof(MeshVertex::VulkanMeshVertexPosition) * vertex_count;
-			VkDeviceSize vertex_varying_enable_blending_buffer_size =
+			RHIDeviceSize vertex_position_buffer_size = sizeof(MeshVertex::VulkanMeshVertexPosition) * vertex_count;
+			RHIDeviceSize vertex_varying_enable_blending_buffer_size =
 				sizeof(MeshVertex::VulkanMeshVertexVaringEnableBlending) * vertex_count;
-			VkDeviceSize vertex_varying_buffer_size = sizeof(MeshVertex::VulkanMeshVertexVaring) * vertex_count;
-			VkDeviceSize vertex_joint_binding_buffer_size =
+			RHIDeviceSize vertex_varying_buffer_size = sizeof(MeshVertex::VulkanMeshVertexVaring) * vertex_count;
+			RHIDeviceSize vertex_joint_binding_buffer_size =
 				sizeof(MeshVertex::VulkanMeshVertexJointBinding) * index_count;
 
-			VkDeviceSize vertex_position_buffer_offset = 0;
-			VkDeviceSize vertex_varying_enable_blending_buffer_offset =
+			RHIDeviceSize vertex_position_buffer_offset = 0;
+			RHIDeviceSize vertex_varying_enable_blending_buffer_offset =
 				vertex_position_buffer_offset + vertex_position_buffer_size;
-			VkDeviceSize vertex_varying_buffer_offset =
+			RHIDeviceSize vertex_varying_buffer_offset =
 				vertex_varying_enable_blending_buffer_offset + vertex_varying_enable_blending_buffer_size;
-			VkDeviceSize vertex_joint_binding_buffer_offset = vertex_varying_buffer_offset + vertex_varying_buffer_size;
+			RHIDeviceSize vertex_joint_binding_buffer_offset = vertex_varying_buffer_offset + vertex_varying_buffer_size;
 
 			// temporary staging buffer
-			VkDeviceSize inefficient_staging_buffer_size =
+			RHIDeviceSize inefficient_staging_buffer_size =
 				vertex_position_buffer_size + vertex_varying_enable_blending_buffer_size + vertex_varying_buffer_size +
 				vertex_joint_binding_buffer_size;
-			VkBuffer       inefficient_staging_buffer = VK_NULL_HANDLE;
-			VkDeviceMemory inefficient_staging_buffer_memory = VK_NULL_HANDLE;
-			VulkanUtil::createBuffer(vulkanRendererAPI->m_physical_device,
-				vulkanRendererAPI->m_device,
-				inefficient_staging_buffer_size,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			RHIBuffer* inefficient_staging_buffer = RHI_NULL_HANDLE;
+			RHIDeviceMemory* inefficient_staging_buffer_memory = RHI_NULL_HANDLE;
+			rhi->CreateBuffer(inefficient_staging_buffer_size,
+				RHI_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				inefficient_staging_buffer,
 				inefficient_staging_buffer_memory);
 
 			void* inefficient_staging_buffer_data;
-			vkMapMemory(vulkanRendererAPI->m_device,
-				inefficient_staging_buffer_memory,
+			rhi->MapMemory(inefficient_staging_buffer_memory,
 				0,
-				VK_WHOLE_SIZE,
+				RHI_WHOLE_SIZE,
 				0,
 				&inefficient_staging_buffer_data);
 
@@ -1170,11 +1164,10 @@ namespace Astan
 
 				// TODO: move to assets loading process
 
-				mesh_vertex_joint_binding[index_index].indices =
-					glm::ivec4(joint_binding_buffer_data[vertex_buffer_index].m_index0,
-						joint_binding_buffer_data[vertex_buffer_index].m_index1,
-						joint_binding_buffer_data[vertex_buffer_index].m_index2,
-						joint_binding_buffer_data[vertex_buffer_index].m_index3);
+				mesh_vertex_joint_binding[index_index].indices[0] = joint_binding_buffer_data[vertex_buffer_index].m_index0;
+				mesh_vertex_joint_binding[index_index].indices[1] = joint_binding_buffer_data[vertex_buffer_index].m_index1;
+				mesh_vertex_joint_binding[index_index].indices[2] = joint_binding_buffer_data[vertex_buffer_index].m_index2;
+				mesh_vertex_joint_binding[index_index].indices[3] = joint_binding_buffer_data[vertex_buffer_index].m_index3;
 
 				float inv_total_weight = joint_binding_buffer_data[vertex_buffer_index].m_weight0 +
 					joint_binding_buffer_data[vertex_buffer_index].m_weight1 +
@@ -1190,344 +1183,329 @@ namespace Astan
 						joint_binding_buffer_data[vertex_buffer_index].m_weight3 * inv_total_weight);
 			}
 
-			vkUnmapMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory);
+			rhi->UnmapMemory(inefficient_staging_buffer_memory);
 
 			// use the vmaAllocator to allocate asset vertex buffer
-			VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+			RHIBufferCreateInfo bufferInfo = { RHI_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 
 			VmaAllocationCreateInfo allocInfo = {};
 			allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-			bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			bufferInfo.usage = RHI_BUFFER_USAGE_VERTEX_BUFFER_BIT | RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
 			bufferInfo.size = vertex_position_buffer_size;
-			vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
 				&bufferInfo,
 				&allocInfo,
-				&now_mesh.mesh_vertex_position_buffer,
+				now_mesh.mesh_vertex_position_buffer,
 				&now_mesh.mesh_vertex_position_buffer_allocation,
 				NULL);
 			bufferInfo.size = vertex_varying_enable_blending_buffer_size;
-			vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
 				&bufferInfo,
 				&allocInfo,
-				&now_mesh.mesh_vertex_varying_enable_blending_buffer,
+				now_mesh.mesh_vertex_varying_enable_blending_buffer,
 				&now_mesh.mesh_vertex_varying_enable_blending_buffer_allocation,
 				NULL);
 			bufferInfo.size = vertex_varying_buffer_size;
-			vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
 				&bufferInfo,
 				&allocInfo,
-				&now_mesh.mesh_vertex_varying_buffer,
+				now_mesh.mesh_vertex_varying_buffer,
 				&now_mesh.mesh_vertex_varying_buffer_allocation,
 				NULL);
 
-			bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			bufferInfo.usage = RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
 			bufferInfo.size = vertex_joint_binding_buffer_size;
-			vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
 				&bufferInfo,
 				&allocInfo,
-				&now_mesh.mesh_vertex_joint_binding_buffer,
+				now_mesh.mesh_vertex_joint_binding_buffer,
 				&now_mesh.mesh_vertex_joint_binding_buffer_allocation,
 				NULL);
 
 			// use the data from staging buffer
-			VulkanUtil::copyBuffer(rhi.get(),
-				inefficient_staging_buffer,
+			rhi->CopyBuffer(inefficient_staging_buffer,
 				now_mesh.mesh_vertex_position_buffer,
 				vertex_position_buffer_offset,
 				0,
 				vertex_position_buffer_size);
-			VulkanUtil::copyBuffer(rhi.get(),
-				inefficient_staging_buffer,
+			rhi->CopyBuffer(inefficient_staging_buffer,
 				now_mesh.mesh_vertex_varying_enable_blending_buffer,
 				vertex_varying_enable_blending_buffer_offset,
 				0,
 				vertex_varying_enable_blending_buffer_size);
-			VulkanUtil::copyBuffer(rhi.get(),
-				inefficient_staging_buffer,
+			rhi->CopyBuffer(inefficient_staging_buffer,
 				now_mesh.mesh_vertex_varying_buffer,
 				vertex_varying_buffer_offset,
 				0,
 				vertex_varying_buffer_size);
-			VulkanUtil::copyBuffer(rhi.get(),
-				inefficient_staging_buffer,
+			rhi->CopyBuffer(inefficient_staging_buffer,
 				now_mesh.mesh_vertex_joint_binding_buffer,
 				vertex_joint_binding_buffer_offset,
 				0,
 				vertex_joint_binding_buffer_size);
 
 			// release staging buffer
-			vkDestroyBuffer(vulkanRendererAPI->m_device, inefficient_staging_buffer, nullptr);
-			vkFreeMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory, nullptr);
+			rhi->DestroyBuffer(inefficient_staging_buffer);
+			rhi->FreeMemory(inefficient_staging_buffer_memory);
 
 			// update descriptor set
-			VkDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
+			RHIDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
 			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.sType =
-				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+				RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = NULL;
-			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool = vulkanRendererAPI->m_descriptor_pool;
+			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool = vulkan_context->m_descriptor_pool;
 			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorSetCount = 1;
 			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pSetLayouts = m_mesh_descriptor_set_layout;
 
-			if (VK_SUCCESS != vkAllocateDescriptorSets(vulkanRendererAPI->m_device,
+			if (RHI_SUCCESS != rhi->AllocateDescriptorSets(
 				&mesh_vertex_blending_per_mesh_descriptor_set_alloc_info,
-				&now_mesh.mesh_vertex_blending_descriptor_set))
+				now_mesh.mesh_vertex_blending_descriptor_set))
 			{
 				throw std::runtime_error("allocate mesh vertex blending per mesh descriptor set");
 			}
 
-			VkDescriptorBufferInfo mesh_vertex_Joint_binding_storage_buffer_info = {};
+			RHIDescriptorBufferInfo mesh_vertex_Joint_binding_storage_buffer_info = {};
 			mesh_vertex_Joint_binding_storage_buffer_info.offset = 0;
 			mesh_vertex_Joint_binding_storage_buffer_info.range = vertex_joint_binding_buffer_size;
 			mesh_vertex_Joint_binding_storage_buffer_info.buffer = now_mesh.mesh_vertex_joint_binding_buffer;
-			AS_CORE_ASSERT(mesh_vertex_Joint_binding_storage_buffer_info.range <
-				m_global_render_resource._storage_buffer._max_storage_buffer_range);
+			assert(mesh_vertex_Joint_binding_storage_buffer_info.range < m_GlobalRenderResource._storage_buffer._max_storage_buffer_range);
 
-			VkDescriptorSet descriptor_set_to_write = now_mesh.mesh_vertex_blending_descriptor_set;
+			RHIDescriptorSet* descriptor_set_to_write = now_mesh.mesh_vertex_blending_descriptor_set;
 
-			VkWriteDescriptorSet descriptor_writes[1];
+			RHIWriteDescriptorSet descriptor_writes[1];
 
-			VkWriteDescriptorSet& mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info =
+			RHIWriteDescriptorSet& mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info =
 				descriptor_writes[0];
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.sType =
-				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext = NULL;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstSet = descriptor_set_to_write;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstBinding = 0;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstArrayElement = 0;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorType =
-				VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorCount = 1;
 			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pBufferInfo =
 				&mesh_vertex_Joint_binding_storage_buffer_info;
 
-			vkUpdateDescriptorSets(vulkanRendererAPI->m_device,
-				(sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
+			rhi->UpdateDescriptorSets((sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
 				descriptor_writes,
 				0,
 				NULL);
-			}
+		}
 		else
 		{
-		assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
-		uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
+			AS_CORE_ASSERT(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
+			uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
 
-		VkDeviceSize vertex_position_buffer_size = sizeof(MeshVertex::VulkanMeshVertexPosition) * vertex_count;
-		VkDeviceSize vertex_varying_enable_blending_buffer_size =
-			sizeof(MeshVertex::VulkanMeshVertexVaringEnableBlending) * vertex_count;
-		VkDeviceSize vertex_varying_buffer_size = sizeof(MeshVertex::VulkanMeshVertexVaring) * vertex_count;
+			RHIDeviceSize vertex_position_buffer_size = sizeof(MeshVertex::VulkanMeshVertexPosition) * vertex_count;
+			RHIDeviceSize vertex_varying_enable_blending_buffer_size =
+				sizeof(MeshVertex::VulkanMeshVertexVaringEnableBlending) * vertex_count;
+			RHIDeviceSize vertex_varying_buffer_size = sizeof(MeshVertex::VulkanMeshVertexVaring) * vertex_count;
 
-		VkDeviceSize vertex_position_buffer_offset = 0;
-		VkDeviceSize vertex_varying_enable_blending_buffer_offset =
-			vertex_position_buffer_offset + vertex_position_buffer_size;
-		VkDeviceSize vertex_varying_buffer_offset =
-			vertex_varying_enable_blending_buffer_offset + vertex_varying_enable_blending_buffer_size;
+			RHIDeviceSize vertex_position_buffer_offset = 0;
+			RHIDeviceSize vertex_varying_enable_blending_buffer_offset =
+				vertex_position_buffer_offset + vertex_position_buffer_size;
+			RHIDeviceSize vertex_varying_buffer_offset =
+				vertex_varying_enable_blending_buffer_offset + vertex_varying_enable_blending_buffer_size;
 
-		// temporary staging buffer
-		VkDeviceSize inefficient_staging_buffer_size =
-			vertex_position_buffer_size + vertex_varying_enable_blending_buffer_size + vertex_varying_buffer_size;
-		VkBuffer       inefficient_staging_buffer = VK_NULL_HANDLE;
-		VkDeviceMemory inefficient_staging_buffer_memory = VK_NULL_HANDLE;
-		VulkanUtil::createBuffer(vulkanRendererAPI->m_physical_device,
-			vulkanRendererAPI->m_device,
-			inefficient_staging_buffer_size,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			inefficient_staging_buffer,
-			inefficient_staging_buffer_memory);
+			// temporary staging buffer
+			RHIDeviceSize inefficient_staging_buffer_size =
+				vertex_position_buffer_size + vertex_varying_enable_blending_buffer_size + vertex_varying_buffer_size;
+			RHIBuffer* inefficient_staging_buffer = RHI_NULL_HANDLE;
+			RHIDeviceMemory* inefficient_staging_buffer_memory = RHI_NULL_HANDLE;
+			rhi->CreateBuffer(inefficient_staging_buffer_size,
+				RHI_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				inefficient_staging_buffer,
+				inefficient_staging_buffer_memory);
 
-		void* inefficient_staging_buffer_data;
-		vkMapMemory(vulkanRendererAPI->m_device,
-			inefficient_staging_buffer_memory,
-			0,
-			VK_WHOLE_SIZE,
-			0,
-			&inefficient_staging_buffer_data);
+			void* inefficient_staging_buffer_data;
+			rhi->MapMemory(inefficient_staging_buffer_memory,
+				0,
+				RHI_WHOLE_SIZE,
+				0,
+				&inefficient_staging_buffer_data);
 
-		MeshVertex::VulkanMeshVertexPosition* mesh_vertex_positions =
-			reinterpret_cast<MeshVertex::VulkanMeshVertexPosition*>(
-				reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_position_buffer_offset);
-		MeshVertex::VulkanMeshVertexVaringEnableBlending* mesh_vertex_blending_varyings =
-			reinterpret_cast<MeshVertex::VulkanMeshVertexVaringEnableBlending*>(
-				reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) +
-				vertex_varying_enable_blending_buffer_offset);
-		MeshVertex::VulkanMeshVertexVaring* mesh_vertex_varyings =
-			reinterpret_cast<MeshVertex::VulkanMeshVertexVaring*>(
-				reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_varying_buffer_offset);
+			MeshVertex::VulkanMeshVertexPosition* mesh_vertex_positions =
+				reinterpret_cast<MeshVertex::VulkanMeshVertexPosition*>(
+					reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_position_buffer_offset);
+			MeshVertex::VulkanMeshVertexVaringEnableBlending* mesh_vertex_blending_varyings =
+				reinterpret_cast<MeshVertex::VulkanMeshVertexVaringEnableBlending*>(
+					reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) +
+					vertex_varying_enable_blending_buffer_offset);
+			MeshVertex::VulkanMeshVertexVaring* mesh_vertex_varyings =
+				reinterpret_cast<MeshVertex::VulkanMeshVertexVaring*>(
+					reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_varying_buffer_offset);
 
-		for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
-		{
-			glm::vec3 normal = glm::vec3(vertex_buffer_data[vertex_index].nx,
-				vertex_buffer_data[vertex_index].ny,
-				vertex_buffer_data[vertex_index].nz);
-			glm::vec3 tangent = glm::vec3(vertex_buffer_data[vertex_index].tx,
-				vertex_buffer_data[vertex_index].ty,
-				vertex_buffer_data[vertex_index].tz);
+			for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
+			{
+				glm::vec3 normal = glm::vec3(vertex_buffer_data[vertex_index].nx,
+					vertex_buffer_data[vertex_index].ny,
+					vertex_buffer_data[vertex_index].nz);
+				glm::vec3 tangent = glm::vec3(vertex_buffer_data[vertex_index].tx,
+					vertex_buffer_data[vertex_index].ty,
+					vertex_buffer_data[vertex_index].tz);
 
-			mesh_vertex_positions[vertex_index].position = glm::vec3(vertex_buffer_data[vertex_index].x,
-				vertex_buffer_data[vertex_index].y,
-				vertex_buffer_data[vertex_index].z);
+				mesh_vertex_positions[vertex_index].position = glm::vec3(vertex_buffer_data[vertex_index].x,
+					vertex_buffer_data[vertex_index].y,
+					vertex_buffer_data[vertex_index].z);
 
-			mesh_vertex_blending_varyings[vertex_index].normal = normal;
-			mesh_vertex_blending_varyings[vertex_index].tangent = tangent;
+				mesh_vertex_blending_varyings[vertex_index].normal = normal;
+				mesh_vertex_blending_varyings[vertex_index].tangent = tangent;
 
-			mesh_vertex_varyings[vertex_index].texcoord =
-				glm::vec2(vertex_buffer_data[vertex_index].u, vertex_buffer_data[vertex_index].v);
-		}
+				mesh_vertex_varyings[vertex_index].texcoord =
+					glm::vec2(vertex_buffer_data[vertex_index].u, vertex_buffer_data[vertex_index].v);
+			}
 
-		vkUnmapMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory);
+			rhi->UnmapMemory(inefficient_staging_buffer_memory);
 
-		// use the vmaAllocator to allocate asset vertex buffer
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			// use the vmaAllocator to allocate asset vertex buffer
+			RHIBufferCreateInfo bufferInfo = { RHI_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+			bufferInfo.usage = RHI_BUFFER_USAGE_VERTEX_BUFFER_BIT | RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-		VmaAllocationCreateInfo allocInfo = {};
-		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+			VmaAllocationCreateInfo allocInfo = {};
+			allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-		bufferInfo.size = vertex_position_buffer_size;
-		vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
-			&bufferInfo,
-			&allocInfo,
-			&now_mesh.mesh_vertex_position_buffer,
-			&now_mesh.mesh_vertex_position_buffer_allocation,
-			NULL);
-		bufferInfo.size = vertex_varying_enable_blending_buffer_size;
-		vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
-			&bufferInfo,
-			&allocInfo,
-			&now_mesh.mesh_vertex_varying_enable_blending_buffer,
-			&now_mesh.mesh_vertex_varying_enable_blending_buffer_allocation,
-			NULL);
-		bufferInfo.size = vertex_varying_buffer_size;
-		vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
-			&bufferInfo,
-			&allocInfo,
-			&now_mesh.mesh_vertex_varying_buffer,
-			&now_mesh.mesh_vertex_varying_buffer_allocation,
-			NULL);
+			bufferInfo.size = vertex_position_buffer_size;
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
+				&bufferInfo,
+				&allocInfo,
+				now_mesh.mesh_vertex_position_buffer,
+				&now_mesh.mesh_vertex_position_buffer_allocation,
+				NULL);
+			bufferInfo.size = vertex_varying_enable_blending_buffer_size;
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
+				&bufferInfo,
+				&allocInfo,
+				now_mesh.mesh_vertex_varying_enable_blending_buffer,
+				&now_mesh.mesh_vertex_varying_enable_blending_buffer_allocation,
+				NULL);
+			bufferInfo.size = vertex_varying_buffer_size;
+			rhi->CreateBufferVMA(vulkan_context->m_assets_allocator,
+				&bufferInfo,
+				&allocInfo,
+				now_mesh.mesh_vertex_varying_buffer,
+				&now_mesh.mesh_vertex_varying_buffer_allocation,
+				NULL);
 
-		// use the data from staging buffer
-		VulkanUtil::copyBuffer(rhi.get(),
-			inefficient_staging_buffer,
-			now_mesh.mesh_vertex_position_buffer,
-			vertex_position_buffer_offset,
-			0,
-			vertex_position_buffer_size);
-		VulkanUtil::copyBuffer(rhi.get(),
-			inefficient_staging_buffer,
-			now_mesh.mesh_vertex_varying_enable_blending_buffer,
-			vertex_varying_enable_blending_buffer_offset,
-			0,
-			vertex_varying_enable_blending_buffer_size);
-		VulkanUtil::copyBuffer(rhi.get(),
-			inefficient_staging_buffer,
-			now_mesh.mesh_vertex_varying_buffer,
-			vertex_varying_buffer_offset,
-			0,
-			vertex_varying_buffer_size);
+			// use the data from staging buffer
+			rhi->CopyBuffer(inefficient_staging_buffer,
+				now_mesh.mesh_vertex_position_buffer,
+				vertex_position_buffer_offset,
+				0,
+				vertex_position_buffer_size);
+			rhi->CopyBuffer(inefficient_staging_buffer,
+				now_mesh.mesh_vertex_varying_enable_blending_buffer,
+				vertex_varying_enable_blending_buffer_offset,
+				0,
+				vertex_varying_enable_blending_buffer_size);
+			rhi->CopyBuffer(inefficient_staging_buffer,
+				now_mesh.mesh_vertex_varying_buffer,
+				vertex_varying_buffer_offset,
+				0,
+				vertex_varying_buffer_size);
 
-		// release staging buffer
-		vkDestroyBuffer(vulkanRendererAPI->m_device, inefficient_staging_buffer, nullptr);
-		vkFreeMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory, nullptr);
+			// release staging buffer
+			rhi->DestroyBuffer(inefficient_staging_buffer);
+			rhi->FreeMemory(inefficient_staging_buffer_memory);
 
-		// update descriptor set
-		VkDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
-		mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.sType =
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = NULL;
-		mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool = vulkanRendererAPI->m_descriptor_pool;
-		mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorSetCount = 1;
-		mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pSetLayouts = m_mesh_descriptor_set_layout;
+			// update descriptor set
+			RHIDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
+			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.sType =
+				RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext = NULL;
+			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool = vulkan_context->m_descriptor_pool;
+			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorSetCount = 1;
+			mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pSetLayouts = m_mesh_descriptor_set_layout;
 
-		if (VK_SUCCESS != vkAllocateDescriptorSets(vulkanRendererAPI->m_device,
-			&mesh_vertex_blending_per_mesh_descriptor_set_alloc_info,
-			&now_mesh.mesh_vertex_blending_descriptor_set))
-		{
-			throw std::runtime_error("allocate mesh vertex blending per mesh descriptor set");
-		}
+			if (RHI_SUCCESS != rhi->AllocateDescriptorSets(
+				&mesh_vertex_blending_per_mesh_descriptor_set_alloc_info,
+				now_mesh.mesh_vertex_blending_descriptor_set))
+			{
+				throw std::runtime_error("allocate mesh vertex blending per mesh descriptor set");
+			}
 
-		VkDescriptorBufferInfo mesh_vertex_Joint_binding_storage_buffer_info = {};
-		mesh_vertex_Joint_binding_storage_buffer_info.offset = 0;
-		mesh_vertex_Joint_binding_storage_buffer_info.range = 1;
-		mesh_vertex_Joint_binding_storage_buffer_info.buffer =
-			m_global_render_resource._storage_buffer._global_null_descriptor_storage_buffer;
-		assert(mesh_vertex_Joint_binding_storage_buffer_info.range <
-			m_global_render_resource._storage_buffer._max_storage_buffer_range);
+			RHIDescriptorBufferInfo mesh_vertex_Joint_binding_storage_buffer_info = {};
+			mesh_vertex_Joint_binding_storage_buffer_info.offset = 0;
+			mesh_vertex_Joint_binding_storage_buffer_info.range = 1;
+			mesh_vertex_Joint_binding_storage_buffer_info.buffer =
+				m_GlobalRenderResource._storage_buffer._global_null_descriptor_storage_buffer;
+			assert(mesh_vertex_Joint_binding_storage_buffer_info.range <
+				m_GlobalRenderResource._storage_buffer._max_storage_buffer_range);
 
-		VkDescriptorSet descriptor_set_to_write = now_mesh.mesh_vertex_blending_descriptor_set;
+			RHIDescriptorSet* descriptor_set_to_write = now_mesh.mesh_vertex_blending_descriptor_set;
 
-		VkWriteDescriptorSet descriptor_writes[1];
+			RHIWriteDescriptorSet descriptor_writes[1];
 
-		VkWriteDescriptorSet& mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info =
-			descriptor_writes[0];
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.sType =
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext = NULL;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstSet = descriptor_set_to_write;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstBinding = 0;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstArrayElement = 0;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorType =
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorCount = 1;
-		mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pBufferInfo =
-			&mesh_vertex_Joint_binding_storage_buffer_info;
+			RHIWriteDescriptorSet& mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info =
+				descriptor_writes[0];
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.sType =
+				RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext = NULL;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstSet = descriptor_set_to_write;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstBinding = 0;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstArrayElement = 0;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorType =
+				RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorCount = 1;
+			mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pBufferInfo =
+				&mesh_vertex_Joint_binding_storage_buffer_info;
 
-		vkUpdateDescriptorSets(vulkanRendererAPI->m_device,
-			(sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
-			descriptor_writes,
-			0,
-			NULL);
+			rhi->UpdateDescriptorSets((sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
+				descriptor_writes,
+				0,
+				NULL);
 		}
 	}
+	
 	void RenderSource::UpdateIndexBuffer(Ref<VulkanRendererAPI> rhi, uint32_t index_buffer_size, void* index_buffer_data, VulkanMesh& now_mesh)
 	{
 		VulkanRendererAPI* vulkanRendererAPI = static_cast<VulkanRendererAPI*>(rhi.get());
 
 		// temp staging buffer
-		VkDeviceSize buffer_size = index_buffer_size;
+		RHIDeviceSize buffer_size = index_buffer_size;
 
-		VkBuffer       inefficient_staging_buffer;
-		VkDeviceMemory inefficient_staging_buffer_memory;
-		VulkanUtil::createBuffer(vulkanRendererAPI->m_physical_device,
-			vulkanRendererAPI->m_device,
-			buffer_size,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		RHIBuffer* inefficient_staging_buffer;
+		RHIDeviceMemory* inefficient_staging_buffer_memory;
+		rhi->CreateBuffer(buffer_size,
+			RHI_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			inefficient_staging_buffer,
 			inefficient_staging_buffer_memory);
 
 		void* staging_buffer_data;
-		vkMapMemory(
-			vulkanRendererAPI->m_device, inefficient_staging_buffer_memory, 0, buffer_size, 0, &staging_buffer_data);
+		rhi->MapMemory(inefficient_staging_buffer_memory, 0, buffer_size, 0, &staging_buffer_data);
 		memcpy(staging_buffer_data, index_buffer_data, (size_t)buffer_size);
-		vkUnmapMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory);
+		rhi->UnmapMemory(inefficient_staging_buffer_memory);
 
 		// use the vmaAllocator to allocate asset index buffer
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		RHIBufferCreateInfo bufferInfo = { RHI_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		bufferInfo.size = buffer_size;
-		bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		bufferInfo.usage = RHI_BUFFER_USAGE_INDEX_BUFFER_BIT | RHI_BUFFER_USAGE_TRANSFER_DST_BIT;
 
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-		vmaCreateBuffer(vulkanRendererAPI->m_assets_allocator,
+		rhi->CreateBufferVMA(vulkanRendererAPI->m_assets_allocator,
 			&bufferInfo,
 			&allocInfo,
-			&now_mesh.mesh_index_buffer,
+			now_mesh.mesh_index_buffer,
 			&now_mesh.mesh_index_buffer_allocation,
 			NULL);
 
 		// use the data from staging buffer
-		VulkanUtil::copyBuffer(rhi.get(), inefficient_staging_buffer, now_mesh.mesh_index_buffer, 0, 0, buffer_size);
+		rhi->CopyBuffer(inefficient_staging_buffer, now_mesh.mesh_index_buffer, 0, 0, buffer_size);
 
 		// release temp staging buffer
-		vkDestroyBuffer(vulkanRendererAPI->m_device, inefficient_staging_buffer, nullptr);
-		vkFreeMemory(vulkanRendererAPI->m_device, inefficient_staging_buffer_memory, nullptr);
+		rhi->DestroyBuffer(inefficient_staging_buffer);
+		rhi->FreeMemory(inefficient_staging_buffer_memory);
 	}
 
 	void RenderSource::UpdateTextureImageData(Ref<VulkanRendererAPI> rhi, const TextureDataToUpdate& texture_data)
 	{
-		VulkanUtil::createGlobalImage(rhi.get(),
+		rhi->CreateGlobalImage(
 			texture_data.now_material->base_color_texture_image,
 			texture_data.now_material->base_color_image_view,
 			texture_data.now_material->base_color_image_allocation,
@@ -1536,7 +1514,7 @@ namespace Astan
 			texture_data.base_color_image_pixels,
 			texture_data.base_color_image_format);
 
-		VulkanUtil::createGlobalImage(rhi.get(),
+		rhi->CreateGlobalImage(
 			texture_data.now_material->metallic_roughness_texture_image,
 			texture_data.now_material->metallic_roughness_image_view,
 			texture_data.now_material->metallic_roughness_image_allocation,
@@ -1545,7 +1523,7 @@ namespace Astan
 			texture_data.metallic_roughness_image_pixels,
 			texture_data.metallic_roughness_image_format);
 
-		VulkanUtil::createGlobalImage(rhi.get(),
+		rhi->CreateGlobalImage(
 			texture_data.now_material->normal_texture_image,
 			texture_data.now_material->normal_image_view,
 			texture_data.now_material->normal_image_allocation,
@@ -1554,7 +1532,7 @@ namespace Astan
 			texture_data.normal_roughness_image_pixels,
 			texture_data.normal_roughness_image_format);
 
-		VulkanUtil::createGlobalImage(rhi.get(),
+		rhi->CreateGlobalImage(
 			texture_data.now_material->occlusion_texture_image,
 			texture_data.now_material->occlusion_image_view,
 			texture_data.now_material->occlusion_image_allocation,
@@ -1563,7 +1541,7 @@ namespace Astan
 			texture_data.occlusion_image_pixels,
 			texture_data.occlusion_image_format);
 
-		VulkanUtil::createGlobalImage(rhi.get(),
+		rhi->CreateGlobalImage(
 			texture_data.now_material->emissive_texture_image,
 			texture_data.now_material->emissive_image_view,
 			texture_data.now_material->emissive_image_allocation,
@@ -1577,166 +1555,166 @@ namespace Astan
 	{
 		StaticMeshData mesh_data;
 
-		tinyobj::ObjReader       reader;
-		tinyobj::ObjReaderConfig reader_config;
-		reader_config.vertex_color = false;
-		if (!reader.ParseFromFile(filename, reader_config))
-		{
-			if (!reader.Error().empty())
-			{
-				AS_CORE_ERROR("loadMesh {} failed, error: {}", filename, reader.Error());
-			}
-			assert(0);
-		}
+		//tinyobj::ObjReader       reader;
+		//tinyobj::ObjReaderConfig reader_config;
+		//reader_config.vertex_color = false;
+		//if (!reader.ParseFromFile(filename, reader_config))
+		//{
+		//	if (!reader.Error().empty())
+		//	{
+		//		AS_CORE_ERROR("loadMesh {} failed, error: {}", filename, reader.Error());
+		//	}
+		//	assert(0);
+		//}
 
-		if (!reader.Warning().empty())
-		{
-			AS_CORE_WARN("loadMesh {} warning, warning: {}", filename, reader.Warning());
-		}
+		//if (!reader.Warning().empty())
+		//{
+		//	AS_CORE_WARN("loadMesh {} warning, warning: {}", filename, reader.Warning());
+		//}
 
-		auto& attrib = reader.GetAttrib();
-		auto& shapes = reader.GetShapes();
+		//auto& attrib = reader.GetAttrib();
+		//auto& shapes = reader.GetShapes();
 
-		std::vector<MeshVertexDataDefinition> mesh_vertices;
+		//std::vector<MeshVertexDataDefinition> mesh_vertices;
 
-		for (size_t s = 0; s < shapes.size(); s++)
-		{
-			size_t index_offset = 0;
-			for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
-			{
-				size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+		//for (size_t s = 0; s < shapes.size(); s++)
+		//{
+		//	size_t index_offset = 0;
+		//	for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
+		//	{
+		//		size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
 
-				bool with_normal = true;
-				bool with_texcoord = true;
+		//		bool with_normal = true;
+		//		bool with_texcoord = true;
 
-				glm::vec3 vertex[3];
-				glm::vec3 normal[3];
-				glm::vec2 uv[3];
+		//		glm::vec3 vertex[3];
+		//		glm::vec3 normal[3];
+		//		glm::vec2 uv[3];
 
-				// only deals with triangle faces
-				if (fv != 3)
-				{
-					continue;
-				}
+		//		// only deals with triangle faces
+		//		if (fv != 3)
+		//		{
+		//			continue;
+		//		}
 
-				// expanding vertex data is not efficient and is for testing purposes only
-				for (size_t v = 0; v < fv; v++)
-				{
-					auto idx = shapes[s].mesh.indices[index_offset + v];
-					auto vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
-					auto vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
-					auto vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
+		//		// expanding vertex data is not efficient and is for testing purposes only
+		//		for (size_t v = 0; v < fv; v++)
+		//		{
+		//			auto idx = shapes[s].mesh.indices[index_offset + v];
+		//			auto vx = attrib.vertices[3 * size_t(idx.vertex_index) + 0];
+		//			auto vy = attrib.vertices[3 * size_t(idx.vertex_index) + 1];
+		//			auto vz = attrib.vertices[3 * size_t(idx.vertex_index) + 2];
 
-					vertex[v].x = static_cast<float>(vx);
-					vertex[v].y = static_cast<float>(vy);
-					vertex[v].z = static_cast<float>(vz);
+		//			vertex[v].x = static_cast<float>(vx);
+		//			vertex[v].y = static_cast<float>(vy);
+		//			vertex[v].z = static_cast<float>(vz);
 
-					bounding_box.Merge(glm::vec3(vertex[v].x, vertex[v].y, vertex[v].z));
+		//			bounding_box.Merge(glm::vec3(vertex[v].x, vertex[v].y, vertex[v].z));
 
-					if (idx.normal_index >= 0)
-					{
-						auto nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
-						auto ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
-						auto nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
+		//			if (idx.normal_index >= 0)
+		//			{
+		//				auto nx = attrib.normals[3 * size_t(idx.normal_index) + 0];
+		//				auto ny = attrib.normals[3 * size_t(idx.normal_index) + 1];
+		//				auto nz = attrib.normals[3 * size_t(idx.normal_index) + 2];
 
-						normal[v].x = static_cast<float>(nx);
-						normal[v].y = static_cast<float>(ny);
-						normal[v].z = static_cast<float>(nz);
-					}
-					else
-					{
-						with_normal = false;
-					}
+		//				normal[v].x = static_cast<float>(nx);
+		//				normal[v].y = static_cast<float>(ny);
+		//				normal[v].z = static_cast<float>(nz);
+		//			}
+		//			else
+		//			{
+		//				with_normal = false;
+		//			}
 
-					if (idx.texcoord_index >= 0)
-					{
-						auto tx = attrib.texcoords[2 * size_t(idx.texcoord_index) + 0];
-						auto ty = attrib.texcoords[2 * size_t(idx.texcoord_index) + 1];
+		//			if (idx.texcoord_index >= 0)
+		//			{
+		//				auto tx = attrib.texcoords[2 * size_t(idx.texcoord_index) + 0];
+		//				auto ty = attrib.texcoords[2 * size_t(idx.texcoord_index) + 1];
 
-						uv[v].x = static_cast<float>(tx);
-						uv[v].y = static_cast<float>(ty);
-					}
-					else
-					{
-						with_texcoord = false;
-					}
-				}
-				index_offset += fv;
+		//				uv[v].x = static_cast<float>(tx);
+		//				uv[v].y = static_cast<float>(ty);
+		//			}
+		//			else
+		//			{
+		//				with_texcoord = false;
+		//			}
+		//		}
+		//		index_offset += fv;
 
-				if (!with_normal)
-				{
-					glm::vec3 v0 = vertex[1] - vertex[0];
-					glm::vec3 v1 = vertex[2] - vertex[1];
-					normal[0] = glm::normalize(glm::cross(v0, v1));
-					normal[1] = normal[0];
-					normal[2] = normal[0];
-				}
+		//		if (!with_normal)
+		//		{
+		//			glm::vec3 v0 = vertex[1] - vertex[0];
+		//			glm::vec3 v1 = vertex[2] - vertex[1];
+		//			normal[0] = glm::normalize(glm::cross(v0, v1));
+		//			normal[1] = normal[0];
+		//			normal[2] = normal[0];
+		//		}
 
-				if (!with_texcoord)
-				{
-					uv[0] = glm::vec2(0.5f, 0.5f);
-					uv[1] = glm::vec2(0.5f, 0.5f);
-					uv[2] = glm::vec2(0.5f, 0.5f);
-				}
+		//		if (!with_texcoord)
+		//		{
+		//			uv[0] = glm::vec2(0.5f, 0.5f);
+		//			uv[1] = glm::vec2(0.5f, 0.5f);
+		//			uv[2] = glm::vec2(0.5f, 0.5f);
+		//		}
 
-				glm::vec3 tangent{ 1, 0, 0 };
-				{
-					glm::vec3 edge1 = vertex[1] - vertex[0];
-					glm::vec3 edge2 = vertex[2] - vertex[1];
-					glm::vec2 deltaUV1 = uv[1] - uv[0];
-					glm::vec2 deltaUV2 = uv[2] - uv[1];
+		//		glm::vec3 tangent{ 1, 0, 0 };
+		//		{
+		//			glm::vec3 edge1 = vertex[1] - vertex[0];
+		//			glm::vec3 edge2 = vertex[2] - vertex[1];
+		//			glm::vec2 deltaUV1 = uv[1] - uv[0];
+		//			glm::vec2 deltaUV2 = uv[2] - uv[1];
 
-					auto divide = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
-					if (divide >= 0.0f && divide < 0.000001f)
-						divide = 0.000001f;
-					else if (divide < 0.0f && divide > -0.000001f)
-						divide = -0.000001f;
+		//			auto divide = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
+		//			if (divide >= 0.0f && divide < 0.000001f)
+		//				divide = 0.000001f;
+		//			else if (divide < 0.0f && divide > -0.000001f)
+		//				divide = -0.000001f;
 
-					float df = 1.0f / divide;
-					tangent.x = df * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-					tangent.y = df * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-					tangent.z = df * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-					tangent = glm::normalize(tangent);
-				}
+		//			float df = 1.0f / divide;
+		//			tangent.x = df * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+		//			tangent.y = df * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+		//			tangent.z = df * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+		//			tangent = glm::normalize(tangent);
+		//		}
 
-				for (size_t i = 0; i < 3; i++)
-				{
-					MeshVertexDataDefinition mesh_vert{};
+		//		for (size_t i = 0; i < 3; i++)
+		//		{
+		//			MeshVertexDataDefinition mesh_vert{};
 
-					mesh_vert.x = vertex[i].x;
-					mesh_vert.y = vertex[i].y;
-					mesh_vert.z = vertex[i].z;
+		//			mesh_vert.x = vertex[i].x;
+		//			mesh_vert.y = vertex[i].y;
+		//			mesh_vert.z = vertex[i].z;
 
-					mesh_vert.nx = normal[i].x;
-					mesh_vert.ny = normal[i].y;
-					mesh_vert.nz = normal[i].z;
+		//			mesh_vert.nx = normal[i].x;
+		//			mesh_vert.ny = normal[i].y;
+		//			mesh_vert.nz = normal[i].z;
 
-					mesh_vert.u = uv[i].x;
-					mesh_vert.v = uv[i].y;
+		//			mesh_vert.u = uv[i].x;
+		//			mesh_vert.v = uv[i].y;
 
-					mesh_vert.tx = tangent.x;
-					mesh_vert.ty = tangent.y;
-					mesh_vert.tz = tangent.z;
+		//			mesh_vert.tx = tangent.x;
+		//			mesh_vert.ty = tangent.y;
+		//			mesh_vert.tz = tangent.z;
 
-					mesh_vertices.push_back(mesh_vert);
-				}
-			}
-		}
+		//			mesh_vertices.push_back(mesh_vert);
+		//		}
+		//	}
+		//}
 
-		uint32_t stride = sizeof(MeshVertexDataDefinition);
-		mesh_data.m_vertex_buffer = std::make_shared<BufferData>(mesh_vertices.size() * stride);
-		mesh_data.m_index_buffer = std::make_shared<BufferData>(mesh_vertices.size() * sizeof(uint16_t));
+		//uint32_t stride = sizeof(MeshVertexDataDefinition);
+		//mesh_data.m_vertex_buffer = std::make_shared<BufferData>(mesh_vertices.size() * stride);
+		//mesh_data.m_index_buffer = std::make_shared<BufferData>(mesh_vertices.size() * sizeof(uint16_t));
 
-		assert(mesh_vertices.size() <= std::numeric_limits<uint16_t>::max()); // take care of the index range, should be
-																			  // consistent with the index range used by
-																			  // vulkan
+		//assert(mesh_vertices.size() <= std::numeric_limits<uint16_t>::max()); // take care of the index range, should be
+		//																	  // consistent with the index range used by
+		//																	  // vulkan
 
-		uint16_t* indices = (uint16_t*)mesh_data.m_index_buffer->m_data;
-		for (size_t i = 0; i < mesh_vertices.size(); i++)
-		{
-			((MeshVertexDataDefinition*)(mesh_data.m_vertex_buffer->m_data))[i] = mesh_vertices[i];
-			indices[i] = static_cast<uint16_t>(i);
-		}
+		//uint16_t* indices = (uint16_t*)mesh_data.m_index_buffer->m_data;
+		//for (size_t i = 0; i < mesh_vertices.size(); i++)
+		//{
+		//	((MeshVertexDataDefinition*)(mesh_data.m_vertex_buffer->m_data))[i] = mesh_vertices[i];
+		//	indices[i] = static_cast<uint16_t>(i);
+		//}
 		return mesh_data;
 	}
 }

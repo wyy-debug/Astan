@@ -2,6 +2,7 @@
 #include "ParticlePass.h"
 #include <fstream>
 #include <random>
+#include <Astan/Renderer/NewSystem/shader/mesh_frag.h>
 
 namespace Astan
 {
@@ -323,8 +324,8 @@ namespace Astan
     {
         // billboard texture
         {
-            std::shared_ptr<TextureData> m_particle_billboard_texture_resource = m_render_resource->loadTextureHDR(
-                m_particle_manager->GetGlobalParticleRes().m_particle_billboard_texture_path);
+            std::shared_ptr<TextureData> m_particle_billboard_texture_resource = m_render_resource->LoadTextureHDR(
+                m_particle_manager->getGlobalParticleRes().m_particle_billboard_texture_path);
             m_RenderCommand->CreateGlobalImage(m_particle_billboard_texture_image,
                 m_particle_billboard_texture_image_view,
                 m_particle_billboard_texture_vma_allocation,
@@ -336,8 +337,8 @@ namespace Astan
 
         // piccolo texture
         {
-            std::shared_ptr<TextureData> m_piccolo_logo_texture_resource = m_render_resource->loadTexture(
-                m_particle_manager->GetGlobalParticleRes().m_piccolo_logo_texture_path, true);
+            std::shared_ptr<TextureData> m_piccolo_logo_texture_resource = m_render_resource->LoadTexture(
+                m_particle_manager->getGlobalParticleRes().m_piccolo_logo_texture_path, true);
             m_RenderCommand->CreateGlobalImage(m_piccolo_logo_texture_image,
                 m_piccolo_logo_texture_image_view,
                 m_piccolo_logo_texture_vma_allocation,
@@ -1035,7 +1036,7 @@ namespace Astan
         shaderStage.pName = "main";
 
         {
-            shaderStage.module = m_RenderCommand->CreateShaderModule(PARTICLE_KICKOFF_COMP);
+            shaderStage.module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
             shaderStage.pSpecializationInfo = nullptr;
             assert(shaderStage.module != RHI_NULL_HANDLE);
 
@@ -1048,7 +1049,7 @@ namespace Astan
         }
 
         {
-            shaderStage.module = m_RenderCommand->CreateShaderModule(PARTICLE_EMIT_COMP);
+            shaderStage.module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
             shaderStage.pSpecializationInfo = nullptr;
             assert(shaderStage.module != RHI_NULL_HANDLE);
 
@@ -1061,7 +1062,7 @@ namespace Astan
         }
 
         {
-            shaderStage.module = m_RenderCommand->CreateShaderModule(PARTICLE_SIMULATE_COMP);
+            shaderStage.module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
             shaderStage.pSpecializationInfo = nullptr;
             assert(shaderStage.module != RHI_NULL_HANDLE);
 
@@ -1087,8 +1088,8 @@ namespace Astan
                 throw std::runtime_error("create particle billboard pipeline layout");
             }
 
-            RHIShader* vert_shader_module = m_RenderCommand->CreateShaderModule(PARTICLEBILLBOARD_VERT);
-            RHIShader* frag_shader_module = m_RenderCommand->CreateShaderModule(PARTICLEBILLBOARD_FRAG);
+            RHIShader* vert_shader_module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
+            RHIShader* frag_shader_module = m_RenderCommand->CreateShaderModule(MESH_FRAG);
 
             RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info{};
             vert_pipeline_shader_stage_create_info.sType = RHI_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1837,7 +1838,7 @@ namespace Astan
             throw std::runtime_error("map buffer");
         }
 
-        const GlobalParticleRes& global_res = m_particle_manager->GetGlobalParticleRes();
+        const GlobalParticleRes& global_res = m_particle_manager->getGlobalParticleRes();
 
         m_ubo.emit_gap = global_res.m_emit_gap;
         m_ubo.time_step = global_res.m_time_step;
@@ -1846,9 +1847,12 @@ namespace Astan
         std::random_device r;
         std::seed_seq      seed {r()};
         m_random_engine.seed(seed);
-        float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-        float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-        float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+        //float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+        //float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+        //float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+        float rnd0 = 0.0f;
+        float rnd1 = 0.f;
+        float rnd2 = 0.0f;
         m_ubo.pack = glm::vec4{ rnd0, static_cast<float>(m_RenderCommand->GetCurrentFrameIndex()), rnd1, rnd2 };
         m_ubo.xemit_count = 100000;
 
@@ -1897,9 +1901,13 @@ namespace Astan
         std::random_device r;
         std::seed_seq      seed {r()};
         m_random_engine.seed(seed);
-        float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+       /* float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
         float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-        float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+        float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;*/
+        float rnd0     = 0.0f;
+        float rnd1 = 0.0f;
+        float rnd2 = 0.0f;
+
         m_ubo.pack = glm::vec4{ rnd0, rnd1, rnd2, static_cast<float>(m_RenderCommand->GetCurrentFrameIndex()) };
 
         m_ubo.viewport.x = m_RenderCommand->GetSwapchainInfo().viewport->x;
@@ -1909,8 +1917,8 @@ namespace Astan
         m_ubo.extent.x = m_RenderCommand->GetSwapchainInfo().scissor->extent.width;
         m_ubo.extent.y = m_RenderCommand->GetSwapchainInfo().scissor->extent.height;
 
-        m_ubo.extent.z = g_runtime_global_context.m_render_system->GetRenderCamera()->m_znear;
-        m_ubo.extent.w = g_runtime_global_context.m_render_system->GetRenderCamera()->m_zfar;
+        //m_ubo.extent.z = g_runtime_global_context.m_render_system->GetRenderCamera()->m_znear;
+        //m_ubo.extent.w = g_runtime_global_context.m_render_system->GetRenderCamera()->m_zfar;
         memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
     }
 

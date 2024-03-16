@@ -1,6 +1,8 @@
 #pragma once
 #include "Platform/Vulkan/VulkanRendererAPI.h"
 #include "RenderSource.h"
+#include <Astan/Renderer/NewSystem/RenderConfig.h>
+
 namespace Astan
 { 
 	enum
@@ -30,6 +32,14 @@ namespace Astan
 		_main_camera_subpass_ui,
 		_main_camera_subpass_combine_ui,
 		_main_camera_subpass_count
+	};
+
+	struct VisiableNodes
+	{
+		std::vector<RenderMeshNode>* p_directional_light_visible_mesh_nodes{ nullptr };
+		std::vector<RenderMeshNode>* p_point_lights_visible_mesh_nodes{ nullptr };
+		std::vector<RenderMeshNode>* p_main_camera_visible_mesh_nodes{ nullptr };
+		RenderAxisNode* p_axis_node{ nullptr };
 	};
 
 	class RenderPass
@@ -82,10 +92,11 @@ namespace Astan
 		std::vector<Descriptor>  m_DescriptorInfos;
 		std::vector<RenderPipelineBase> m_RenderPipelines;
 
-
+		static VisiableNodes m_visiable_nodes;
 
 	
 	protected:
 		Ref<VulkanRendererAPI> m_RenderCommand;
+		Ref<RenderSource> m_render_resource;
 	};
 }
