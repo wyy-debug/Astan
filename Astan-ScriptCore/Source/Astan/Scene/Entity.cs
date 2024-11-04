@@ -28,6 +28,19 @@ namespace Astan {
             }
         }
 
+        public Vector3 Scale
+        {
+            get
+            {
+                InternalCalls.TransformComponent_GetScale(ID, out Vector3 result);
+                return result;
+            }
+            set
+            {
+                InternalCalls.TransformComponent_SetScale(ID, ref value);
+            }
+        }
+
         public bool HasComponent<T>() where T : Component, new() 
         {
             Type componentType = typeof(T);
@@ -41,6 +54,19 @@ namespace Astan {
 
             T component =  new T() { Entity = this };
             return component;
+        }
+
+        public Entity CreateEntity(string name)
+        {
+            ulong entity = InternalCalls.Create_Entity(name);
+            if (entity == 0)
+                return null;
+            return new Entity(entity);
+        }
+
+        public void AddSpriteRenderer(ref Vector3 color)
+        {
+            InternalCalls.Add_SpriteRenderer(ID, ref color);
         }
 
         public Entity FindEntityByName(string name)

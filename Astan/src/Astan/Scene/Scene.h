@@ -19,6 +19,7 @@ namespace Astan
 		static Ref<Scene> Copy(Ref<Scene> other);
 
 		Entity CreateEntity(const std::string& name = std::string());
+		UUID InternalCreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
@@ -44,6 +45,9 @@ namespace Astan
 		bool IsPaused() const { return m_IsPaused; }
 		void SetPaused(bool paused) { m_IsPaused = paused; }
 
+		// ComponentAdd
+		void SpriteRendererAdd(UUID uuid, glm::vec3 color);
+		
 		void Step(int frames = 1);
 
 		template<typename... Components>

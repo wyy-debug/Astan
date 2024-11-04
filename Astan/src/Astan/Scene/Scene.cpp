@@ -114,6 +114,25 @@ namespace Astan
 		return CreateEntityWithUUID(UUID(), name);
 	}
 
+	UUID Scene::InternalCreateEntity(const std::string& name)
+	{
+		UUID uuid = UUID();
+		Entity entity = { m_Registry.create(), this };
+		entity.AddComponent<IDComponent>(uuid);
+		entity.AddComponent<TransformComponent>();
+		auto& tag = entity.AddComponent<TagComponent>();
+		tag.Tag = name.empty() ? "Entity" : name;
+
+		m_EntityMap[uuid] = entity;
+		return uuid;
+	}
+
+	void Scene::SpriteRendererAdd(UUID uuid, glm::vec3 color)
+	{
+		Entity entity = GetEntityByUUID(uuid);
+		entity.AddComponent<SpriteRendererComponent>(glm::vec4(color,1.0f));
+	}
+
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
 		Entity entity = { m_Registry.create(), this };

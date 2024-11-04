@@ -25,6 +25,19 @@ namespace Astan
                 InternalCalls.TransformComponent_SetTranslation(Entity.ID, ref value);
             }
         }
+
+        public Vector3 Scale
+        {
+            get
+            {
+                InternalCalls.TransformComponent_GetScale(Entity.ID, out Vector3 scale);
+                return scale;
+            }
+            set
+            {
+                InternalCalls.TransformComponent_SetScale(Entity.ID, ref value);
+            }
+        }
     }
     public class Rigidbody2DComponent : Component
     {

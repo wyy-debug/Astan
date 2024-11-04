@@ -16,12 +16,18 @@ namespace Sandbox
             Console.WriteLine($"Player.OnCreate - {ID}");
             m_Transform = GetComponet<TransformComponent>();
             m_RigidBody = GetComponet<Rigidbody2DComponent>();
+            Entity entity = CreateEntity("1111");
+            Vector3 velocity = new Vector3(1, 1, 1);
+            entity.AddSpriteRenderer(ref velocity);
+            TransformComponent test_Transform = entity.GetComponet<TransformComponent>();
+            test_Transform =  m_Transform;
         }
-
+         
         void OnUpdate(float ts)
         {
 
             Time += ts;
+            Entity entity = CreateEntity("1111");
 
             float speed = Speed;
             Vector3 velocity = Vector3.Zero;
@@ -48,8 +54,8 @@ namespace Sandbox
             }
 
             // m_RigidBody.ApplyLinearImpulse(velocity.XY, Vector2.Zero, true);
-            m_RigidBody.ApplyLinearImpulse(velocity.XY, true);
-            velocity *= Speed;
+            //m_RigidBody.ApplyLinearImpulse(velocity.XY, true);
+            //velocity *= Speed;
 
             //Vector3 translation = m_Transform.Translation;
             //translation += velocity * ts;

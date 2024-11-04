@@ -53,19 +53,37 @@ namespace Astan
 		entity.GetComponent<TransformComponent>().Translation = *translation;
 	}
 
+	static void TransformComponent_GetScale(UUID entityID, glm::vec3* outScale)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+		*outScale = entity.GetComponent<TransformComponent>().Scale;
+	}
 
+	static void TransformComponent_SetScale(UUID entityID, glm::vec3* scale)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+		entity.GetComponent<TransformComponent>().Scale = *scale;
+	}
 
 	static MonoObject* GetScriptInstance(UUID entityID)
 	{
 		return ScriptEngine::GetManagedInstance(entityID);
 	}
 
+	// Creare Entity
+	static uint64_t Create_Entity(MonoString* string)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		char* cStr = mono_string_to_utf8(string);
+		return scene->InternalCreateEntity(cStr);
+	}
 
 	static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
 		Entity entity = scene->GetEntityByUUID(entityID);
-		
 		MonoType* managedType = mono_reflection_type_get_type(componentType);
 		return s_EntityHasComponentFuncs.at(managedType)(entity);
 	}
@@ -144,9 +162,16 @@ namespace Astan
 		b2Body* body = (b2Body*)rb2d.RuntimeBody;
 		body->SetType(Utils::Rigidbody2DTypeToBox2DBody(bodyType));
 	}
+
 	static bool Input_IsKeyDown(KeyCode keycode)
 	{
 		return Input::IsKeyPressed(keycode);
+	}
+
+	static void Add_SpriteRenderer(UUID uuid, glm::vec3 color)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		scene->SpriteRendererAdd(uuid, color);
 	}
 
 	template<typename... Component>
@@ -187,6 +212,8 @@ namespace Astan
 		AS_ADD_INTERNAL_CALL(NativeLog_Vector);
 		AS_ADD_INTERNAL_CALL(NativeLog_VectorDot);
 
+		// Entity
+		AS_ADD_INTERNAL_CALL(Create_Entity);
 		AS_ADD_INTERNAL_CALL(Entity_HasComponent);
 		AS_ADD_INTERNAL_CALL(Entity_FindEntityByName);
 
@@ -194,6 +221,8 @@ namespace Astan
 
 		AS_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
 		AS_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
+		AS_ADD_INTERNAL_CALL(TransformComponent_GetScale);
+		AS_ADD_INTERNAL_CALL(TransformComponent_SetScale);
 
 		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulse);
 		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulseToCenter);
@@ -202,5 +231,10 @@ namespace Astan
 		AS_ADD_INTERNAL_CALL(Rigidbody2DComponent_SetType);
 
 		AS_ADD_INTERNAL_CALL(Input_IsKeyDown);
+
+		// SpriteRenderer
+
+		AS_ADD_INTERNAL_CALL(Add_SpriteRenderer);
+		
 	}
 }
