@@ -219,10 +219,12 @@ namespace Astan
 		s_Data->RootDomain = nullptr;
 	}
 
+
+
 	void ScriptEngine::InitMono()
 	{
 		// set mono assemblies lib
-		mono_set_assemblies_path("mono/lib");
+		mono_set_assemblies_path("mono/lib/mono/4.5");
 
 		if (s_Data->EnableDebugging)
 		{
@@ -238,6 +240,9 @@ namespace Astan
 		MonoDomain* rootDomain = mono_jit_init("AstanJITRuntime");
 		AS_CORE_ASSERT(rootDomain);
 		
+		// 在这里加载其余的dll
+		MonoAssembly* assembly = mono_domain_assembly_open(rootDomain, "System.Net.dll");
+
 		if (s_Data->EnableDebugging)
 			mono_debug_domain_create(s_Data->RootDomain);
 
@@ -255,7 +260,7 @@ namespace Astan
 		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath, s_Data->EnableDebugging);
 
 		// Move this maybe
-		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath);
+		//s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath);
 		s_Data->CoreAssemblyImage = mono_assembly_get_image(s_Data->CoreAssembly);
 
 	}

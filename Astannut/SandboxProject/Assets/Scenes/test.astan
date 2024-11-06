@@ -1,5 +1,17 @@
 Scene: Untitled
 Entities:
+  - Entity: 6496727677805852896
+    TagComponent:
+      Tag: Empty Entity
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: 11
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
   - Entity: 6764160227124239539
     TagComponent:
       Tag: Camera
@@ -28,9 +40,9 @@ Entities:
     TransformComponent:
       Translation: [-5, 5, 0]
       Rotation: [0, 0, 0]
-      Scale: [0.100000001, 10, 1]
+      Scale: [0.0500000007, 100, 1]
     SpriteRendererComponent:
-      Color: [1, 0, 0, 1]
+      Color: [0.00392156886, 0.00392156886, 0.00392156886, 1]
   - Entity: 14879644733215978251
     TagComponent:
       Tag: Scene
@@ -48,6 +60,15 @@ Entities:
     TransformComponent:
       Translation: [4.76837158e-07, -1.1920929e-07, 0]
       Rotation: [0, 0, 0]
-      Scale: [10, 0.100000001, 1]
+      Scale: [100, 0.0500000007, 0]
     SpriteRendererComponent:
-      Color: [0.386904716, 1, 0, 1]
+      Color: [0, 0, 0, 1]
+  - Entity: 15105703770157871962
+    TagComponent:
+      Tag: Back
+    TransformComponent:
+      Translation: [0, 0, -1]
+      Rotation: [0, 0, 0]
+      Scale: [100, 100, 0]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
@@ -10,37 +11,41 @@ namespace Sandbox
     {
         private Socket client_socket;
         private byte[] recvData = new byte[0];
-        private int length;
+        private int length = 0;
+        public dpsDamage damge;
 
         public void Create()
         {
-            //client_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            //IPAddress serverIP = IPAddress.Parse("127.0.0.1");
-            //int serverPort = 3000;
-
-            //IPEndPoint serverEndPoint = new IPEndPoint(serverIP, serverPort);
-
-            //client_socket.Connect(serverEndPoint);
             client_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            IPAddress serverIP = IPAddress.Parse("127.0.0.1");
+            int serverPort = 5001;
+
+            IPEndPoint serverEndPoint = new IPEndPoint(serverIP, serverPort);
+
+            client_socket.Connect(serverEndPoint);
 
         }
 
+        public void socket_recive()
+        {
+            byte[] buffer = new byte[1024];
+            int bytesRead = client_socket.Receive(buffer);
+            byte[] newData = new byte[recvData.Length + bytesRead];
+            Buffer.BlockCopy(recvData, 0, newData, 0, recvData.Length);
+            Buffer.BlockCopy(buffer, 0, newData, recvData.Length, bytesRead);
+            recvData = newData;
+        }
 
         public void Recive()
         {
             // 使用Poll方法检查是否有数据可读
-            if (client_socket.Poll(1000000, SelectMode.SelectRead))
+            if (client_socket.Poll(1660, SelectMode.SelectRead))
             {
-                byte[] buffer = new byte[1024];
-                int bytesRead = client_socket.Receive(buffer);
-                byte[] newData = new byte[recvData.Length + bytesRead];
-                Buffer.BlockCopy(recvData, 0, newData, 0, recvData.Length);
-                Buffer.BlockCopy(buffer, 0, newData, recvData.Length, bytesRead);
-                recvData = newData;
-
+                
                 if (length > 0)
                 {
+                    socket_recive();
                     if (recvData.Length >= length + 4)
                     {
                         byte[] dataBytes = new byte[length];
@@ -62,8 +67,11 @@ namespace Sandbox
                             var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(data_str);
                             if (data != null && data.ContainsKey("protoname"))
                             {
-                                WriteToFile(data_str);
-                                ParseProto((string)data["protoname"], data);
+                                //WriteToFile(data_str);
+                                Dps dps = new Dps();
+                                damge = dps.parseProto((string)data["protoname"], data);
+                                Console.WriteLine("parseProto over");
+                                Console.WriteLine(damge.Value);
                             }
                         }
                         catch (JsonException)
@@ -74,6 +82,7 @@ namespace Sandbox
                 }
                 else
                 {
+                    socket_recive();
                     if (recvData.Length >= 4)
                     {
                         length = BitConverter.ToInt32(recvData, 0);
@@ -88,11 +97,6 @@ namespace Sandbox
             Console.WriteLine(data);
         }
 
-        private void ParseProto(string protoName, Dictionary<string, object> data)
-        {
-            // 这里实现根据协议名称解析数据的逻辑
-            Console.WriteLine($"Parsing protocol: {protoName}");
-        }
     }
 }
 
